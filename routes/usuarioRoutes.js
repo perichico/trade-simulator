@@ -1,12 +1,13 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const usuarioController = require('../controllers/usuarioController');
+const usuarioController = require("../controllers/usuarioController");
 
-// Rutas para vistas de autenticación
-router.get('/register', usuarioController.mostrarFormularioRegistro);
-router.post('/register', usuarioController.registrarUsuario);
+router.get("/", usuarioController.mostrarLogin);
+router.post("/login", usuarioController.procesarLogin);
+router.get("/logout", usuarioController.logout);
+router.get("/dashboard", usuarioController.mostrarDashboard);
 
-router.get('/login', usuarioController.mostrarFormularioLogin);
-router.post('/login', usuarioController.iniciarSesion);
+router.get("/registro", usuarioController.mostrarRegistro);
+router.post("/registro", usuarioController.registrarUsuario);
 
 module.exports = router;

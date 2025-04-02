@@ -4,7 +4,7 @@ const transaccionController = require('../controllers/transaccionController');
 
 // Rutas de Transaccion
 router.get('/transacciones', transaccionController.obtenerTransacciones);
-router.post('/comprar', transaccionController.comprarActivo);
-router.post('/vender', transaccionController.venderActivo);
+router.post('/creartransaccion', transaccionController.crearTransaccion);
+router.post('/transacciones/:usuario', transaccionController.obtenerTransaccionesPorUsuario);
 
 module.exports = router;

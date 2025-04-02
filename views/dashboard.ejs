@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+
+    <h1>Bienvenido, <%= usuario.nombre %></h1>
+    <p>Email: <%= usuario.email %></p>
+    <p>Balance: $<%= usuario.balance %></p>
+
+    <h2>Mis Activos</h2>
+
+    <% if (activos.length > 0) { %>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Símbolo</th>
+                    <th>Cantidad Total</th>
+                    <th>Precio Actual</th>
+                    <th>Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% activos.forEach(activo => { %>
+                    <tr>
+                        <td><%= activo.nombre %></td>
+                        <td><%= activo.simbolo %></td>
+                        <td><%= activo.cantidadTotal %></td>
+                        <td>$<%= activo.precio %></td>
+                        <td>$<%= (activo.cantidadTotal * activo.precio).toFixed(2) %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p>No tienes activos actualmente.</p>
+    <% } %>
+
+    <h2>Tus Transacciones</h2>
+
+    <% if (transacciones.length > 0) { %>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Símbolo</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Valor Total</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% transacciones.forEach(transaccion => { %>
+                    <tr>
+                        <td><%= transaccion.activo.nombre %></td>
+                        <td><%= transaccion.activo.simbolo %></td>
+                        <td><%= transaccion.cantidad %></td>
+                        <td>$<%= transaccion.precio %></td>
+                        <td>$<%= (transaccion.cantidad * transaccion.precio).toFixed(2) %></td>
+                        <td>
+                            <form action="/transacciones/creartransaccion" method="POST">
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>"> <!-- Token CSRF -->
+                                <input type="hidden" name="activoId" value="<%= transaccion.activoId %>">
+                                <input type="hidden" name="tipo" value="venta">
+                                <input type="number" name="cantidad" min="1" max="<%= transaccion.cantidad %>" required>
+                                <button type="submit">Vender</button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p>No tienes transacciones actualmente.</p>
+    <% } %>
+
+    <br>
+    <a href="/logout">Cerrar sesión</a>
+
+    <!-- Botón para ir al panel de compra de activos -->
+    <br><br>
+    <a href="/activos">
+        <button>Ir al panel de compra</button>
+    </a>
+
+</body>
+</html>

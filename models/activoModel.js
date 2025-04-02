@@ -1,24 +1,13 @@
-const sequelize = require('../database/db'); 
-const { DataTypes } = require('sequelize');
-const { TipoActivo } = require('./tipoActivoModel'); 
+const { DataTypes } = require("sequelize");
 
-const Activo = sequelize.define('Activo', {
-    ID: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    Nombre: {
-        type: DataTypes.STRING(100),
-        allowNull: false
-    }
-}, {
-    tableName: 'activos',
-    timestamps: false
-});
-
-// Relación con TipoActivo
-Activo.belongsTo(TipoActivo, { foreignKey: 'TipoActivoID', onDelete: 'CASCADE' });
-TipoActivo.hasMany(Activo, { foreignKey: 'TipoActivoID', onDelete: 'CASCADE' });
-
-module.exports = { Activo };
+module.exports = (sequelize) => {
+    return sequelize.define("activo", {
+        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+        nombre: { type: DataTypes.STRING, allowNull: false },
+        simbolo: { type: DataTypes.STRING, allowNull: false, unique: true },
+        precio: { type: DataTypes.DECIMAL(10, 2), allowNull: false }
+    }, {
+        tableName: "activos",
+        timestamps: false
+    });
+};

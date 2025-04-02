@@ -1,49 +1,44 @@
-const sequelize = require('../database/db'); 
-const { DataTypes } = require('sequelize');
-const { Usuario } = require('./usuarioModel'); 
-const { Activo } = require('./activoModel'); 
+const { DataTypes } = require("sequelize");
 
-const Transaccion = sequelize.define('Transaccion', {
-    ID: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
-    },
-    Tipo: {
-        type: DataTypes.STRING(50),
-        allowNull: false // Compra o venta
-    },
-    Cantidad: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    Fecha: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
-    },
-    UsuarioID: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Usuario,
-            key: 'ID'
+module.exports = (sequelize) => {
+    return sequelize.define("transaccion", {
+        id: { 
+            type: DataTypes.INTEGER, 
+            autoIncrement: true, 
+            primaryKey: true 
         },
-        onDelete: 'CASCADE'
-    },
-    ActivoID: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Activo,
-            key: 'ID'
+        usuarioId: { 
+            type: DataTypes.INTEGER, 
+            allowNull: false, 
+            references: {
+                model: "usuarios", // El nombre de la tabla de usuarios
+                key: "id" // La columna que hace referencia en la tabla usuarios
+            },
+            onDelete: 'CASCADE' // Si un usuario se elimina, las transacciones asociadas también se eliminan
         },
-        onDelete: 'CASCADE'
-    }
-}, {
-    tableName: 'transacciones',
-    timestamps: false
-});
-
-// Relaciones
-Transaccion.belongsTo(Usuario, { foreignKey: 'UsuarioID' });
-Transaccion.belongsTo(Activo, { foreignKey: 'ActivoID' });
-
-module.exports = { Transaccion };
+        activoId: { 
+            type: DataTypes.INTEGER, 
+            allowNull: false, 
+            references: {
+                model: "activos", // El nombre de la tabla de activos
+                key: "id" // La columna que hace referencia en la tabla activos
+            },
+            onDelete: 'CASCADE' // Si un activo se elimina, las transacciones asociadas también se eliminan
+        },
+        cantidad: { 
+            type: DataTypes.INTEGER, 
+            allowNull: false 
+        },
+        precio: { 
+            type: DataTypes.DECIMAL(10, 2), 
+            allowNull: false
+        },
+        fecha: { 
+            type: DataTypes.DATE, 
+            allowNull: false // Nueva columna para la fecha de la transacción
+        }
+    }, {
+        tableName: "transacciones", // Nombre de la tabla
+        timestamps: false // No se utilizan createdAt y updatedAt en este modelo
+    });
+};

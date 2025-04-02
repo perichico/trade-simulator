@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60   # Dura 60 segundos
+      arrivalRate: 500 # 10 usuarios por segundo
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - flow:
+      - post:
+          url: "/transacciones/creartransaccion"
+          json:
+            usuarioId: 1
+            activoId: 1
+            tipo: "compra"
+            cantidad: 1
+      - think: 2  # Espera 2 segundos antes de la siguiente acción
+      - post:
+          url: "/transacciones/creartransaccion"
+          json:
+            usuarioId: 1
+            activoId: 1
+            tipo: "venta"
+            cantidad: 1

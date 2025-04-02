@@ -1,32 +1,62 @@
-const { Activo } = require('../models/activoModel');
+const {sequelize, Usuario, Activo, Transaccion} = require("../models/index");
 
-//Gestion de Activos
-const obtenerActivos = async (req, res) => {
+// Obtener todos los activos
+exports.obtenerActivos = async (req, res) => {
     try {
+        // Obtener todos los activos de la base de datos
         const activos = await Activo.findAll();
-        res.render('listadoActivos', { activos }); 
+
+        res.render('activos', { activos });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error(error);
+        res.status(500).send("Error al obtener los activos");
     }
 };
 
-const obtenerActivo = async (req, res) => {  //Devuelve un activo especifico
+// Crear un nuevo activo
+exports.crearActivo = async (req, res) => {
     try {
-        const activo = await Activo.findByPk(req.params.id, {
-            include: [{ model: Activo }]
-        });
-        if (activo) {
-            res.render('verActivo', { activo }); 
-        } else {
-            res.status(404).json({ error: 'Activo no encontrado' });
-        }
+        const { nombre, simbolo, precio } = req.body;
+        const activo = await Activo.create({ nombre, simbolo, precio });
+        res.status(201).json(activo);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Error al crear el activo" });
     }
 };
 
-// Exportación de los Controladores
-module.exports = {
-    obtenerActivos,
-    obtenerActivo
+// Obtener un activo por ID
+exports.obtenerActivoPorId = async (req, res) => {
+    try {
+        const activo = await Activo.findByPk(req.params.id);
+        if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
+        res.json(activo);
+    } catch (error) {
+        res.status(500).json({ error: "Error al obtener el activo" });
+    }
+};
+
+// Actualizar activo
+exports.actualizarActivo = async (req, res) => {
+    try {
+        const activo = await Activo.findByPk(req.params.id);
+        if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
+
+        await activo.update(req.body);
+        res.json(activo);
+    } catch (error) {
+        res.status(500).json({ error: "Error al actualizar el activo" });
+    }
+};
+
+// Eliminar activo
+exports.eliminarActivo = async (req, res) => {
+    try {
+        const activo = await Activo.findByPk(req.params.id);
+        if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
+
+        await activo.destroy();
+        res.json({ mensaje: "Activo eliminado correctamente" });
+    } catch (error) {
+        res.status(500).json({ error: "Error al eliminar el activo" });
+    }
 };

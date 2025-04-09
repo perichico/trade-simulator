@@ -1,0 +1,9 @@
+FROM bolsa/angular
+
+RUN apt update
+
+WORKDIR /app
+
+COPY ./sources/frontendAngular .
+
+EXPOSE 3000

@@ -1,0 +1,114 @@
+.mercado-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-info {
+  margin-right: 16px;
+  font-size: 14px;
+}
+
+.content-container {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mercado-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.mercado-header h1 {
+  margin-bottom: 5px;
+}
+
+.last-update {
+  color: #666;
+  font-size: 14px;
+  margin-top: 0;
+}
+
+.mercado-card {
+  margin-bottom: 20px;
+}
+
+.mercado-table {
+  width: 100%;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.positive-value {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.negative-value {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.tendencia-icon {
+  vertical-align: middle;
+  font-size: 18px;
+  margin-right: 4px;
+}
+
+/* Estilos para los botones de acción */
+td.mat-cell:last-of-type button {
+  margin-right: 8px;
+}
+
+/* Estilos para la pantalla de login requerido */
+.login-required {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.login-required mat-card {
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mercado-table {
+    font-size: 14px;
+  }
+  
+  td.mat-cell:last-of-type button {
+    margin-bottom: 8px;
+    display: block;
+    width: 100%;
+  }
+}

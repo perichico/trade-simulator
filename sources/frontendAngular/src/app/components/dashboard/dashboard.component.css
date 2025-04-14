@@ -1,0 +1,129 @@
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-info {
+  margin-right: 16px;
+  font-size: 14px;
+}
+
+.content-container {
+  margin-top: 70px;
+  padding: 20px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.last-update {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.summary-card {
+  text-align: center;
+  padding: 16px;
+}
+
+.balance-card {
+  background-color: #e3f2fd;
+}
+
+.portfolio-card {
+  background-color: #e8f5e9;
+}
+
+.performance-card {
+  background-color: #fff8e1;
+}
+
+.balance-amount,
+.portfolio-amount,
+.performance-amount {
+  font-size: 24px;
+  font-weight: 500;
+  margin-top: 16px;
+}
+
+.portfolio-table-card {
+  margin-bottom: 30px;
+}
+
+.portfolio-table {
+  width: 100%;
+}
+
+.empty-portfolio {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.empty-portfolio p {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+}
+
+.login-required {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-required mat-card {
+  max-width: 400px;
+  text-align: center;
+  padding: 30px;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .portfolio-table {
+    overflow-x: auto;
+  }
+}

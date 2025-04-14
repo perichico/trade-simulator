@@ -1,0 +1,142 @@
+<div class="dashboard-container" *ngIf="usuario">
+  <mat-toolbar color="primary" class="toolbar">
+    <span>Simulador de Inversión en Bolsa</span>
+    <span class="spacer"></span>
+    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(usuario.balance) }}</span>
+    <button mat-icon-button aria-label="Cerrar sesión" (click)="cerrarSesion()">
+      <mat-icon>exit_to_app</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="content-container">
+    <div class="dashboard-header">
+      <h1>Panel de Control</h1>
+      <p class="last-update">Última actualización: {{ now | date:'medium' }}</p>
+    </div>
+
+    <div class="dashboard-summary" *ngIf="portafolio$ | async as portafolio">
+      <mat-card class="summary-card balance-card">
+        <mat-card-header>
+          <mat-card-title>Balance Disponible</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="balance-amount">{{ formatearDinero(usuario.balance) }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card portfolio-card">
+        <mat-card-header>
+          <mat-card-title>Valor del Portafolio</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="portfolio-amount">{{ formatearDinero(portafolio.valorTotal) }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card performance-card">
+        <mat-card-header>
+          <mat-card-title>Rendimiento</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="performance-amount" [ngClass]="obtenerClaseValor(portafolio.rendimientoTotal)">
+            {{ formatearDinero(portafolio.rendimientoTotal) }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="dashboard-content" *ngIf="portafolio$ | async as portafolio">
+      <mat-card class="portfolio-table-card">
+        <mat-card-header>
+          <mat-card-title>Mi Portafolio</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <table mat-table [dataSource]="portafolio.activos" class="mat-elevation-z0 portfolio-table" *ngIf="portafolio.activos.length > 0">
+            <!-- Símbolo Column -->
+            <ng-container matColumnDef="simbolo">
+              <th mat-header-cell *matHeaderCellDef> Símbolo </th>
+              <td mat-cell *matCellDef="let activo"> {{activo.simbolo}} </td>
+            </ng-container>
+
+            <!-- Nombre Column -->
+            <ng-container matColumnDef="nombre">
+              <th mat-header-cell *matHeaderCellDef> Nombre </th>
+              <td mat-cell *matCellDef="let activo"> {{activo.nombre}} </td>
+            </ng-container>
+
+            <!-- Cantidad Column -->
+            <ng-container matColumnDef="cantidad">
+              <th mat-header-cell *matHeaderCellDef> Cantidad </th>
+              <td mat-cell *matCellDef="let activo"> {{activo.cantidad}} </td>
+            </ng-container>
+
+            <!-- Precio Compra Column -->
+            <ng-container matColumnDef="precioCompra">
+              <th mat-header-cell *matHeaderCellDef> Precio Compra </th>
+              <td mat-cell *matCellDef="let activo"> {{formatearDinero(activo.precioCompra)}} </td>
+            </ng-container>
+
+            <!-- Precio Actual Column -->
+            <ng-container matColumnDef="precioActual">
+              <th mat-header-cell *matHeaderCellDef> Precio Actual </th>
+              <td mat-cell *matCellDef="let activo"> {{formatearDinero(activo.precioActual)}} </td>
+            </ng-container>
+
+            <!-- Valor Total Column -->
+            <ng-container matColumnDef="valorTotal">
+              <th mat-header-cell *matHeaderCellDef> Valor Total </th>
+              <td mat-cell *matCellDef="let activo"> {{formatearDinero(activo.valorTotal)}} </td>
+            </ng-container>
+
+            <!-- Rendimiento Column -->
+            <ng-container matColumnDef="rendimiento">
+              <th mat-header-cell *matHeaderCellDef> Rendimiento </th>
+              <td mat-cell *matCellDef="let activo" [ngClass]="obtenerClaseValor(activo.rendimiento)">
+                {{formatearDinero(activo.rendimiento)}} ({{activo.rendimientoPorcentaje | number:'1.2-2'}}%)
+              </td>
+            </ng-container>
+
+            <!-- Acciones Column -->
+            <ng-container matColumnDef="acciones">
+              <th mat-header-cell *matHeaderCellDef> Acciones </th>
+              <td mat-cell *matCellDef="let activo">
+                <button mat-icon-button [routerLink]="['/activo', activo.id]" matTooltip="Ver detalles">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button mat-icon-button (click)="abrirDialogoTransaccion(activo, 'compra')" matTooltip="Comprar">
+                  <mat-icon>add_circle</mat-icon>
+                </button>
+                <button mat-icon-button (click)="abrirDialogoTransaccion(activo, 'venta')" matTooltip="Vender">
+                  <mat-icon>remove_circle</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['simbolo', 'nombre', 'cantidad', 'precioCompra', 'precioActual', 'valorTotal', 'rendimiento', 'acciones']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['simbolo', 'nombre', 'cantidad', 'precioCompra', 'precioActual', 'valorTotal', 'rendimiento', 'acciones'];"></tr>
+          </table>
+
+          <div class="no-assets-message" *ngIf="portafolio.activos.length === 0">
+            <mat-icon>info</mat-icon>
+            <p>No tienes activos en tu portafolio</p>
+            <button mat-raised-button color="primary" routerLink="/mercado">
+              Ir al Mercado
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+
+<div class="login-required" *ngIf="!usuario">
+  <mat-card>
+    <mat-card-content>
+      <p>Debes iniciar sesión para acceder al simulador de inversión.</p>
+      <div class="login-buttons">
+        <button mat-raised-button color="primary" routerLink="/login">Iniciar Sesión</button>
+        <button mat-raised-button routerLink="/registro">Registrarse</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

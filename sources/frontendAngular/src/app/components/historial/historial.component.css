@@ -1,0 +1,148 @@
+.historial-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-info {
+  margin-right: 16px;
+  font-size: 14px;
+}
+
+.content-container {
+  margin-top: 64px;
+  padding: 24px;
+  max-width: 1200px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.historial-header {
+  margin-bottom: 24px;
+}
+
+.historial-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  color: #333;
+}
+
+.subtitle {
+  color: #666;
+  margin-top: 8px;
+}
+
+.historial-card {
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.historial-table {
+  width: 100%;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.empty-state p {
+  margin-bottom: 24px;
+  color: #666;
+}
+
+.compra-row {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.venta-row {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.tipo-icon {
+  vertical-align: middle;
+  margin-right: 4px;
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}
+
+.login-required {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.login-required mat-card {
+  max-width: 400px;
+  padding: 24px;
+  text-align: center;
+}
+
+.login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .content-container {
+    padding: 16px;
+  }
+  
+  .historial-header h1 {
+    font-size: 24px;
+  }
+  
+  .user-info {
+    display: none;
+  }
+}

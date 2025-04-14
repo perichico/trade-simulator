@@ -1,1 +1,56 @@
-/* You can add global styles to this file, and also import other style files */
+/* Estilos globales para el simulador de inversión en bolsa */
+
+html, body { height: 100%; }
+body { 
+  margin: 0; 
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+  background-color: #f5f5f5;
+}
+
+/* Colores personalizados para el simulador */
+:root {
+  --primary-color: #1e88e5; /* Azul principal */
+  --secondary-color: #43a047; /* Verde para ganancias */
+  --danger-color: #e53935; /* Rojo para pérdidas */
+  --background-light: #ffffff;
+  --background-dark: #f5f5f5;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+}
+
+/* Estilos para tarjetas y contenedores */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilos para valores positivos y negativos */
+.positive-value {
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+.negative-value {
+  color: var(--danger-color);
+  font-weight: 500;
+}
+
+/* Estilos para contenedores principales */
+.content-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .content-container {
+    padding: 10px;
+  }
+}

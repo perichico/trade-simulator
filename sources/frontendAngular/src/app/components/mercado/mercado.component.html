@@ -1,0 +1,86 @@
+<div class="mercado-container" *ngIf="usuario">
+  <mat-toolbar color="primary" class="toolbar">
+    <button mat-icon-button aria-label="Volver al dashboard" routerLink="/dashboard">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span>Mercado de Activos</span>
+    <span class="spacer"></span>
+    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(usuario.balance) }}</span>
+    <button mat-icon-button aria-label="Cerrar sesión">
+      <mat-icon>exit_to_app</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="content-container">
+    <div class="mercado-header">
+      <h1>Activos Disponibles</h1>
+      <p class="last-update">Los precios se actualizan cada 10 segundos</p>
+    </div>
+
+    <mat-card class="mercado-card">
+      <mat-card-content>
+        <div class="loading-container" *ngIf="!(activos$ | async)">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Cargando activos...</p>
+        </div>
+
+        <table mat-table [dataSource]="(activos$ | async) || []" class="mat-elevation-z0 mercado-table" *ngIf="activos$ | async">
+          <!-- Símbolo Column -->
+          <ng-container matColumnDef="simbolo">
+            <th mat-header-cell *matHeaderCellDef> Símbolo </th>
+            <td mat-cell *matCellDef="let activo"> {{activo.simbolo}} </td>
+          </ng-container>
+
+          <!-- Nombre Column -->
+          <ng-container matColumnDef="nombre">
+            <th mat-header-cell *matHeaderCellDef> Nombre </th>
+            <td mat-cell *matCellDef="let activo"> {{activo.nombre}} </td>
+          </ng-container>
+
+          <!-- Precio Column -->
+          <ng-container matColumnDef="precio">
+            <th mat-header-cell *matHeaderCellDef> Precio </th>
+            <td mat-cell *matCellDef="let activo"> {{formatearDinero(activo.precio)}} </td>
+          </ng-container>
+
+          <!-- Variación Column -->
+          <ng-container matColumnDef="variacion">
+            <th mat-header-cell *matHeaderCellDef> Variación </th>
+            <td mat-cell *matCellDef="let activo" [ngClass]="obtenerClaseVariacion(activo.variacion)">
+              <mat-icon class="tendencia-icon">{{obtenerIconoTendencia(activo.tendencia)}}</mat-icon>
+              {{activo.variacion > 0 ? '+' : ''}}{{activo.variacion}}%
+            </td>
+          </ng-container>
+
+          <!-- Acciones Column -->
+          <ng-container matColumnDef="acciones">
+            <th mat-header-cell *matHeaderCellDef> Acciones </th>
+            <td mat-cell *matCellDef="let activo">
+              <button mat-raised-button color="primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
+                <mat-icon>add_shopping_cart</mat-icon> Comprar
+              </button>
+              <button mat-raised-button color="warn" (click)="abrirDialogoTransaccion(activo, 'venta')">
+                <mat-icon>remove_shopping_cart</mat-icon> Vender
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columnasMostradas"></tr>
+          <tr mat-row *matRowDef="let row; columns: columnasMostradas;"></tr>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+
+<div class="login-required" *ngIf="!usuario">
+  <mat-card>
+    <mat-card-content>
+      <p>Debes iniciar sesión para acceder al mercado de activos.</p>
+      <div class="login-buttons">
+        <button mat-raised-button color="primary" routerLink="/login">Iniciar Sesión</button>
+        <button mat-raised-button routerLink="/registro">Registrarse</button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

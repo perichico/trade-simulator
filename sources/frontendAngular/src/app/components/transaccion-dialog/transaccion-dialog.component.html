@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>{{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}</h2>
+
+<mat-dialog-content>
+  <div class="info-activo">
+    <p><strong>Símbolo:</strong> {{ data.activo.simbolo }}</p>
+    <p><strong>Precio actual:</strong> {{ formatearDinero(data.activo.precio) }}</p>
+    <p *ngIf="data.tipo === 'compra'">
+      <strong>Balance disponible:</strong> {{ formatearDinero(data.balanceUsuario) }}
+    </p>
+  </div>
+
+  <form [formGroup]="transaccionForm" class="transaccion-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Cantidad</mat-label>
+      <input matInput type="number" formControlName="cantidad" min="1" step="1">
+      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('required')">
+        La cantidad es obligatoria
+      </mat-error>
+      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('min')">
+        La cantidad debe ser mayor a 0
+      </mat-error>
+      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('fondosInsuficientes')">
+        No tienes suficiente balance para esta compra
+      </mat-error>
+    </mat-form-field>
+
+    <div class="resumen-transaccion" *ngIf="transaccionForm.get('cantidad')?.valid && transaccionForm.get('cantidad')?.value > 0">
+      <p><strong>Valor total:</strong> {{ formatearDinero(calcularValorTotal()) }}</p>
+      <p *ngIf="data.tipo === 'compra'">
+        <strong>Balance restante:</strong> {{ formatearDinero(calcularBalanceRestante()) }}
+      </p>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancelar</button>
+  <button 
+    mat-raised-button 
+    [color]="data.tipo === 'compra' ? 'primary' : 'warn'"
+    [disabled]="!transaccionForm.valid"
+    (click)="confirmarTransaccion()">
+    {{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }}
+  </button>
+</mat-dialog-actions>

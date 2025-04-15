@@ -7,13 +7,87 @@ CREATE TABLE usuarios (
     contrasena VARCHAR(255) NOT NULL
 );
 
+-- Crear tabla de tipo_activo
+CREATE TABLE tipo_activo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    descripcion TEXT
+);
 
 -- Crear tabla de activos
 CREATE TABLE activos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     simbolo VARCHAR(50) NOT NULL,
-    precio DECIMAL(10, 2) NOT NULL
+    tipo_activo_id INT NOT NULL,
+    ultimo_precio DECIMAL(10, 2),
+    ultima_actualizacion DATETIME,
+    FOREIGN KEY (tipo_activo_id) REFERENCES tipo_activo(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de portafolio
+CREATE TABLE portafolio (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de portafolio_activo
+CREATE TABLE portafolio_activo (
+    portafolio_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    cantidad INT NOT NULL,
+    PRIMARY KEY (portafolio_id, activo_id),
+    FOREIGN KEY (portafolio_id) REFERENCES portafolio(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de historial_precios
+CREATE TABLE historial_precios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    activo_id INT NOT NULL,
+    precio DECIMAL(10, 2) NOT NULL,
+    fecha DATETIME NOT NULL,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de dividendos
+CREATE TABLE dividendos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    activo_id INT NOT NULL,
+    monto DECIMAL(10, 2) NOT NULL,
+    fecha_pago DATETIME NOT NULL,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de ordenes
+CREATE TABLE ordenes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    tipo ENUM('compra', 'venta') NOT NULL,
+    cantidad INT NOT NULL,
+    precio_limite DECIMAL(10, 2),
+    estado ENUM('pendiente', 'ejecutada', 'cancelada') NOT NULL,
+    fecha_creacion DATETIME NOT NULL,
+    fecha_ejecucion DATETIME,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de alertas
+CREATE TABLE alertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    precio_objetivo DECIMAL(10, 2) NOT NULL,
+    condicion ENUM('mayor', 'menor') NOT NULL,
+    estado ENUM('activa', 'disparada', 'cancelada') NOT NULL,
+    fecha_creacion DATETIME NOT NULL,
+    fecha_disparo DATETIME,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
 );
 
 -- Crear tabla de transacciones
@@ -28,25 +102,33 @@ CREATE TABLE transacciones (
     FOREIGN KEY (activoId) REFERENCES activos(id) ON DELETE CASCADE
 );
 
+-- Insertar tipos de activo
+INSERT INTO tipo_activo (nombre, descripcion) VALUES
+('Acciones', 'Títulos de renta variable que representan una parte del capital de una empresa'),
+('ETFs', 'Fondos cotizados que siguen índices o sectores específicos'),
+('Bonos', 'Títulos de deuda que pagan intereses'),
+('Materias Primas', 'Commodities y recursos naturales'),
+('Criptomonedas', 'Activos digitales basados en blockchain');
+
 -- Insertar activos
-INSERT INTO activos (nombre, simbolo, precio) VALUES
-('Apple', 'AAPL', 150.00),
-('Microsoft', 'MSFT', 280.00),
-('Tesla', 'TSLA', 650.00),
-('Amazon', 'AMZN', 3400.00),
-('Google (Alphabet)', 'GOOGL', 2800.00),
-('Meta (Facebook)', 'META', 350.00),
-('Nvidia', 'NVDA', 220.00),
-('Netflix', 'NFLX', 600.00),
-('Intel', 'INTC', 60.00),
-('AMD', 'AMD', 100.00),
-('Visa', 'V', 220.00),
-('Mastercard', 'MA', 370.00),
-('Johnson & Johnson', 'JNJ', 170.00),
-('Coca-Cola', 'KO', 55.00),
-('PepsiCo', 'PEP', 150.00),
-('Berkshire Hathaway', 'BRK-B', 420.00),
-('ExxonMobil', 'XOM', 65.00),
+INSERT INTO activos (nombre, simbolo, precio, tipo_activo_id) VALUES
+('Apple', 'AAPL', 150.00, 1),
+('Microsoft', 'MSFT', 280.00, 1),
+('Tesla', 'TSLA', 650.00, 1),
+('Amazon', 'AMZN', 3400.00, 1),
+('Google (Alphabet)', 'GOOGL', 2800.00, 1),
+('Meta (Facebook)', 'META', 350.00, 1),
+('Nvidia', 'NVDA', 220.00, 1),
+('Netflix', 'NFLX', 600.00, 1),
+('Intel', 'INTC', 60.00, 1),
+('AMD', 'AMD', 100.00, 1),
+('Visa', 'V', 220.00, 1),
+('Mastercard', 'MA', 370.00, 1),
+('Johnson & Johnson', 'JNJ', 170.00, 1),
+('Coca-Cola', 'KO', 55.00, 1),
+('PepsiCo', 'PEP', 150.00, 1),
+('Berkshire Hathaway', 'BRK-B', 420.00, 1),
+('ExxonMobil', 'XOM', 65.00, 1),
 ('Chevron', 'CVX', 110.00),
 ('Walmart', 'WMT', 140.00),
 ('McDonald\'s', 'MCD', 230.00),
@@ -106,6 +188,45 @@ INSERT INTO usuarios (nombre, email, balance, contrasena) VALUES
 ('Laura Martínez', 'laura.martinez@hotmail.com', 5000.00, '1234'),
 ('Luis Sánchez', 'luis.sanchez@outlook.com', 20000.00, '1234');
 
+
+-- Insertar portafolios
+INSERT INTO portafolio (nombre, usuario_id) VALUES
+('Portafolio Principal', 1),
+('Inversiones Tech', 2),
+('Cartera Conservadora', 3),
+('Trading Activo', 4),
+('Largo Plazo', 5);
+
+-- Insertar portafolio_activo
+INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
+(1, 1, 10),
+(1, 2, 5),
+(2, 3, 2),
+(3, 4, 1),
+(4, 5, 15);
+
+-- Insertar historial_precios
+INSERT INTO historial_precios (activo_id, precio, fecha) VALUES
+(1, 148.50, '2025-02-25 16:00:00'),
+(1, 150.00, '2025-02-26 16:00:00'),
+(2, 278.00, '2025-02-25 16:00:00'),
+(2, 280.00, '2025-02-26 16:00:00');
+
+-- Insertar dividendos
+INSERT INTO dividendos (activo_id, monto, fecha_pago) VALUES
+(1, 0.88, '2025-03-15 00:00:00'),
+(2, 0.75, '2025-03-10 00:00:00');
+
+-- Insertar ordenes
+INSERT INTO ordenes (usuario_id, activo_id, tipo, cantidad, precio_limite, estado, fecha_creacion, fecha_ejecucion) VALUES
+(1, 1, 'compra', 10, 150.00, 'ejecutada', '2025-02-26 09:00:00', '2025-02-26 09:00:00'),
+(2, 2, 'compra', 5, 280.00, 'ejecutada', '2025-02-26 09:10:00', '2025-02-26 09:10:00'),
+(3, 3, 'venta', 2, 650.00, 'pendiente', '2025-02-26 09:15:00', NULL);
+
+-- Insertar alertas
+INSERT INTO alertas (usuario_id, activo_id, precio_objetivo, condicion, estado, fecha_creacion, fecha_disparo) VALUES
+(1, 1, 155.00, 'mayor', 'activa', '2025-02-26 00:00:00', NULL),
+(2, 2, 275.00, 'menor', 'activa', '2025-02-26 00:00:00', NULL);
 
 -- Insertar transacciones
 INSERT INTO transacciones (usuarioId, activoId, cantidad, precio, fecha) VALUES

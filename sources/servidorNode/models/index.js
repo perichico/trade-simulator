@@ -25,35 +25,40 @@ const AlertaModel = Alerta(sequelize);
 const TransaccionModel = Transaccion(sequelize);
 
 // Definir relaciones
-TipoActivoModel.hasMany(ActivoModel, { foreignKey: 'tipo_activo_id', onDelete: 'RESTRICT' });
-ActivoModel.belongsTo(TipoActivoModel, { foreignKey: 'tipo_activo_id', targetKey: 'id' });
+// Relaciones principales con índices optimizados
+TipoActivoModel.hasMany(ActivoModel, { foreignKey: 'tipo_activo_id', onDelete: 'RESTRICT', constraints: false });
+ActivoModel.belongsTo(TipoActivoModel, { foreignKey: 'tipo_activo_id', targetKey: 'id', constraints: false });
 
-UsuarioModel.hasMany(PortafolioModel, { foreignKey: 'usuario_id' });
-PortafolioModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id' });
+UsuarioModel.hasMany(PortafolioModel, { foreignKey: 'usuario_id', constraints: false });
+PortafolioModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints: false });
 
-PortafolioModel.belongsToMany(ActivoModel, { through: PortafolioActivoModel, foreignKey: 'portafolio_id' });
-ActivoModel.belongsToMany(PortafolioModel, { through: PortafolioActivoModel, foreignKey: 'activo_id' });
+// Relaciones many-to-many con índices optimizados
+PortafolioModel.belongsToMany(ActivoModel, { through: PortafolioActivoModel, foreignKey: 'portafolio_id', constraints: false });
+ActivoModel.belongsToMany(PortafolioModel, { through: PortafolioActivoModel, foreignKey: 'activo_id', constraints: false });
 
-ActivoModel.hasMany(HistorialPreciosModel, { foreignKey: 'activo_id' });
-HistorialPreciosModel.belongsTo(ActivoModel, { foreignKey: 'activo_id' });
+// Relaciones con Activo optimizadas
+ActivoModel.hasMany(HistorialPreciosModel, { foreignKey: 'activo_id', constraints: false });
+HistorialPreciosModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
-ActivoModel.hasMany(DividendoModel, { foreignKey: 'activo_id' });
-DividendoModel.belongsTo(ActivoModel, { foreignKey: 'activo_id' });
+ActivoModel.hasMany(DividendoModel, { foreignKey: 'activo_id', constraints: false });
+DividendoModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
-UsuarioModel.hasMany(OrdenModel, { foreignKey: 'usuario_id' });
-OrdenModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id' });
-ActivoModel.hasMany(OrdenModel, { foreignKey: 'activo_id' });
-OrdenModel.belongsTo(ActivoModel, { foreignKey: 'activo_id' });
+// Relaciones de Órdenes y Alertas
+UsuarioModel.hasMany(OrdenModel, { foreignKey: 'usuario_id', constraints: false });
+OrdenModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints: false });
+ActivoModel.hasMany(OrdenModel, { foreignKey: 'activo_id', constraints: false });
+OrdenModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
-UsuarioModel.hasMany(AlertaModel, { foreignKey: 'usuario_id' });
-AlertaModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id' });
-ActivoModel.hasMany(AlertaModel, { foreignKey: 'activo_id' });
-AlertaModel.belongsTo(ActivoModel, { foreignKey: 'activo_id' });
+UsuarioModel.hasMany(AlertaModel, { foreignKey: 'usuario_id', constraints: false });
+AlertaModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints: false });
+ActivoModel.hasMany(AlertaModel, { foreignKey: 'activo_id', constraints: false });
+AlertaModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
-UsuarioModel.hasMany(TransaccionModel, { foreignKey: 'usuarioId' });
-TransaccionModel.belongsTo(UsuarioModel, { foreignKey: 'usuarioId' });
-ActivoModel.hasMany(TransaccionModel, { foreignKey: 'activoId' });
-TransaccionModel.belongsTo(ActivoModel, { foreignKey: 'activoId' });
+// Relaciones de Transacciones
+UsuarioModel.hasMany(TransaccionModel, { foreignKey: 'usuarioId', constraints: false });
+TransaccionModel.belongsTo(UsuarioModel, { foreignKey: 'usuarioId', constraints: false });
+ActivoModel.hasMany(TransaccionModel, { foreignKey: 'activoId', constraints: false });
+TransaccionModel.belongsTo(ActivoModel, { foreignKey: 'activoId', constraints: false });
 
 module.exports = {
     sequelize,

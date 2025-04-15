@@ -1,4 +1,4 @@
-const axios = require('axios');
+const yahooFinance = require('yahoo-finance2');
 
 class PreciosService {
     constructor() {
@@ -14,19 +14,13 @@ class PreciosService {
                 return cachePrecio.precio;
             }
 
-            // Si no hay caché válido, consultar a Google Finance
-            const url = `https://www.google.com/finance/quote/${simbolo}`;
-            const response = await axios.get(url);
-            
-            // Extraer el precio del HTML de la respuesta
-            // Nota: Esta es una implementación simplificada. En producción,
-            // se debería usar una API oficial o un parser HTML más robusto
-            const precioMatch = response.data.match(/data-last-price="([\d.]+)"/);
-            if (!precioMatch) {
+            // Si no hay caché válido, consultar a Yahoo Finance
+            const quote = await yahooFinance.quote(simbolo);
+            if (!quote || !quote.regularMarketPrice) {
                 throw new Error(`No se pudo obtener el precio para ${simbolo}`);
             }
 
-            const precio = parseFloat(precioMatch[1]);
+            const precio = quote.regularMarketPrice;
 
             // Guardar en caché
             this.cache.set(simbolo, {
@@ -61,4 +55,4 @@ class PreciosService {
     }
 }
 
-module.exports = new PreciosService();
+module.exports = PreciosService;

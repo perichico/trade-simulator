@@ -1,13 +1,9 @@
 const express = require("express");
 const session = require("express-session");
-const flash = require("connect-flash");
 const bodyParser = require("body-parser");
-const methodOverride = require("method-override");
 const cors = require("cors");
 require("dotenv").config();
 const helmet = require("helmet");
-const csrf = require("csurf");
-const cookieParser = require("cookie-parser");
 
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const activoRoutes = require("./routes/activoRoutes");
@@ -15,41 +11,28 @@ const transaccionRoutes = require("./routes/transaccionRoutes");
 
 const app = express();
 
-// Configuración
-app.set("view engine", "ejs");
-app.use(express.static("public"));
+// Configuración de CORS para Angular
+app.use(cors({
+    origin: 'http://localhost:4200',
+    credentials: true
+}));
+
+// Configuración básica
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(methodOverride("_method"));
-app.use(cors());
 app.use(helmet());
-app.use(cookieParser());
 
+// Configuración de sesión
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax'
+    }
 }));
-
-// Middleware de flash messages
-app.use(flash());
-
-// Middleware para hacer los mensajes flash accesibles en todas las vistas
-app.use((req, res, next) => {
-    res.locals.mensaje_exito = req.flash("exito");
-    res.locals.mensaje_error = req.flash("error");
-    next();
-});
-
-// Configurar CSRF después de session y cookie-parser
-const csrfProtection = csrf({ cookie: true });
-app.use(csrfProtection);
-
-// Middleware para pasar el token CSRF a todas las vistas
-app.use((req, res, next) => {
-    res.locals.csrfToken = req.csrfToken(); 
-    next();
-});
 
 // Rutas
 app.use("/", usuarioRoutes);

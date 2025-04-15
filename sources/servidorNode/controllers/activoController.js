@@ -3,10 +3,8 @@ const {sequelize, Usuario, Activo, Transaccion} = require("../models/index");
 // Obtener todos los activos
 exports.obtenerActivos = async (req, res) => {
     try {
-        // Obtener todos los activos de la base de datos
         const activos = await Activo.findAll();
-
-        res.render('activos', { activos });
+        res.status(200).json(activos);
     } catch (error) {
         console.error(error);
         res.status(500).send("Error al obtener los activos");

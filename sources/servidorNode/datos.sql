@@ -12,7 +12,7 @@ CREATE TABLE usuarios (
 CREATE TABLE activos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
-    simbolo VARCHAR(50) NOT NULL UNIQUE,
+    simbolo VARCHAR(50) NOT NULL,
     precio DECIMAL(10, 2) NOT NULL
 );
 

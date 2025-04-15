@@ -45,16 +45,22 @@ exports.crearTransaccion = async (req, res) => {
         await usuario.update({ balance: usuario.balance - costoTotal });
   
         // Registrar transacción de compra
-        await Transaccion.create({
+        const transaccion = await Transaccion.create({
           usuarioId,
           activoId,
           tipo,
           cantidad,
           precio: precioEnTransaccion,
-          fecha: new Date(), // Fecha actual
+          fecha: new Date()
         });
   
-        return res.redirect("/dashboard");
+        return res.status(201).json({
+          mensaje: "Transacción realizada con éxito",
+          transaccion: {
+            ...transaccion.toJSON(),
+            valorTotal: costoTotal
+          }
+        });
       }
   
       // Lógica de venta
@@ -76,16 +82,22 @@ exports.crearTransaccion = async (req, res) => {
         await usuario.update({ balance: usuario.balance + costoTotal });
   
         // Registrar transacción de venta
-        await Transaccion.create({
+        const transaccion = await Transaccion.create({
           usuarioId,
           activoId,
           tipo,
-          cantidad: -cantidad, // Como es una venta, la cantidad será negativa
+          cantidad: -cantidad,
           precio: precioEnTransaccion,
-          fecha: new Date(), // Fecha actual
+          fecha: new Date()
         });
   
-        return res.redirect("/dashboard");
+        return res.status(201).json({
+          mensaje: "Transacción realizada con éxito",
+          transaccion: {
+            ...transaccion.toJSON(),
+            valorTotal: costoTotal
+          }
+        });
       }
   
       // Si el tipo no es válido

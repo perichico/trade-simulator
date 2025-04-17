@@ -20,6 +20,7 @@ export class ActivoService {
           // Añadir propiedades adicionales para la UI
           return activos.map(activo => ({
             ...activo,
+            precio: activo.ultimo_precio,
             variacion: this.generarVariacionAleatoria(), // En una app real, esto vendría del backend
             tendencia: this.determinarTendencia(this.generarVariacionAleatoria())
           }));
@@ -62,7 +63,8 @@ export class ActivoService {
   // Método para simular cambios de precio en tiempo real (para demo)
   simularCambioPrecio(activo: Activo): Activo {
     const variacion = this.generarVariacionAleatoria();
-    const nuevoPrecio = parseFloat((activo.precio * (1 + variacion / 100)).toFixed(2));
+    const precioBase = activo.precio || activo.ultimo_precio || 0;
+    const nuevoPrecio = parseFloat((precioBase * (1 + variacion / 100)).toFixed(2));
     
     return {
       ...activo,

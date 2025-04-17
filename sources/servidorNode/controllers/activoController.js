@@ -1,5 +1,6 @@
 const {sequelize, Usuario, Activo, Transaccion} = require("../models/index");
-const preciosService = require('../services/preciosService');
+const PreciosService = require('../services/preciosService');
+const preciosService = new PreciosService();
 
 // Obtener todos los activos
 exports.obtenerActivos = async (req, res) => {

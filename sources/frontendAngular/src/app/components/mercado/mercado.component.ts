@@ -18,7 +18,11 @@ import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-di
 export class MercadoComponent implements OnInit, OnDestroy {
   activos$!: Observable<Activo[]>;
   usuario: Usuario | null = null;
-  columnasMostradas: string[] = ['simbolo', 'nombre', 'precio', 'variacion', 'acciones'];
+  columnasMostradas: string[] = ['simbolo', 'nombre', 'precio', 'variacion'];
+
+  get columnasCompletas(): string[] {
+    return this.usuario ? [...this.columnasMostradas, 'acciones'] : this.columnasMostradas;
+  }
   actualizacionSubscription!: Subscription;
   
   constructor(

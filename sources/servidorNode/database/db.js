@@ -19,7 +19,7 @@ sequelize.authenticate()
     .catch(error => console.error('Error en la conexión:', error));
 
 // Sincronizar la base de datos con los modelos
-sequelize.sync({ alter: false, force: true })
+sequelize.sync({ alter: false, force: false })
     .then(() => console.log('Base de datos sincronizada'))
     .catch(error => {
         console.error('Error al sincronizar la base de datos:', error);

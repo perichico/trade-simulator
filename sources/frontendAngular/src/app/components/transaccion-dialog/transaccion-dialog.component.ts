@@ -32,7 +32,7 @@ export class TransaccionDialogComponent implements OnInit {
     // Suscribirse a cambios en la cantidad para validar fondos suficientes
     this.transaccionForm.get('cantidad')?.valueChanges.subscribe(cantidad => {
       if (this.data.tipo === 'compra') {
-        const valorTotal = cantidad * this.data.activo.precio;
+        const valorTotal = cantidad * (this.data.activo.precio || 0);
         if (valorTotal > this.data.balanceUsuario) {
           this.transaccionForm.get('cantidad')?.setErrors({ fondosInsuficientes: true });
         }
@@ -43,7 +43,7 @@ export class TransaccionDialogComponent implements OnInit {
   // Calcular el valor total de la transacción
   calcularValorTotal(): number {
     const cantidad = this.transaccionForm.get('cantidad')?.value || 0;
-    return cantidad * this.data.activo.precio;
+    return cantidad * (this.data.activo.precio || 0);
   }
 
   // Calcular el balance restante después de la compra
@@ -64,7 +64,7 @@ export class TransaccionDialogComponent implements OnInit {
   }
 
   // Método para formatear valores monetarios
-  formatearDinero(valor: number): string {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor);
+  formatearDinero(valor: number | undefined): string {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor || 0);
   }
 }

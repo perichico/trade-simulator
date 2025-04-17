@@ -71,8 +71,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Método para cerrar sesión
   cerrarSesion(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    this.authService.logout().subscribe(() => {
+      this.router.navigate(['/login']);
+    });
   }
 
   // Método para abrir el diálogo de transacción

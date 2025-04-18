@@ -1,45 +1,60 @@
-<h2 mat-dialog-title>{{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}</h2>
-
-<mat-dialog-content>
-  <div class="info-activo">
-    <p><strong>Símbolo:</strong> {{ data.activo.simbolo }}</p>
-    <p><strong>Precio actual:</strong> {{ formatearDinero(data.activo.precio) }}</p>
-    <p *ngIf="data.tipo === 'compra'">
-      <strong>Balance disponible:</strong> {{ formatearDinero(data.balanceUsuario) }}
-    </p>
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-primary text-white">
+    <h2 class="mb-0 fs-5">{{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}</h2>
   </div>
 
-  <form [formGroup]="transaccionForm" class="transaccion-form">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Cantidad</mat-label>
-      <input matInput type="number" formControlName="cantidad" min="1" step="1">
-      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('required')">
-        La cantidad es obligatoria
-      </mat-error>
-      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('min')">
-        La cantidad debe ser mayor a 0
-      </mat-error>
-      <mat-error *ngIf="transaccionForm.get('cantidad')?.hasError('fondosInsuficientes')">
-        No tienes suficiente balance para esta compra
-      </mat-error>
-    </mat-form-field>
-
-    <div class="resumen-transaccion" *ngIf="transaccionForm.get('cantidad')?.valid && transaccionForm.get('cantidad')?.value > 0">
-      <p><strong>Valor total:</strong> {{ formatearDinero(calcularValorTotal()) }}</p>
-      <p *ngIf="data.tipo === 'compra'">
-        <strong>Balance restante:</strong> {{ formatearDinero(calcularBalanceRestante()) }}
-      </p>
+  <div class="card-body">
+    <div class="info-activo mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="badge bg-secondary">{{ data.activo.simbolo }}</span>
+        <span class="badge bg-success">{{ formatearDinero(data.activo.precio) }}</span>
+      </div>
+      <div class="alert alert-info" *ngIf="data.tipo === 'compra'">
+        <i class="bi bi-wallet2"></i>
+        Balance disponible: {{ formatearDinero(data.balanceUsuario) }}
+      </div>
     </div>
-  </form>
-</mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button mat-dialog-close>Cancelar</button>
-  <button 
-    mat-raised-button 
-    [color]="data.tipo === 'compra' ? 'primary' : 'warn'"
-    [disabled]="!transaccionForm.valid"
-    (click)="confirmarTransaccion()">
-    {{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }}
-  </button>
-</mat-dialog-actions>
+    <form [formGroup]="transaccionForm" class="transaccion-form">
+      <div class="form-group mb-4">
+        <label for="cantidad" class="form-label">Cantidad</label>
+        <input 
+          id="cantidad"
+          type="number" 
+          class="form-control" 
+          [class.is-invalid]="transaccionForm.get('cantidad')?.invalid && transaccionForm.get('cantidad')?.touched"
+          formControlName="cantidad" 
+          min="1" 
+          step="1">
+        <div class="invalid-feedback">
+          <span *ngIf="transaccionForm.get('cantidad')?.hasError('required')">La cantidad es obligatoria</span>
+          <span *ngIf="transaccionForm.get('cantidad')?.hasError('min')">La cantidad debe ser mayor a 0</span>
+          <span *ngIf="transaccionForm.get('cantidad')?.hasError('fondosInsuficientes')">No tienes suficiente balance para esta compra</span>
+        </div>
+      </div>
+
+      <div class="resumen-transaccion" *ngIf="transaccionForm.get('cantidad')?.valid && transaccionForm.get('cantidad')?.value > 0">
+        <div class="alert alert-secondary">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>Valor total:</span>
+            <strong>{{ formatearDinero(calcularValorTotal()) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-2" *ngIf="data.tipo === 'compra'">
+             <span>Balance restante:</span>
+             <strong>{{ formatearDinero(calcularBalanceRestante()) }}</strong>
+           </div>
+         </div>
+       </div>
+     </form>
+   </div>
+
+   <div class="card-footer bg-light d-flex justify-content-end gap-2">
+     <button class="btn btn-secondary" (click)="dialogRef.close()">Cancelar</button>
+     <button 
+       class="btn btn-primary" 
+       [disabled]="!transaccionForm.valid"
+       (click)="confirmarTransaccion()">
+       {{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }}
+     </button>
+   </div>
+ </div>

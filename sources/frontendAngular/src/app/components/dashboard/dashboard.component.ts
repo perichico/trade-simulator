@@ -76,8 +76,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Método para convertir ActivoEnPortafolio a Activo
+  private convertirAActivo(activoPortafolio: any): Activo {
+    return {
+      id: activoPortafolio.activoId,
+      nombre: activoPortafolio.nombre,
+      simbolo: activoPortafolio.simbolo,
+      ultimo_precio: activoPortafolio.precioActual
+    };
+  }
+
   // Método para abrir el diálogo de transacción
-  abrirDialogoTransaccion(activo: Activo, tipo: 'compra' | 'venta'): void {
+  abrirDialogoTransaccion(activoPortafolio: any, tipo: 'compra' | 'venta'): void {
     if (!this.usuario) {
       this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
         duration: 3000
@@ -85,6 +95,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const activo = this.convertirAActivo(activoPortafolio);
     const dialogRef = this.dialog.open(TransaccionDialogComponent, {
       width: '400px',
       data: {

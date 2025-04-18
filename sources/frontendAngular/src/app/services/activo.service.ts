@@ -17,13 +17,19 @@ export class ActivoService {
     return this.http.get<Activo[]>(`${this.apiUrl}/activos`)
       .pipe(
         map(activos => {
-          // Añadir propiedades adicionales para la UI
-          return activos.map(activo => ({
-            ...activo,
-            precio: activo.ultimo_precio,
-            variacion: this.generarVariacionAleatoria(), // En una app real, esto vendría del backend
-            tendencia: this.determinarTendencia(this.generarVariacionAleatoria())
-          }));
+          // Usar los precios reales del backend que ya consulta Yahoo Finance
+          return activos.map(activo => {
+            const precioAnterior = activo.precio || activo.ultimo_precio;
+            const precioActual = activo.ultimo_precio;
+            const variacion = precioAnterior ? ((precioActual - precioAnterior) / precioAnterior) * 100 : 0;
+            
+            return {
+              ...activo,
+              precio: precioActual,
+              variacion: parseFloat(variacion.toFixed(2)),
+              tendencia: this.determinarTendencia(variacion)
+            };
+          });
         }),
         catchError(error => {
           console.error('Error al obtener activos', error);
@@ -36,11 +42,18 @@ export class ActivoService {
   obtenerActivoPorId(id: number): Observable<Activo> {
     return this.http.get<Activo>(`${this.apiUrl}/activos/${id}`)
       .pipe(
-        map(activo => ({
-          ...activo,
-          variacion: this.generarVariacionAleatoria(),
-          tendencia: this.determinarTendencia(this.generarVariacionAleatoria())
-        })),
+        map(activo => {
+          const precioAnterior = activo.precio || activo.ultimo_precio;
+          const precioActual = activo.ultimo_precio;
+          const variacion = precioAnterior ? ((precioActual - precioAnterior) / precioAnterior) * 100 : 0;
+          
+          return {
+            ...activo,
+            precio: precioActual,
+            variacion: parseFloat(variacion.toFixed(2)),
+            tendencia: this.determinarTendencia(variacion)
+          };
+        }),
         catchError(error => {
           console.error(`Error al obtener activo con ID ${id}`, error);
           throw error;
@@ -48,29 +61,10 @@ export class ActivoService {
       );
   }
 
-  // Método auxiliar para generar variaciones aleatorias de precio (simulación)
-  private generarVariacionAleatoria(): number {
-    return parseFloat((Math.random() * 6 - 3).toFixed(2)); // Entre -3% y +3%
-  }
-
   // Método auxiliar para determinar la tendencia basada en la variación
   private determinarTendencia(variacion: number): 'alza' | 'baja' | 'estable' {
     if (variacion > 0.5) return 'alza';
     if (variacion < -0.5) return 'baja';
     return 'estable';
-  }
-
-  // Método para simular cambios de precio en tiempo real (para demo)
-  simularCambioPrecio(activo: Activo): Activo {
-    const variacion = this.generarVariacionAleatoria();
-    const precioBase = activo.precio || activo.ultimo_precio || 0;
-    const nuevoPrecio = parseFloat((precioBase * (1 + variacion / 100)).toFixed(2));
-    
-    return {
-      ...activo,
-      precio: nuevoPrecio,
-      variacion: variacion,
-      tendencia: this.determinarTendencia(variacion)
-    };
   }
 }

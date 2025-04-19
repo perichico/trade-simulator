@@ -40,7 +40,19 @@ export class TransaccionService {
     }).pipe(
       catchError(error => {
         console.error('Error al crear transacción', error);
-        return throwError(() => error);
+        let mensajeError = 'Error desconocido';
+        
+        if (error.status === 401) {
+          mensajeError = 'No estás autenticado. Por favor, inicia sesión.';
+        } else if (error.status === 400) {
+          mensajeError = error.error?.error || 'Datos de transacción inválidos';
+        } else if (error.status === 404) {
+          mensajeError = 'Activo no encontrado';
+        } else if (error.status === 500) {
+          mensajeError = error.error?.error || 'Error en el servidor';
+        }
+        
+        return throwError(() => ({ error: { error: mensajeError } }));
       })
     );
   }

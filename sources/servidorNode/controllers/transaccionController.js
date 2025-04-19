@@ -14,12 +14,18 @@ exports.obtenerTransacciones = async (req, res) => {
 
 // Crear una nueva transacción (Compra/Venta)
 exports.crearTransaccion = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
-      // Obtener el usuarioId desde la sesión
-      const usuarioId = req.session.usuario.id;
-  
       // Obtener los datos del formulario
       const { activoId, tipo, cantidad } = req.body;
+
+      // Validar los datos del formulario
+      if (!activoId || !tipo || !cantidad) {
+        return res.status(400).json({ error: 'Datos incompletos para la transacción' });
+      }
+
+      // Obtener el usuarioId desde la sesión
+      const usuarioId = req.session.usuario.id;
   
       // Verificar si el usuario está autenticado
       if (!usuarioId) {
@@ -27,22 +33,52 @@ exports.crearTransaccion = async (req, res) => {
       }
   
       // Verificar si el usuario y el activo existen
-      const usuario = await Usuario.findByPk(usuarioId);
-      const activo = await Activo.findByPk(activoId);
-      if (!usuario || !activo) {
-        return res.status(404).json({ error: "Usuario o activo no encontrado" });
+      let usuario, activo;
+      try {
+        [usuario, activo] = await Promise.all([
+          Usuario.findByPk(usuarioId),
+          Activo.findByPk(activoId, {
+            attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+          })
+        ]);
+      } catch (error) {
+        console.error('Error al buscar usuario o activo:', error);
+        await transaction.rollback();
+        return res.status(500).json({ error: "Error al verificar usuario o activo" });
+      }
+      
+      if (!usuario) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+      
+      if (!activo) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Activo no encontrado" });
+      }
+      
+      // Validar que el activo tenga un símbolo válido
+      if (!activo.simbolo) {
+        await transaction.rollback();
+        return res.status(400).json({ error: "El activo no tiene un símbolo válido" });
       }
   
       // Obtener el precio del activo en el momento de la transacción
-      const precioEnTransaccion = activo.precio;
+      const precioEnTransaccion = activo.ultimo_precio;
+      
+      if (!precioEnTransaccion) {
+        await transaction.rollback();
+        return res.status(400).json({ error: "El activo no tiene un precio válido para realizar la transacción" });
+      }
       const costoTotal = precioEnTransaccion * cantidad;
   
       // Lógica de compra
       if (tipo === "compra") {
         if (usuario.balance < costoTotal) {
+          await transaction.rollback();
           return res.status(400).json({ error: "Saldo insuficiente" });
         }
-        await usuario.update({ balance: usuario.balance - costoTotal });
+        await usuario.update({ balance: usuario.balance - costoTotal }, { transaction });
   
         // Registrar transacción de compra
         const transaccion = await Transaccion.create({
@@ -52,7 +88,9 @@ exports.crearTransaccion = async (req, res) => {
           cantidad,
           precio: precioEnTransaccion,
           fecha: new Date()
-        });
+        }, { transaction });
+
+        await transaction.commit();
   
         return res.status(201).json({
           mensaje: "Transacción realizada con éxito",
@@ -71,15 +109,17 @@ exports.crearTransaccion = async (req, res) => {
             usuarioId,
             activoId,
           },
+          transaction
         });
   
         // Si no tiene suficientes activos para vender
         if (cantidadActivosUsuario < cantidad) {
+          await transaction.rollback();
           return res.status(400).json({ error: "No tienes suficientes activos para vender" });
         }
   
         // Actualizar el balance del usuario
-        await usuario.update({ balance: usuario.balance + costoTotal });
+        await usuario.update({ balance: usuario.balance + costoTotal }, { transaction });
   
         // Registrar transacción de venta
         const transaccion = await Transaccion.create({
@@ -89,7 +129,9 @@ exports.crearTransaccion = async (req, res) => {
           cantidad: -cantidad,
           precio: precioEnTransaccion,
           fecha: new Date()
-        });
+        }, { transaction });
+
+        await transaction.commit();
   
         return res.status(201).json({
           mensaje: "Transacción realizada con éxito",
@@ -101,11 +143,22 @@ exports.crearTransaccion = async (req, res) => {
       }
   
       // Si el tipo no es válido
+      await transaction.rollback();
       return res.status(400).json({ error: "Tipo de transacción inválido" });
-  
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Error al registrar la transacción" });
+      await transaction.rollback();
+      console.error('Error en la transacción:', error);
+      let mensajeError = 'Error al registrar la transacción';
+      
+      if (error.name === 'SequelizeValidationError') {
+        mensajeError = 'Error de validación en los datos de la transacción';
+      } else if (error.name === 'SequelizeDatabaseError') {
+        mensajeError = 'Error en la base de datos al procesar la transacción';
+      } else if (error.name === 'SequelizeConnectionError') {
+        mensajeError = 'Error de conexión con la base de datos';
+      }
+      
+      return res.status(500).json({ error: mensajeError });
     }
   };
   

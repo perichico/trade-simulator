@@ -1,11 +1,9 @@
-const axios = require('axios');
-
 class PreciosService {
     constructor() {
         this.cache = new Map();
         this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
-        this.API_KEY = '9c0f61fb452f4ee2bf0c253292af6e5f';
-        this.BASE_URL = 'https://api.twelvedata.com';
+        this.VOLATILIDAD = 0.02; // 2% de volatilidad máxima
+        this.preciosBase = new Map(); // Almacena los precios base para cada símbolo
     }
 
     async obtenerPrecioActual(simbolo) {
@@ -21,27 +19,42 @@ class PreciosService {
                 return cachePrecio.precio;
             }
 
-            const response = await axios.get(`${this.BASE_URL}/quote?symbol=${simbolo}&apikey=${this.API_KEY}`);
-            const data = response.data;
-            console.log(`El precio actual de ${simbolo} es: ${data.close} USD`);
-            
-            const precio = parseFloat(data.close);
-            if (isNaN(precio) || precio <= 0) {
-                throw new Error(`Precio no válido para ${simbolo}`);
+            // Generar precio aleatorio
+            let precioBase = this.preciosBase.get(simbolo);
+            if (!precioBase) {
+                // Si no existe un precio base, generamos uno inicial
+                precioBase = this.generarPrecioBaseAleatorio();
+                this.preciosBase.set(simbolo, precioBase);
             }
+
+            // Calcular variación aleatoria
+            const variacion = (Math.random() * 2 - 1) * this.VOLATILIDAD;
+            const precio = precioBase * (1 + variacion);
+            const precioFinal = parseFloat(precio.toFixed(2));
+
+            console.log(`Precio simulado de ${simbolo}: ${precioFinal} USD`);
 
             // Actualizar caché
             this.cache.set(simbolo, {
-                precio,
+                precio: precioFinal,
                 timestamp: Date.now()
             });
 
-            return precio;
+            // Actualizar precio base con una pequeña tendencia
+            const tendencia = (Math.random() - 0.5) * 0.001; // ±0.1% de tendencia
+            this.preciosBase.set(simbolo, precioBase * (1 + tendencia));
+
+            return precioFinal;
         } catch (error) {
-            console.error('Error al obtener los datos:', error);
+            console.error('Error al generar precio simulado:', error);
             const cachePrecio = this.cache.get(simbolo);
             return cachePrecio ? cachePrecio.precio : 0;
         }
+    }
+
+    generarPrecioBaseAleatorio() {
+        // Genera un precio base aleatorio entre 10 y 1000
+        return Math.random() * 990 + 10;
     }
 
     async actualizarPreciosActivos(activos) {

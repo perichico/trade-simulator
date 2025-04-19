@@ -2,13 +2,14 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subscription, interval } from 'rxjs';
-import { startWith, switchMap } from 'rxjs/operators';
+import { startWith, switchMap, map } from 'rxjs/operators';
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
 import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
 import { TransaccionService } from '../../services/transaccion.service';
 import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-dialog.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-mercado',
@@ -17,8 +18,17 @@ import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-di
 })
 export class MercadoComponent implements OnInit, OnDestroy {
   activos$!: Observable<Activo[]>;
+  activosFiltrados$!: Observable<Activo[]>;
   usuario: Usuario | null = null;
   columnasMostradas: string[] = ['simbolo', 'nombre', 'precio', 'variacion'];
+  tipoSeleccionado: string = 'todos';
+  tiposActivo = [
+    { valor: 'todos', nombre: 'Todos' },
+    { valor: 'accion', nombre: 'Acciones' },
+    { valor: 'criptomoneda', nombre: 'Criptomonedas' },
+    { valor: 'materia_prima', nombre: 'Materias Primas' },
+    { valor: 'divisa', nombre: 'Divisas' }
+  ];
 
   get columnasCompletas(): string[] {
     return this.usuario ? [...this.columnasMostradas, 'acciones'] : this.columnasMostradas;
@@ -30,7 +40,8 @@ export class MercadoComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private transaccionService: TransaccionService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -44,6 +55,9 @@ export class MercadoComponent implements OnInit, OnDestroy {
       startWith(0),
       switchMap(() => this.activoService.obtenerActivos())
     );
+
+    // Inicializar los activos filtrados
+    this.actualizarActivosFiltrados();
   }
 
   ngOnDestroy(): void {
@@ -58,6 +72,11 @@ export class MercadoComponent implements OnInit, OnDestroy {
       this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
         duration: 3000
       });
+      return;
+    }
+
+    if (tipo === 'compra') {
+      this.router.navigate(['/detalle-activo', activo.id]);
       return;
     }
 
@@ -118,5 +137,23 @@ export class MercadoComponent implements OnInit, OnDestroy {
   // Método para formatear valores monetarios
   formatearDinero(valor: number): string {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor);
+  }
+
+  // Método para actualizar los activos filtrados
+  private actualizarActivosFiltrados(): void {
+    this.activosFiltrados$ = this.activos$.pipe(
+      map(activos => {
+        if (this.tipoSeleccionado === 'todos') {
+          return activos;
+        }
+        return activos.filter(activo => activo.tipo === this.tipoSeleccionado);
+      })
+    );
+  }
+
+  // Método para cambiar el tipo de activo seleccionado
+  cambiarTipoActivo(tipo: string): void {
+    this.tipoSeleccionado = tipo;
+    this.actualizarActivosFiltrados();
   }
 }

@@ -82,7 +82,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       id: activoPortafolio.activoId,
       nombre: activoPortafolio.nombre,
       simbolo: activoPortafolio.simbolo,
-      ultimo_precio: activoPortafolio.precioActual
+      ultimo_precio: activoPortafolio.precioActual,
+      tipo: activoPortafolio.tipo
     };
   }
 
@@ -96,6 +97,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     const activo = this.convertirAActivo(activoPortafolio);
+    if (tipo === 'compra') {
+      this.router.navigate(['/detalle-activo', activo.id]);
+      return;
+    }
+    // Para venta, mantener el diálogo actual
     const dialogRef = this.dialog.open(TransaccionDialogComponent, {
       width: '400px',
       data: {

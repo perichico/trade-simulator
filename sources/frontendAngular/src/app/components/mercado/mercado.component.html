@@ -2,10 +2,21 @@
   <div class="row mb-4">
     <div class="col">
       <div class="d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">
-          <i class="bi bi-graph-up text-primary me-2"></i>
-          Mercado de Activos
-        </h2>
+        <div>
+          <h2 class="mb-0">
+            <i class="bi bi-graph-up text-primary me-2"></i>
+            Mercado de Activos
+          </h2>
+          <div class="btn-group mt-3">
+            <button *ngFor="let tipo of tiposActivo"
+                    class="btn"
+                    [class.btn-primary]="tipoSeleccionado === tipo.valor"
+                    [class.btn-outline-primary]="tipoSeleccionado !== tipo.valor"
+                    (click)="cambiarTipoActivo(tipo.valor)">
+              {{ tipo.nombre }}
+            </button>
+          </div>
+        </div>
         <div class="d-flex align-items-center" *ngIf="usuario">
           <span class="badge bg-success me-3">
             <i class="bi bi-wallet2 me-1"></i>
@@ -30,7 +41,7 @@
     </div>
   </div>
 
-  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" *ngIf="activos$ | async as activos">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" *ngIf="activosFiltrados$ | async as activos">
     <div class="col" *ngFor="let activo of activos">
       <div class="card h-100 shadow-sm">
         <div class="card-body">

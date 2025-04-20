@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -11,22 +11,31 @@ import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-di
 import { TransaccionService } from '../../services/transaccion.service';
 import { AuthService } from '../../services/auth.service';
 import { PortafolioService } from '../../services/portafolio.service';
+import { PatrimonioService, PatrimonioHistorico } from '../../services/patrimonio.service';
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('patrimonioChart') private chartRef!: ElementRef;
+  private chart: Chart | undefined;
+
   usuario: Usuario | null = null;
   portafolio$: Observable<Portafolio> | null = null;
   actualizacionSubscription!: Subscription;
   now: Date = new Date();
+  historialPatrimonio: PatrimonioHistorico[] = [];
   
   constructor(
     private authService: AuthService,
     private portafolioService: PortafolioService,
     private transaccionService: TransaccionService,
+    private patrimonioService: PatrimonioService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private router: Router
@@ -37,9 +46,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
       
-      // Si hay un usuario autenticado, cargar su portafolio
+      // Si hay un usuario autenticado, cargar su portafolio y historial
       if (usuario) {
         this.cargarPortafolio(usuario.id);
+        this.cargarHistorialPatrimonio(usuario.id);
       } else {
         this.router.navigate(['/login']);
       }
@@ -145,7 +155,79 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
   }
 
+  cargarHistorialPatrimonio(usuarioId: number): void {
+    this.patrimonioService.obtenerHistorialPatrimonio(usuarioId)
+      .subscribe(historial => {
+        this.historialPatrimonio = historial;
+        this.actualizarGrafico();
+      });
+  }
+
+  actualizarGrafico(): void {
+    if (this.chart) {
+      this.chart.destroy();
+    }
+
+    if (this.chartRef && this.historialPatrimonio.length > 0) {
+      const ctx = this.chartRef.nativeElement.getContext('2d');
+      
+      this.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: this.historialPatrimonio.map(item => 
+            new Date(item.fecha).toLocaleDateString('es-ES', { 
+              day: 'numeric', 
+              month: 'short'
+            })
+          ),
+          datasets: [{
+            label: 'Patrimonio Total',
+            data: this.historialPatrimonio.map(item => item.patrimonioTotal),
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Evolución del Patrimonio'
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const value = context.raw as number;
+                  return `Patrimonio: ${this.formatearDinero(value)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => this.formatearDinero(value as number)
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  ngAfterViewInit(): void {
+    if (this.historialPatrimonio.length > 0) {
+      this.actualizarGrafico();
+    }
+  }
+
   ngOnDestroy(): void {
+    if (this.chart) {
+      this.chart.destroy();
+    }
     if (this.actualizacionSubscription) {
       this.actualizacionSubscription.unsubscribe();
     }

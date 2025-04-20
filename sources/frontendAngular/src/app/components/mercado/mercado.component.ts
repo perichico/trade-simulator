@@ -21,14 +21,18 @@ export class MercadoComponent implements OnInit, OnDestroy {
   activosFiltrados$!: Observable<Activo[]>;
   usuario: Usuario | null = null;
   columnasMostradas: string[] = ['simbolo', 'nombre', 'precio', 'variacion'];
-  tipoSeleccionado: string = 'todos';
+
   tiposActivo = [
-    { valor: 'todos', nombre: 'Todos' },
-    { valor: 'accion', nombre: 'Acciones' },
-    { valor: 'criptomoneda', nombre: 'Criptomonedas' },
-    { valor: 'materia_prima', nombre: 'Materias Primas' },
-    { valor: 'divisa', nombre: 'Divisas' }
+    { id: 0, nombre: 'Todos' },
+    { id: 1, nombre: 'Acciones' },
+    { id: 2, nombre: 'Índices/ETF' },
+    { id: 3, nombre: 'Bonos' },
+    { id: 4, nombre: 'Materias Primas' },
+    { id: 5, nombre: 'Criptomonedas' },
+    { id: 6, nombre: 'Divisas' }
   ];
+
+  tipoSeleccionado: number = 0;
 
   get columnasCompletas(): string[] {
     return this.usuario ? [...this.columnasMostradas, 'acciones'] : this.columnasMostradas;
@@ -141,18 +145,14 @@ export class MercadoComponent implements OnInit, OnDestroy {
 
   // Método para actualizar los activos filtrados
   private actualizarActivosFiltrados(): void {
-    this.activosFiltrados$ = this.activos$.pipe(
-      map(activos => {
-        if (this.tipoSeleccionado === 'todos') {
-          return activos;
-        }
-        return activos.filter(activo => activo.tipo === this.tipoSeleccionado);
-      })
+    this.activosFiltrados$ = interval(10000).pipe(
+      startWith(0),
+      switchMap(() => this.activoService.obtenerActivos(this.tipoSeleccionado === 0 ? undefined : this.tipoSeleccionado))
     );
   }
 
   // Método para cambiar el tipo de activo seleccionado
-  cambiarTipoActivo(tipo: string): void {
+  cambiarTipoActivo(tipo: number): void {
     this.tipoSeleccionado = tipo;
     this.actualizarActivosFiltrados();
   }

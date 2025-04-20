@@ -10,9 +10,9 @@
           <div class="btn-group mt-3">
             <button *ngFor="let tipo of tiposActivo"
                     class="btn"
-                    [class.btn-primary]="tipoSeleccionado === tipo.valor"
-                    [class.btn-outline-primary]="tipoSeleccionado !== tipo.valor"
-                    (click)="cambiarTipoActivo(tipo.valor)">
+                    [class.btn-primary]="tipoSeleccionado === tipo.id"
+                    [class.btn-outline-primary]="tipoSeleccionado !== tipo.id"
+                    (click)="cambiarTipoActivo(tipo.id)">
               {{ tipo.nombre }}
             </button>
           </div>

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { Activo } from '../models/activo.model';
@@ -12,9 +12,10 @@ export class ActivoService {
 
   constructor(private http: HttpClient) { }
 
-  // Obtener todos los activos disponibles
-  obtenerActivos(): Observable<Activo[]> {
-    return this.http.get<Activo[]>(`${this.apiUrl}/activos`)
+  // Obtener todos los activos disponibles con opción de filtrado por tipo
+  obtenerActivos(tipoActivoId?: number): Observable<Activo[]> {
+    const params = tipoActivoId ? { params: new HttpParams().set('tipo_activo_id', tipoActivoId.toString()) } : {};
+    return this.http.get<Activo[]>(`${this.apiUrl}/activos`, params)
       .pipe(
         map(activos => {
           // Usar los precios reales del backend que ya consulta Yahoo Finance
@@ -27,7 +28,8 @@ export class ActivoService {
               ...activo,
               precio: precioActual,
               variacion: parseFloat(variacion.toFixed(2)),
-              tendencia: this.determinarTendencia(variacion)
+              tendencia: this.determinarTendencia(variacion),
+              tipo: (activo.tipoActivo?.nombre.toLowerCase() as 'accion' | 'criptomoneda' | 'materia_prima' | 'divisa') || 'accion'
             };
           });
         }),

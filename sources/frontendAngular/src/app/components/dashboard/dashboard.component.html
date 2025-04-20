@@ -21,6 +21,17 @@
   </div>
 
   <div class="row g-4 mb-4" *ngIf="portafolio$ | async as portafolio">
+    <div class="col-12 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Evolución del Patrimonio</h5>
+          <div class="chart-container">
+            <canvas #patrimonioChart></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="col-12 col-md-4">
       <div class="card h-100 border-primary border-opacity-25">
         <div class="card-body text-center">

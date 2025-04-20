@@ -93,26 +93,21 @@
 }
 
 .btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.2s;
+  background-color: black;
 }
 
 .btn-primary {
   background-color: #007bff;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #008000;
 }
 
 .btn-secondary {
   background-color: #6c757d;
-  color: white;
+  color: #ffffff;
 }
 
 .btn-secondary:hover {
@@ -122,4 +117,8 @@
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.btn-outline-danger:hover {
+  background-color: #ff0000;
 }

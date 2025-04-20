@@ -54,3 +54,151 @@ body {
     padding: 10px;
   }
 }
+
+body.dark-mode {
+  background-color: #181a1b !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode, body.dark-mode .card, body.dark-mode .content-container, body.dark-mode .navbar, body.dark-mode .login-required mat-card {
+  background-color: #181a1b !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .navbar, body.dark-mode .navbar-brand, body.dark-mode .nav-link {
+  background-color: #23272b !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .card {
+  background-color: #23272b !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .positive-value {
+  color: #43a047 !important;
+}
+
+body.dark-mode .negative-value {
+  color: #e53935 !important;
+}
+
+body.dark-mode .btn, body.dark-mode .btn-primary, body.dark-mode .btn-secondary { background-color: #ffffff !important; color: #000000 !important; border-color: #444 !important; }
+
+body.dark-mode .btn-outline-light {
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+body.dark-mode .mat-card {
+  background-color: #23272b !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .table, body.dark-mode .mercado-table {
+  background-color: #23272b !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .form-control, body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+  background-color: #ffffff !important;
+  color: #212121 !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode .bg-primary {
+  background-color: #23272b !important;
+}
+
+body.dark-mode .bg-light {
+  background-color: #23272b !important;
+}
+
+body.dark-mode .bg-white {
+  background-color: #23272b !important;
+}
+
+body.dark-mode .mat-toolbar {
+  background: #23272b !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .mat-dialog-container {
+  background: #23272b !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .mercado-filter {
+  background-color: #000000 !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #90ee90 !important;
+  color: #000000 !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+.btn-comprar:hover, .btn-vender:hover {
+  background-color: rgba(173, 216, 230, 0.5); /* Mantener efecto de hover */
+}
+
+body.dark-mode .mercado-filter {
+  background-color: #000000 !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+body.dark-mode .mat-dialog-container {
+  background: #23272b !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .mercado-filter {
+  background-color: #000000 !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #90ee90 !important;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+  background-color: #ffcccb !important;
+}
+
+.btn-comprar:hover, .btn-vender:hover {
+  background-color: rgba(173, 216, 230, 0.5); /* Mantener efecto de hover */
+}
+
+body {
+  color: #333333;
+}
+
+.text-muted {
+  color: #666666 !important;
+}
+
+body.dark-mode .logo {
+  filter: invert(1);
+}
+
+body:not(.dark-mode) .logo {
+  filter: invert(0);
+}

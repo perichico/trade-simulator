@@ -79,22 +79,45 @@
   margin-top: 16px;
 }
 
-.portfolio-table-card {
-  margin-bottom: 30px;
-}
-
-.portfolio-table {
-  width: 100%;
-}
-
 .empty-portfolio {
   text-align: center;
   padding: 40px 0;
+  color: var(--text-primary);
 }
 
 .empty-portfolio p {
   margin-bottom: 20px;
-  color: var(--text-secondary);
+  color: #000000;
+}
+
+.portfolio-table-card {
+  margin-bottom: 30px;
+  color: #000000;
+}
+
+.portfolio-table {
+  width: 100%;
+  color: #000000;
+}
+
+.last-update {
+  color: #ffffff;
+}
+
+.balance-card,
+.portfolio-card,
+.performance-card {
+  background-color: #fff8e1;
+  color: #ffffff;
+}
+
+.balance-amount,
+.portfolio-amount,
+.performance-amount {
+  font-size: 24px;
+  font-weight: 500;
+  margin-top: 16px;
+  color: #ffffff;
 }
 
 .login-required {

@@ -45,7 +45,7 @@ export class MercadoComponent implements OnInit, OnDestroy {
     private transaccionService: TransaccionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private router: Router
+    public router: Router
   ) { }
 
   ngOnInit(): void {

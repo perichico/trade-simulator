@@ -5,7 +5,7 @@
     </button>
     <span class="title">Detalle de Activo</span>
     <span class="spacer"></span>
-    <span class="user-info">{{ usuario?.nombre }} | {{ formatearDinero(usuario?.balance || 0) }}</span>
+    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(usuario.balance || 0) }}</span>
     <button class="icon-button" aria-label="Cerrar sesión">
       <span class="icon">⤴</span>
     </button>
@@ -13,12 +13,12 @@
 
   <div class="content-container">
     <div class="detalle-header">
-      <h1>{{ activo.nombre }} ({{ activo.simbolo }})</h1>
+      <h1>{{ activo?.nombre ?? 'N/A' }} ({{ activo?.simbolo ?? 'N/A' }})</h1>
       <div class="precio-container">
-        <span class="precio-actual">{{ formatearDinero(activo.precio) }}</span>
-        <span class="variacion" [class]="obtenerClaseVariacion(activo.variacion)"></span>
-        <span class="material-icons tendencia-icon">{{ obtenerIconoTendencia(activo.tendencia) }}
-          {{ activo.variacion > 0 ? '+' : '' }}{{ activo.variacion }}%
+        <span class="precio-actual">{{ formatearDinero(activo?.precio ?? 0) }}</span>
+        <span class="variacion" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)"></span>
+        <span class="material-icons tendencia-icon">{{ obtenerIconoTendencia(activo?.tendencia ?? 'estable') }}
+          {{ (activo?.variacion ?? 0) > 0 ? '+' : '' }}{{ activo?.variacion ?? 0 }}%
         </span>
       </div>
     </div>
@@ -32,29 +32,29 @@
           <div class="mat-card-content">
             <div class="info-item">
               <span class="info-label">Símbolo:</span>
-              <span class="info-value">{{ activo.simbolo }}</span>
+              <span class="info-value">{{ activo?.simbolo ?? 'N/A' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Nombre:</span>
-              <span class="info-value">{{ activo.nombre }}</span>
+              <span class="info-value">{{ activo?.nombre ?? 'N/A' }} ({{ activo?.simbolo ?? 'N/A' }})</span>
             </div>
             <div class="info-item">
               <span class="info-label">Precio actual:</span>
-              <span class="info-value">{{ formatearDinero(activo.precio) }}</span>
+              <span class="info-value">{{ formatearDinero(activo?.precio ?? 0) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Variación:</span>
-              <span class="info-value" [class]="obtenerClaseVariacion(activo.variacion)">
-                {{ activo.variacion > 0 ? '+' : '' }}{{ activo.variacion }}%
+              <span class="info-value" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)">
+                {{ (activo?.variacion ?? 0) > 0 ? '+' : '' }}{{ activo?.variacion ?? 0 }}%
               </span>
             </div>
             <div class="info-item">
               <span class="info-label">Tendencia:</span>
               <span class="info-value">
-                <span class="material-icons tendencia-icon" [class]="obtenerClaseVariacion(activo.variacion)">
-                  {{ obtenerIconoTendencia(activo.tendencia) }}
+                <span class="material-icons tendencia-icon" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)">
+                  {{ obtenerIconoTendencia(activo?.tendencia ?? 'estable') }}
                 </span>
-                {{ activo.tendencia === 'alza' ? 'Alcista' : activo.tendencia === 'baja' ? 'Bajista' : 'Estable' }}
+                {{ activo?.tendencia === 'alza' ? 'Alcista' : activo?.tendencia === 'baja' ? 'Bajista' : 'Estable' }}
               </span>
             </div>
           </div>
@@ -65,7 +65,7 @@
             <h2 class="card-title">Realizar Transacción</h2>
           </div>
           <div class="card-content">
-            <p class="balance-info">Balance disponible: {{ formatearDinero(usuario?.balance || 0) }}</p>
+            <p class="balance-info">Balance disponible: {{ formatearDinero(usuario.balance || 0) }}</p>
             <div class="acciones-buttons">
               <button class="button primary" (click)="abrirDialogoTransaccion(activo, 'compra')" class="accion-button">
                 <span class="icon">🛒</span> Comprar

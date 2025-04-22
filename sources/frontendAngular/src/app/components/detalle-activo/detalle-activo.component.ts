@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Observable, Subscription, interval } from 'rxjs';
+import { Observable, Subscription, interval, of } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
@@ -23,7 +23,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
   cargando = true;
   error = false;
   actualizacionSubscription!: Subscription;
-  
+  activo: Activo | undefined;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -32,10 +33,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
     private transaccionService: TransaccionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    // Obtener el ID del activo de la URL
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -47,7 +47,6 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Obtener usuario actual
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
     });
@@ -60,30 +59,34 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
   }
 
   cargarActivo(): void {
-    // Cargar activo y actualizar cada 10 segundos
     this.activo$ = interval(10000).pipe(
       startWith(0),
       switchMap(() => this.activoService.obtenerActivoPorId(this.activoId))
     );
 
-    // Suscribirse para detectar cuando termina la carga
     this.actualizacionSubscription = this.activo$.subscribe({
-      next: () => {
+      next: (activo) => {
+        this.activo = activo;
         this.cargando = false;
+        this.error = false;
       },
       error: (error) => {
+        console.error('Error al cargar el activo:', error);
         this.cargando = false;
         this.error = true;
-        this.snackBar.open(
-          `Error al cargar el activo: ${error.error?.error || 'Error desconocido'}`,
-          'Cerrar',
-          { duration: 5000 }
-        );
+
+        const mensaje =
+          error?.error?.error ||
+          error?.message ||
+          'Error desconocido';
+
+        this.snackBar.open(`Error al cargar el activo: ${mensaje}`, 'Cerrar', {
+          duration: 5000
+        });
       }
     });
   }
 
-  // Método para abrir el diálogo de transacción
   abrirDialogoTransaccion(activo: Activo, tipo: 'compra' | 'venta'): void {
     if (!this.usuario) {
       this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
@@ -108,44 +111,38 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Método para realizar la transacción
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
     this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
       .subscribe({
-        next: (respuesta) => {
+        next: () => {
           this.snackBar.open(
-            `Transacción de ${tipo} realizada con éxito`, 
-            'Cerrar', 
+            `Transacción de ${tipo} realizada con éxito`,
+            'Cerrar',
             { duration: 3000 }
           );
-          
-          // Actualizar el balance del usuario
           this.authService.verificarSesion();
         },
         error: (error) => {
           this.snackBar.open(
-            `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`, 
-            'Cerrar', 
+            `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`,
+            'Cerrar',
             { duration: 5000 }
           );
         }
       });
   }
 
-  // Método para formatear valores monetarios
   formatearDinero(valor: number): string {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor);
   }
 
-  // Método para obtener la clase CSS según la variación
   obtenerClaseVariacion(variacion: number): string {
     if (variacion > 0) return 'variacion-positiva';
     if (variacion < 0) return 'variacion-negativa';
     return 'variacion-neutral';
   }
 
-  // Método para obtener el icono según la tendencia
-  obtenerIconoTendencia(tendencia: string): string {
+  obtenerIconoTendencia(tendencia: string | undefined): string {
     switch (tendencia) {
       case 'alza': return 'trending_up';
       case 'baja': return 'trending_down';

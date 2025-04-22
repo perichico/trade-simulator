@@ -27,6 +27,7 @@ import { TransaccionDialogComponent } from './components/transaccion-dialog/tran
 import { LoginComponent } from './components/login/login.component';
 import { RegistroComponent } from './components/registro/registro.component';
 import { HistorialComponent } from './components/historial/historial.component';
+import { DetalleActivoComponent } from './components/detalle-activo/detalle-activo.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +37,8 @@ import { HistorialComponent } from './components/historial/historial.component';
     TransaccionDialogComponent,
     LoginComponent,
     RegistroComponent,
-    HistorialComponent
+    HistorialComponent,
+    DetalleActivoComponent
   ],
   imports: [
     BrowserModule,

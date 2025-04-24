@@ -1,22 +1,26 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Observable, Subscription, interval, of } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
+import { Chart, registerables } from 'chart.js';
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
 import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
 import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-dialog.component';
 import { TransaccionService } from '../../services/transaccion.service';
+import { HistorialPreciosService } from '../../services/historial-precios.service';
+
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-detalle-activo',
   templateUrl: './detalle-activo.component.html',
   styleUrls: ['./detalle-activo.component.css']
 })
-export class DetalleActivoComponent implements OnInit, OnDestroy {
+export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit {
   activoId!: number;
   activo$!: Observable<Activo>;
   usuario: Usuario | null = null;
@@ -24,6 +28,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
   error = false;
   actualizacionSubscription!: Subscription;
   activo: Activo | undefined;
+  @ViewChild('preciosChart') private chartRef!: ElementRef;
+  private chart: Chart | undefined;
 
   constructor(
     private route: ActivatedRoute,
@@ -32,7 +38,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private transaccionService: TransaccionService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private historialPreciosService: HistorialPreciosService
   ) {}
 
   ngOnInit(): void {
@@ -55,6 +62,142 @@ export class DetalleActivoComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.actualizacionSubscription) {
       this.actualizacionSubscription.unsubscribe();
+    }
+    if (this.chart) {
+      this.chart.destroy();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Retraso la carga del historial para asegurar que el canvas esté disponible
+    setTimeout(() => {
+      if (this.activoId) {
+        this.cargarHistorialPrecios();
+      }
+    }, 100);
+  }
+
+  private cargarHistorialPrecios(): void {
+    console.log('Iniciando carga del historial de precios para el activo ID:', this.activoId);
+    const fechaFin = new Date();
+    const fechaInicio = new Date(fechaFin.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 días atrás
+
+    this.historialPreciosService.obtenerHistorialPrecios(this.activoId, fechaInicio, fechaFin)
+      .subscribe({
+        next: (historial) => {
+          console.log(`Historial de precios recibido: ${historial.length} registros`);
+          if (historial.length === 0) {
+            console.warn('El historial de precios está vacío');
+            this.snackBar.open('No hay datos históricos disponibles para este activo', 'Cerrar', {
+              duration: 3000
+            });
+            return;
+          }
+          
+          // Verificar que el elemento canvas esté disponible antes de actualizar el gráfico
+          if (!this.chartRef) {
+            console.error('El elemento canvas no está disponible');
+            setTimeout(() => this.actualizarGrafico(historial), 500); // Intentar de nuevo después de un retraso
+            return;
+          }
+          
+          this.actualizarGrafico(historial);
+        },
+        error: (error) => {
+          console.error('Error al cargar el historial de precios:', error);
+          this.snackBar.open('Error al cargar el historial de precios', 'Cerrar', {
+            duration: 3000
+          });
+        }
+      });
+  }
+
+  private actualizarGrafico(historial: any[]): void {
+    // Verificar si hay datos para mostrar
+    if (!historial || historial.length === 0) {
+      console.warn('No hay datos de historial para mostrar en el gráfico');
+      return;
+    }
+
+    // Destruir el gráfico existente si hay uno
+    if (this.chart) {
+      this.chart.destroy();
+      this.chart = undefined;
+    }
+
+    // Verificar que el elemento canvas esté disponible
+    if (!this.chartRef) {
+      console.error('El elemento canvas no está disponible');
+      return;
+    }
+
+    try {
+      const ctx = this.chartRef.nativeElement.getContext('2d');
+      if (!ctx) {
+        console.error('No se pudo obtener el contexto 2D del canvas');
+        return;
+      }
+
+      // Asegurar que el canvas tenga dimensiones
+      const canvas = this.chartRef.nativeElement;
+      if (!canvas.style.height) {
+        canvas.style.height = '300px';
+      }
+      if (!canvas.style.width) {
+        canvas.style.width = '100%';
+      }
+      
+      // Crear el gráfico con los datos del historial
+      this.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: historial.map(item => 
+            new Date(item.fecha).toLocaleDateString('es-ES', { 
+              day: 'numeric', 
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          ),
+          datasets: [{
+            label: 'Precio',
+            data: historial.map(item => item.precio),
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Evolución del Precio'
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const value = context.raw as number;
+                  return `Precio: ${this.formatearDinero(value)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: {
+                callback: (value) => this.formatearDinero(value as number)
+              }
+            }
+          }
+        }
+      });
+
+      console.log('Gráfico de evolución de precios creado correctamente');
+    } catch (error) {
+      console.error('Error al crear el gráfico:', error);
     }
   }
 

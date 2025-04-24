@@ -10,4 +10,6 @@ router.get("/dashboard", usuarioController.mostrarDashboard);
 router.get("/registro", usuarioController.mostrarRegistro);
 router.post("/registro", usuarioController.registrarUsuario);
 
+// Endpoint para obtener el historial de patrimonio del usuario
+router.get("/historial-patrimonio/:usuarioId", usuarioController.obtenerHistorialPatrimonio);
 module.exports = router;

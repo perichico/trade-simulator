@@ -8,6 +8,7 @@ const helmet = require("helmet");
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const activoRoutes = require("./routes/activoRoutes");
 const transaccionRoutes = require("./routes/transaccionRoutes");
+const historialPreciosRoutes = require("./routes/historialPreciosRoutes");
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use(session({
 app.use("/", usuarioRoutes);
 app.use("/activos", activoRoutes);
 app.use("/transacciones", transaccionRoutes);
+app.use("/historial-precios", historialPreciosRoutes);
 
 // Manejo de errores globales
 app.use((err, req, res, next) => {

@@ -229,3 +229,5 @@ INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
 -- DROP TABLE IF EXISTS activos;
 -- DROP TABLE IF EXISTS tipo_activo;
 -- DROP TABLE IF EXISTS usuarios;
+
+--DELETE FROM historial_precios;

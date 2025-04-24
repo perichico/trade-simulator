@@ -1,4 +1,5 @@
 const sequelize = require('../database/db');
+const { Op } = require('sequelize');
 
 // Importar modelos
 const Usuario = require('./usuarioModel');
@@ -71,5 +72,6 @@ module.exports = {
     Dividendo: DividendoModel,
     Orden: OrdenModel,
     Alerta: AlertaModel,
-    Transaccion: TransaccionModel
+    Transaccion: TransaccionModel,
+    Op
 };

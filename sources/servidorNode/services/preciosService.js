@@ -1,9 +1,12 @@
+const HistorialPreciosService = require('./historialPreciosService');
+
 class PreciosService {
     constructor() {
         this.cache = new Map();
         this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
         this.VOLATILIDAD = 0.02; // 2% de volatilidad máxima
         this.preciosBase = new Map(); // Almacena los precios base para cada símbolo
+        this.historialService = new HistorialPreciosService();
     }
 
     async obtenerPrecioActual(simbolo) {
@@ -68,6 +71,9 @@ class PreciosService {
                     ultimo_precio: precio,
                     ultima_actualizacion: new Date()
                 });
+
+                // Registrar precio en el historial
+                await this.historialService.registrarPrecio(activo.id, precio);
             } catch (error) {
                 console.error(`Error actualizando precio de ${activo.simbolo}:`, error);
             }

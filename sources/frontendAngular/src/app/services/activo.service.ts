@@ -45,15 +45,11 @@ export class ActivoService {
     return this.http.get<Activo>(`${this.apiUrl}/activos/${id}`)
       .pipe(
         map(activo => {
-          const precioAnterior = activo.precio || activo.ultimo_precio;
-          const precioActual = activo.ultimo_precio;
-          const variacion = precioAnterior ? ((precioActual - precioAnterior) / precioAnterior) * 100 : 0;
-          
           return {
             ...activo,
-            precio: precioActual,
-            variacion: parseFloat(variacion.toFixed(2)),
-            tendencia: this.determinarTendencia(variacion)
+            precio: activo.ultimo_precio,
+            variacion: activo.variacion ?? 0,
+            tendencia: this.determinarTendencia(activo.variacion ?? 0)
           };
         }),
         catchError(error => {

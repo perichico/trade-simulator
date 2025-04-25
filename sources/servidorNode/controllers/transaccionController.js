@@ -38,7 +38,7 @@ exports.crearTransaccion = async (req, res) => {
         [usuario, activo] = await Promise.all([
           Usuario.findByPk(usuarioId),
           Activo.findByPk(activoId, {
-            attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+            attributes: ['id', 'nombre', 'simbolo']
           })
         ]);
       } catch (error) {
@@ -62,9 +62,13 @@ exports.crearTransaccion = async (req, res) => {
         await transaction.rollback();
         return res.status(400).json({ error: "El activo no tiene un símbolo válido" });
       }
-  
-      // Obtener el precio del activo en el momento de la transacción
-      const precioEnTransaccion = activo.ultimo_precio;
+      
+      // Importar el servicio de historial de precios
+      const HistorialPreciosService = require('../services/historialPreciosService');
+      const historialService = new HistorialPreciosService();
+      
+      // Obtener el precio del activo desde el historial de precios
+      const precioEnTransaccion = await historialService.obtenerUltimoPrecio(activoId);
       
       if (!precioEnTransaccion) {
         await transaction.rollback();

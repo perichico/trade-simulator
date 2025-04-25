@@ -52,11 +52,6 @@
               'bg-danger': activo.variacion && activo.variacion < 0,
               'bg-secondary': !activo.variacion || activo.variacion === 0
             }">
-              <i class="bi" [ngClass]="{
-                'bi-arrow-up': activo.tendencia === 'alza',
-                'bi-arrow-down': activo.tendencia === 'baja',
-                'bi-arrow-right': !activo.tendencia || activo.tendencia === 'estable'
-              }"></i>
               {{ activo.variacion ? (activo.variacion > 0 ? '+' : '') + activo.variacion + '%' : '0%' }}
             </span>
           </div>

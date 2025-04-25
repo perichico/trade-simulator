@@ -9,17 +9,18 @@ class PreciosService {
         this.historialService = new HistorialPreciosService();
     }
 
-    async obtenerPrecioActual(simbolo) {
+    async obtenerPrecioActual(simbolo, activoId) {
         if (!simbolo) {
             console.error('Símbolo no proporcionado');
-            return 0;
+            return { precio: 0, variacion: 0 };
         }
 
         try {
             // Verificar caché
             const cachePrecio = this.cache.get(simbolo);
             if (cachePrecio && (Date.now() - cachePrecio.timestamp) < this.CACHE_DURATION) {
-                return cachePrecio.precio;
+                // No calculamos la variación aquí, se calculará después de registrar el precio
+                return { precio: cachePrecio.precio };
             }
 
             // Generar precio aleatorio
@@ -31,8 +32,8 @@ class PreciosService {
             }
 
             // Calcular variación aleatoria
-            const variacion = (Math.random() * 2 - 1) * this.VOLATILIDAD;
-            const precio = precioBase * (1 + variacion);
+            const variacionAleatoria = (Math.random() * 2 - 1) * this.VOLATILIDAD;
+            const precio = precioBase * (1 + variacionAleatoria);
             const precioFinal = parseFloat(precio.toFixed(2));
 
             console.log(`Precio simulado de ${simbolo}: ${precioFinal} USD`);
@@ -47,11 +48,14 @@ class PreciosService {
             const tendencia = (Math.random() - 0.5) * 0.001; // ±0.1% de tendencia
             this.preciosBase.set(simbolo, precioBase * (1 + tendencia));
 
-            return precioFinal;
+            // No calculamos la variación aquí, se calculará después de registrar el precio
+            return { precio: precioFinal };
         } catch (error) {
             console.error('Error al generar precio simulado:', error);
             const cachePrecio = this.cache.get(simbolo);
-            return cachePrecio ? cachePrecio.precio : 0;
+            return { 
+                precio: cachePrecio ? cachePrecio.precio : 0
+            };
         }
     }
 
@@ -65,15 +69,20 @@ class PreciosService {
         
         for (const activo of activos) {
             try {
-                const precio = await this.obtenerPrecioActual(activo.simbolo);
+                const { precio } = await this.obtenerPrecioActual(activo.simbolo, activo.id);
+                
+                // Registrar precio en el historial
+                await this.historialService.registrarPrecio(activo.id, precio);
+                
+                // Calcular variación después de registrar el precio
+                const variacion = await this.historialService.calcularVariacionPorcentual(activo.id, precio);
+                
                 actualizaciones.push({
                     id: activo.id,
                     ultimo_precio: precio,
-                    ultima_actualizacion: new Date()
+                    ultima_actualizacion: new Date(),
+                    variacion: variacion
                 });
-
-                // Registrar precio en el historial
-                await this.historialService.registrarPrecio(activo.id, precio);
             } catch (error) {
                 console.error(`Error actualizando precio de ${activo.simbolo}:`, error);
             }

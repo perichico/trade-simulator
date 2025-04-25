@@ -23,8 +23,9 @@ exports.obtenerActivos = async (req, res) => {
       for (const actualizacion of actualizaciones) {
         if (actualizacion && actualizacion.ultimo_precio) {
           await Activo.update({
-            ultimo_precio: actualizacion.ultimo_precio,
             ultima_actualizacion: actualizacion.ultima_actualizacion
+            // No actualizamos ultimo_precio ni variacion en la tabla activos
+            // La variación se calculará en tiempo real usando historial_precios
           }, {
             where: { id: actualizacion.id }
           });
@@ -92,12 +93,24 @@ exports.obtenerActivoPorId = async (req, res) => {
     });
     if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
     
-    // Actualizar precio en tiempo real
-    const precio_actual = await preciosService.obtenerPrecioActual(activo.simbolo);
-    await activo.update({
-      ultimo_precio: precio_actual,
-      ultima_actualizacion: new Date()
-    });
+    // Obtener precio en tiempo real
+    const { precio: precio_actual } = await preciosService.obtenerPrecioActual(activo.simbolo, activo.id);
+    if (precio_actual) {
+      // Registrar el precio en el historial
+      await preciosService.historialService.registrarPrecio(activo.id, precio_actual);
+      
+      // Calcular la variación usando el historial de precios
+      const variacion = await preciosService.historialService.calcularVariacionPorcentual(activo.id, precio_actual);
+      
+      // Solo actualizamos la fecha de actualización, no el precio
+      await activo.update({
+        ultima_actualizacion: new Date()
+      });
+      
+      // Asignamos el precio y variación para la respuesta, pero no lo guardamos en la tabla activos
+      activo.dataValues.ultimo_precio = precio_actual;
+      activo.dataValues.variacion = variacion;
+    }
     
     res.json(activo);
   } catch (error) {

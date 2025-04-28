@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
             unique: true
         }
     }, {
-        tableName: 'tipos_activos',
+        tableName: 'tipo_activo',
         timestamps: false
     });
 };

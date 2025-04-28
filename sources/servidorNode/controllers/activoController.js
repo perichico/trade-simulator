@@ -23,8 +23,8 @@ exports.obtenerActivos = async (req, res) => {
       for (const actualizacion of actualizaciones) {
         if (actualizacion && actualizacion.ultimo_precio) {
           await Activo.update({
-            ultima_actualizacion: actualizacion.ultima_actualizacion
-            // No actualizamos ultimo_precio ni variacion en la tabla activos
+            ultima_actualizacion: actualizacion.ultima_actualizacion,
+            ultimo_precio: actualizacion.ultimo_precio
             // La variación se calculará en tiempo real usando historial_precios
           }, {
             where: { id: actualizacion.id }

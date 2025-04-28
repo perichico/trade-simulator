@@ -10,8 +10,8 @@ class PreciosService {
     }
 
     async obtenerPrecioActual(simbolo, activoId) {
-        if (!simbolo) {
-            console.error('Símbolo no proporcionado');
+        if (!simbolo || !activoId) {
+            console.error('Símbolo o ID de activo no proporcionado');
             return { precio: 0, variacion: 0 };
         }
 
@@ -19,17 +19,25 @@ class PreciosService {
             // Verificar caché
             const cachePrecio = this.cache.get(simbolo);
             if (cachePrecio && (Date.now() - cachePrecio.timestamp) < this.CACHE_DURATION) {
-                // No calculamos la variación aquí, se calculará después de registrar el precio
                 return { precio: cachePrecio.precio };
             }
 
-            // Generar precio aleatorio
-            let precioBase = this.preciosBase.get(simbolo);
-            if (!precioBase) {
-                // Si no existe un precio base, generamos uno inicial
+            // Siempre intentar obtener el último precio registrado primero
+            const ultimoPrecio = await this.historialService.obtenerUltimoPrecio(activoId);
+            let precioBase;
+            
+            if (ultimoPrecio) {
+                precioBase = ultimoPrecio;
+                console.log(`Usando último precio registrado para ${simbolo}: ${precioBase} USD`);
+            } else {
                 precioBase = this.generarPrecioBaseAleatorio();
-                this.preciosBase.set(simbolo, precioBase);
+                console.log(`Generando precio base aleatorio para ${simbolo}: ${precioBase} USD`);
+                // Registrar el precio base inicial en el historial
+                await this.historialService.registrarPrecio(activoId, precioBase);
             }
+            
+            // Actualizar el precio base en el mapa
+            this.preciosBase.set(simbolo, precioBase);
 
             // Calcular variación aleatoria
             const variacionAleatoria = (Math.random() * 2 - 1) * this.VOLATILIDAD;
@@ -48,14 +56,12 @@ class PreciosService {
             const tendencia = (Math.random() - 0.5) * 0.001; // ±0.1% de tendencia
             this.preciosBase.set(simbolo, precioBase * (1 + tendencia));
 
-            // No calculamos la variación aquí, se calculará después de registrar el precio
             return { precio: precioFinal };
         } catch (error) {
             console.error('Error al generar precio simulado:', error);
             const cachePrecio = this.cache.get(simbolo);
-            return { 
-                precio: cachePrecio ? cachePrecio.precio : 0
-            };
+            const precio = cachePrecio ? cachePrecio.precio : await this.historialService.obtenerUltimoPrecio(activoId) || 0;
+            return { precio };
         }
     }
 

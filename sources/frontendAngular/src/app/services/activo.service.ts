@@ -20,15 +20,11 @@ export class ActivoService {
         map(activos => {
           // Usar los precios reales del backend que ya consulta Yahoo Finance
           return activos.map(activo => {
-            const precioAnterior = activo.precio || activo.ultimo_precio;
-            const precioActual = activo.ultimo_precio;
-            const variacion = precioAnterior ? ((precioActual - precioAnterior) / precioAnterior) * 100 : 0;
-            
             return {
               ...activo,
-              precio: precioActual,
-              variacion: parseFloat(variacion.toFixed(2)),
-              tendencia: this.determinarTendencia(variacion),
+              precio: activo.ultimo_precio,
+              variacion: activo.variacion ?? 0,
+              tendencia: this.determinarTendencia(activo.variacion ?? 0),
               tipo: (activo.tipoActivo?.nombre.toLowerCase() as 'accion' | 'criptomoneda' | 'materia_prima' | 'divisa') || 'accion'
             };
           });

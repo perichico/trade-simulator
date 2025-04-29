@@ -39,7 +39,17 @@ exports.obtenerActivos = async (req, res) => {
           attributes: ['nombre']
         }]
       });
-      res.status(200).json(activosActualizados);
+      // Fusionar variación y último precio en la respuesta
+      const activosConVariacion = activosActualizados.map(activo => {
+        const actualizacion = actualizaciones.find(a => a.id === activo.id);
+        return {
+          ...activo.toJSON(),
+          variacion: actualizacion ? actualizacion.variacion : 0,
+          ultimo_precio: actualizacion ? actualizacion.ultimo_precio : activo.ultimo_precio,
+          ultima_actualizacion: actualizacion ? actualizacion.ultima_actualizacion : activo.ultima_actualizacion
+        };
+      });
+      res.status(200).json(activosConVariacion);
     } catch (precioError) {
       console.error('Error al actualizar precios:', precioError);
       // Si hay error al actualizar precios, devolver los activos sin actualizar

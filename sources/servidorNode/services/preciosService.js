@@ -4,7 +4,8 @@ class PreciosService {
     constructor() {
         this.cache = new Map();
         this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutos en milisegundos
-        this.VOLATILIDAD = 0.02; // 2% de volatilidad máxima
+        this.VOLATILIDAD = 0.05; // 0.5% de volatilidad máxima (reducida de 2%)
+        this.TENDENCIA_MAX = 0.02; // ±0.02% de tendencia máxima
         this.preciosBase = new Map(); // Almacena los precios base para cada símbolo
         this.historialService = new HistorialPreciosService();
     }
@@ -39,12 +40,12 @@ class PreciosService {
             // Actualizar el precio base en el mapa
             this.preciosBase.set(simbolo, precioBase);
 
-            // Calcular variación aleatoria
-            const variacionAleatoria = (Math.random() * 2 - 1) * this.VOLATILIDAD;
+            // Calcular variación aleatoria con distribución normal
+            const variacionAleatoria = (Math.random() + Math.random() + Math.random() - 1.5) * (this.VOLATILIDAD / 1.5);
             const precio = precioBase * (1 + variacionAleatoria);
             const precioFinal = parseFloat(precio.toFixed(2));
 
-            console.log(`Precio simulado de ${simbolo}: ${precioFinal} USD`);
+            console.log(`Precio simulado de ${simbolo}: ${precioFinal} USD (variación: ${(variacionAleatoria * 100).toFixed(3)}%)`);
 
             // Actualizar caché
             this.cache.set(simbolo, {
@@ -52,8 +53,8 @@ class PreciosService {
                 timestamp: Date.now()
             });
 
-            // Actualizar precio base con una pequeña tendencia
-            const tendencia = (Math.random() - 0.5) * 0.001; // ±0.1% de tendencia
+            // Actualizar precio base con una tendencia más suave
+            const tendencia = (Math.random() - 0.5) * this.TENDENCIA_MAX;
             this.preciosBase.set(simbolo, precioBase * (1 + tendencia));
 
             return { precio: precioFinal };

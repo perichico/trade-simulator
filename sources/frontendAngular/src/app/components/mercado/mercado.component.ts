@@ -126,7 +126,9 @@ export class MercadoComponent implements OnInit, OnDestroy {
 
   // Método para obtener la clase CSS según la variación
   obtenerClaseVariacion(variacion: number): string {
-    return variacion > 0 ? 'positive-value' : variacion < 0 ? 'negative-value' : '';
+    if (variacion > 0) return 'variacion-positiva';
+    if (variacion < 0) return 'variacion-negativa';
+    return 'variacion-neutral';
   }
 
   // Método para obtener el icono según la tendencia

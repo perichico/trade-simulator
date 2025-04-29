@@ -45,23 +45,23 @@
     <div class="col" *ngFor="let activo of activos">
       <div class="card h-100 shadow-sm" style="cursor: pointer;" [routerLink]="['/detalle-activo', activo.id]">
         <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <h5 class="card-title mb-0">{{ activo.nombre }}</h5>
-            <span class="badge" [ngClass]="{
-              'bg-success': activo.variacion && activo.variacion > 0,
-              'bg-danger': activo.variacion && activo.variacion < 0,
-              'bg-secondary': !activo.variacion || activo.variacion === 0
-            }">
-              {{ activo.variacion ? (activo.variacion > 0 ? '+' : '') + activo.variacion + '%' : '0%' }}
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h5 class="card-title mb-0">{{ activo.nombre }}</h5>
+              <h6 class="card-subtitle mb-3 text-muted">{{ activo.simbolo }}</h6>
+            </div>
+            <span class="variacion-badge" [ngClass]="obtenerClaseVariacion(activo.variacion || 0)">
+              <i class="bi" [ngClass]="{
+                'bi-arrow-up': activo.variacion && activo.variacion > 0,
+                'bi-arrow-down': activo.variacion && activo.variacion < 0,
+                'bi-dash': !activo.variacion || activo.variacion === 0
+              }"></i>
+              <span class="fw-bold ms-1">{{ activo.variacion ? (activo.variacion > 0 ? '+' : '') + activo.variacion + '%' : '0%' }}</span>
             </span>
           </div>
-          
-          <h6 class="card-subtitle mb-3 text-muted">{{ activo.simbolo }}</h6>
-          
           <div class="d-flex justify-content-between align-items-center mb-3">
             <span class="h4 mb-0">{{ formatearDinero(activo.precio || activo.ultimo_precio) }}</span>
           </div>
-
           <div class="d-grid gap-2" *ngIf="usuario" (click)="$event.stopPropagation()">
             <button class="btn btn-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
               <i class="bi bi-cart-plus me-2"></i>Comprar

@@ -67,6 +67,30 @@
   font-weight: 500;
 }
 
+.variacion-positiva {
+  color: #10b981;
+  background-color: #ecfdf5;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.variacion-negativa {
+  color: #ef4444;
+  background-color: #fef2f2;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.variacion-neutral {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
 .tendencia-icon {
   vertical-align: middle;
   font-size: 18px;

@@ -66,14 +66,52 @@
           </div>
           <div class="card-content">
             <p class="balance-info">Balance disponible: {{ formatearDinero(usuario.balance || 0) }}</p>
-            <div class="acciones-buttons">
-              <button class="button primary" (click)="abrirDialogoTransaccion(activo, 'compra')" class="accion-button">
-                <span class="icon">🛒</span> Comprar
-              </button>
-              <button class="button warn" (click)="abrirDialogoTransaccion(activo, 'venta')" class="accion-button">
-                <span class="icon">🗑️</span> Vender
-              </button>
+            <div class="modo-compra-toggle">
+              <button [class.active]="modoCantidad" (click)="cambiarModoCompra(true)" class="toggle-button">Por Cantidad</button>
+              <button [class.active]="!modoCantidad" (click)="cambiarModoCompra(false)" class="toggle-button">Por Monto</button>
             </div>
+            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, 'compra', cantidadCompra)" class="form-compra">
+              <div class="form-group" *ngIf="modoCantidad">
+                <label for="cantidadCompra">Cantidad de activos:</label>
+                <input type="number" 
+                       id="cantidadCompra" 
+                       name="cantidadCompra" 
+                       [(ngModel)]="cantidadCompra" 
+                       (ngModelChange)="calcularMontoTotal()"
+                       min="0.00000001" 
+                       step="0.00000001"
+                       required 
+                       class="input-cantidad" 
+                       [max]="maxCantidadPosible">
+                <p class="calculo-info" *ngIf="cantidadCompra && activo?.precio">
+                  Monto total: {{ formatearDinero(cantidadCompra * (activo?.precio ?? 0)) }}
+                </p>
+              </div>
+              <div class="form-group" *ngIf="!modoCantidad">
+                <label for="montoCompra">Monto a invertir:</label>
+                <input type="number" 
+                       id="montoCompra" 
+                       name="montoCompra" 
+                       [(ngModel)]="montoCompra" 
+                       (ngModelChange)="calcularCantidad()"
+                       min="0.01" 
+                       step="0.01"
+                       required 
+                       class="input-cantidad" 
+                       [max]="usuario.balance">
+                <p class="calculo-info" *ngIf="montoCompra && activo?.precio">
+                  Cantidad de activos: {{ cantidadCompra | number:'1.8-8' }}
+                </p>
+              </div>
+              <button class="button primary" 
+                      type="submit" 
+                      [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))">
+                <span class="icon">🛒</span> Confirmar Compra
+              </button>
+            </form>
+            <button class="button warn" (click)="abrirDialogoTransaccion(activo, 'venta')" class="accion-button">
+              <span class="icon">🗑️</span> Vender
+            </button>
           </div>
         </div>
       </div>

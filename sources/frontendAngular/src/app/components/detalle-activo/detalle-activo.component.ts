@@ -30,6 +30,10 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   activo: Activo | undefined;
   @ViewChild('preciosChart') private chartRef!: ElementRef;
   private chart: Chart | undefined;
+  cantidadCompra: number = 0;
+  montoCompra: number = 0;
+  modoCantidad: boolean = true;
+  maxCantidadPosible: number = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -231,13 +235,16 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   abrirDialogoTransaccion(activo: Activo, tipo: 'compra' | 'venta'): void {
+    if (tipo === 'compra') {
+      // Ahora la compra se maneja directamente en el formulario integrado, no hacer nada
+      return;
+    }
     if (!this.usuario) {
       this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
         duration: 3000
       });
       return;
     }
-
     const dialogRef = this.dialog.open(TransaccionDialogComponent, {
       width: '400px',
       data: {
@@ -246,7 +253,6 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
         balanceUsuario: this.usuario.balance
       }
     });
-
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.realizarTransaccion(activo.id, tipo, result.cantidad);
@@ -254,7 +260,42 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     });
   }
 
+  cambiarModoCompra(esPorCantidad: boolean): void {
+    this.modoCantidad = esPorCantidad;
+    if (esPorCantidad) {
+      this.calcularMontoTotal();
+    } else {
+      this.calcularCantidad();
+    }
+  }
+
+  calcularMontoTotal(): void {
+    if (this.activo?.precio && this.cantidadCompra) {
+      this.montoCompra = this.cantidadCompra * this.activo.precio;
+      this.maxCantidadPosible = this.usuario ? Math.floor(this.usuario.balance / this.activo.precio * 100000000) / 100000000 : 0;
+    }
+  }
+
+  calcularCantidad(): void {
+    if (this.activo?.precio && this.montoCompra) {
+      this.cantidadCompra = Math.floor(this.montoCompra / this.activo.precio * 100000000) / 100000000;
+    }
+  }
+
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
+    if (!this.activo?.precio) {
+      this.snackBar.open('Error: Precio del activo no disponible', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    if (tipo === 'compra') {
+      const montoTotal = cantidad * this.activo.precio;
+      if (montoTotal > (this.usuario?.balance || 0)) {
+        this.snackBar.open('Error: Saldo insuficiente', 'Cerrar', { duration: 3000 });
+        return;
+      }
+    }
+
     this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
       .subscribe({
         next: () => {

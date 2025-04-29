@@ -34,6 +34,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   montoCompra: number = 0;
   modoCantidad: boolean = true;
   maxCantidadPosible: number = 0;
+  procesando: boolean = false;
 
   constructor(
     private route: ActivatedRoute,

@@ -60,30 +60,62 @@
           </div>
         </div>
 
-        <div class="acciones-card card">
-          <div class="card-header">
-            <h2 class="card-title">Realizar Transacción</h2>
+        <div class="acciones-card card shadow-xl rounded-xl overflow-hidden border-0 transition-all duration-300 hover:shadow-2xl">
+          <div class="card-header bg-gradient-to-r from-blue-600 to-blue-700 p-5 text-white">
+            <h2 class="card-title text-2xl font-bold flex items-center gap-2">
+              <i class="bi bi-currency-exchange"></i>
+              Realizar Transacción
+            </h2>
           </div>
-          <div class="card-content">
-            <p class="balance-info">Balance disponible: {{ formatearDinero(usuario.balance || 0) }}</p>
-            <div class="modo-compra-toggle">
-              <button [class.active]="modoCantidad" (click)="cambiarModoCompra(true)" class="toggle-button">Por Cantidad</button>
-              <button [class.active]="!modoCantidad" (click)="cambiarModoCompra(false)" class="toggle-button">Por Monto</button>
+          <div class="card-content p-6 bg-white">
+            <div class="balance-info mb-6 p-4 bg-blue-50 rounded-xl flex items-center gap-3 border border-blue-100">
+              <i class="bi bi-wallet2 text-blue-600 text-xl"></i>
+              <div>
+                <p class="text-sm text-blue-500 font-medium">Balance disponible</p>
+                <p class="text-2xl font-bold text-blue-700">{{ formatearDinero(usuario.balance || 0) }}</p>
+              </div>
             </div>
-            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, 'compra', cantidadCompra)" class="form-compra">
-              <div class="form-group" *ngIf="modoCantidad">
-                <label for="cantidadCompra">Cantidad de activos:</label>
-                <input type="number" 
-                       id="cantidadCompra" 
-                       name="cantidadCompra" 
-                       [(ngModel)]="cantidadCompra" 
-                       (ngModelChange)="calcularMontoTotal()"
-                       min="0.00000001" 
-                       step="0.00000001"
-                       required 
-                       class="input-cantidad" 
-                       [max]="maxCantidadPosible">
-                <p class="calculo-info" *ngIf="cantidadCompra && activo?.precio">
+            <div class="modo-compra-toggle flex rounded-xl overflow-hidden mb-8 border border-gray-200 shadow-sm">
+              <button 
+                [class.active]="modoCantidad" 
+                (click)="cambiarModoCompra(true)" 
+                class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium"
+                [class.bg-blue-600]="modoCantidad"
+                [class.text-white]="modoCantidad"
+                [class.bg-gray-50]="!modoCantidad"
+                [class.text-gray-700]="!modoCantidad">
+                Por Cantidad
+              </button>
+              <button 
+                [class.active]="!modoCantidad" 
+                (click)="cambiarModoCompra(false)" 
+                class="toggle-button flex-1 py-2 px-4 transition-colors duration-200"
+                [class.bg-blue-500]="!modoCantidad"
+                [class.text-white]="!modoCantidad"
+                [class.bg-white]="modoCantidad"
+                [class.text-gray-700]="modoCantidad">
+                Por Monto
+              </button>
+            </div>
+            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, 'compra', cantidadCompra)" class="form-compra space-y-4">
+              <div class="form-group mb-6" *ngIf="modoCantidad">
+                <label for="cantidadCompra" class="block text-sm font-medium text-gray-600 mb-2">Cantidad de activos</label>
+                <div class="relative">
+                  <input 
+                    type="number" 
+                    id="cantidadCompra" 
+                    name="cantidadCompra"
+                    [(ngModel)]="cantidadCompra" 
+                    (ngModelChange)="calcularMontoTotal()"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                    min="0.00000001" 
+                    step="0.00000001"
+                    required
+                    [max]="maxCantidadPosible"
+                    placeholder="0.00">
+                  <span class="absolute right-3 top-3 text-gray-400">{{activo?.simbolo ?? ''}}</span>
+                </div>
+                <p class="mt-1 text-sm text-gray-500" *ngIf="cantidadCompra && activo?.precio">
                   Monto total: {{ formatearDinero(cantidadCompra * (activo?.precio ?? 0)) }}
                 </p>
               </div>
@@ -103,10 +135,14 @@
                   Cantidad de activos: {{ cantidadCompra | number:'1.8-8' }}
                 </p>
               </div>
-              <button class="button primary" 
-                      type="submit" 
-                      [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))">
-                <span class="icon">🛒</span> Confirmar Compra
+              <button 
+                type="submit" 
+                class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))"
+                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))">
+                <i class="bi bi-check-circle" *ngIf="!procesando"></i>
+                <i class="bi bi-arrow-repeat animate-spin" *ngIf="procesando"></i>
+                {{ procesando ? 'Procesando transacción...' : 'Confirmar Compra' }}
               </button>
             </form>
             <button class="button warn" (click)="abrirDialogoTransaccion(activo, 'venta')" class="accion-button">

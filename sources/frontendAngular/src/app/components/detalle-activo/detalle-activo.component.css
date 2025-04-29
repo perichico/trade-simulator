@@ -48,7 +48,7 @@ body.dark-mode .detalle-container {
 
 body.dark-mode .detalle-header h1,
 body.dark-mode .detalle-header .simbolo-activo {
-  color: #fff !important;
+  color: #111827 !important;
 }
 
 .detalle-header h1 {
@@ -80,7 +80,7 @@ body.dark-mode .precio-container {
 }
 
 body.dark-mode .precio-actual {
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .variacion {
@@ -166,22 +166,30 @@ body.dark-mode .info-item {
 
 .info-label {
   font-weight: 600;
-  color: #4b5563;
+  color: #1f2937;
   font-size: 1.05rem;
 }
 
+body:not(.dark-mode) .info-label {
+  color: #000000;
+}
+
 body.dark-mode .info-label {
-  color: #ffffff;
+  color: #000000;
 }
 
 .info-value {
   font-weight: 600;
   font-size: 1.05rem;
-  color: #1f2937;
+  color: #111827;
+}
+
+body:not(.dark-mode) .info-value {
+  color: #000000;
 }
 
 body.dark-mode .info-value {
-  color: #ffffff;
+  color: #000000;
 }
 
 .tendencia-icon {

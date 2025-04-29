@@ -1,23 +1,23 @@
 <div class="card border-0 shadow-sm">
-  <div class="card-header bg-primary text-white">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
     <h2 class="mb-0 fs-5">{{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}</h2>
+    <span class="badge bg-light text-dark">{{ data.activo.simbolo }}</span>
   </div>
 
   <div class="card-body">
-    <div class="info-activo mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <span class="badge bg-secondary">{{ data.activo.simbolo }}</span>
-        <span class="badge bg-success">{{ formatearDinero(data.activo.precio) }}</span>
+    <div class="info-activo mb-4 p-3 bg-light rounded">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted">Precio actual:</span>
+        <span class="fw-bold">{{ formatearDinero(data.activo.precio) }}</span>
       </div>
-      <div class="alert alert-info" *ngIf="data.tipo === 'compra'">
+      <div class="alert alert-info d-flex align-items-center gap-2" *ngIf="data.tipo === 'compra'">
         <i class="bi bi-wallet2"></i>
-        Balance disponible: {{ formatearDinero(data.balanceUsuario) }}
+        <span>Balance disponible: <strong>{{ formatearDinero(data.balanceUsuario) }}</strong></span>
       </div>
     </div>
 
     <form [formGroup]="transaccionForm" class="transaccion-form">
-      <div class="form-group mb-4">
-        <label for="cantidad" class="form-label">Cantidad</label>
+      <div class="form-floating mb-4">
         <input 
           id="cantidad"
           type="number" 
@@ -25,7 +25,9 @@
           [class.is-invalid]="transaccionForm.get('cantidad')?.invalid && transaccionForm.get('cantidad')?.touched"
           formControlName="cantidad" 
           min="1" 
-          step="1">
+          step="1"
+          placeholder=" ">
+        <label for="cantidad">Cantidad</label>
         <div class="invalid-feedback">
           <span *ngIf="transaccionForm.get('cantidad')?.hasError('required')">La cantidad es obligatoria</span>
           <span *ngIf="transaccionForm.get('cantidad')?.hasError('min')">La cantidad debe ser mayor a 0</span>

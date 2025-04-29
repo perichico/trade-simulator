@@ -16,10 +16,6 @@
       <h1>{{ activo?.nombre ?? 'N/A' }} ({{ activo?.simbolo ?? 'N/A' }})</h1>
       <div class="precio-container">
         <span class="precio-actual">{{ formatearDinero(activo?.precio ?? 0) }}</span>
-        <span class="variacion" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)"></span>
-        <span class="material-icons tendencia-icon">{{ obtenerIconoTendencia(activo?.tendencia ?? 'estable') }}
-          {{ (activo?.variacion ?? 0) > 0 ? '+' : '' }}{{ activo?.variacion ?? 0 }}%
-        </span>
       </div>
     </div>
 
@@ -81,9 +77,8 @@
                 (click)="cambiarModoCompra(true)" 
                 class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium"
                 [class.bg-blue-600]="modoCantidad"
-                [class.text-white]="modoCantidad"
-                [class.bg-gray-50]="!modoCantidad"
-                [class.text-gray-700]="!modoCantidad">
+                [class.text-black]="true"
+                [class.bg-gray-50]="!modoCantidad">
                 Por Cantidad
               </button>
               <button 
@@ -91,9 +86,8 @@
                 (click)="cambiarModoCompra(false)" 
                 class="toggle-button flex-1 py-2 px-4 transition-colors duration-200"
                 [class.bg-blue-500]="!modoCantidad"
-                [class.text-white]="!modoCantidad"
-                [class.bg-white]="modoCantidad"
-                [class.text-gray-700]="modoCantidad">
+                [class.text-black]="true"
+                [class.bg-white]="modoCantidad">
                 Por Monto
               </button>
             </div>
@@ -137,7 +131,7 @@
               </div>
               <button 
                 type="submit" 
-                class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-black font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
                 [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))"
                 [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))">
                 <i class="bi bi-check-circle" *ngIf="!procesando"></i>

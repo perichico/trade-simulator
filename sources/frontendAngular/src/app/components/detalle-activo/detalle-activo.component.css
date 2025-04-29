@@ -51,6 +51,14 @@ body.dark-mode .detalle-header .simbolo-activo {
   color: #111827 !important;
 }
 
+.card-title {
+  color: #000000;
+}
+
+body.dark-mode .card-title {
+  color: #ffffff;
+}
+
 .detalle-header h1 {
   margin: 0;
   font-size: 28px;

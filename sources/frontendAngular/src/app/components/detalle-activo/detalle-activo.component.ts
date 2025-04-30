@@ -284,6 +284,19 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
+    // Verificar que el ID del activo sea válido
+    if (!activoId || activoId <= 0) {
+      this.snackBar.open('Error: ID del activo no válido', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    // Verificar que el activo actual coincida con el ID proporcionado
+    if (this.activo && this.activo.id !== activoId) {
+      console.warn(`ID de activo en transacción (${activoId}) no coincide con activo actual (${this.activo.id})`);
+      // Usar el ID del activo actual para asegurar consistencia
+      activoId = this.activo.id;
+    }
+
     if (!this.activo?.precio) {
       this.snackBar.open('Error: Precio del activo no disponible', 'Cerrar', { duration: 3000 });
       return;
@@ -297,22 +310,31 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       }
     }
 
+    this.procesando = true;
+    console.log(`Enviando transacción: Activo ID=${activoId}, Tipo=${tipo}, Cantidad=${cantidad}`);
+    
     this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
       .subscribe({
         next: () => {
+          this.procesando = false;
           this.snackBar.open(
             `Transacción de ${tipo} realizada con éxito`,
             'Cerrar',
             { duration: 3000 }
           );
           this.authService.verificarSesion();
+          // Limpiar el formulario después de una transacción exitosa
+          this.cantidadCompra = 0;
+          this.montoCompra = 0;
         },
         error: (error) => {
+          this.procesando = false;
           this.snackBar.open(
             `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`,
             'Cerrar',
             { duration: 5000 }
           );
+          console.error('Error en transacción:', error);
         }
       });
   }

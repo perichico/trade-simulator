@@ -18,6 +18,7 @@ exports.crearTransaccion = async (req, res) => {
     try {
       // Obtener los datos del formulario
       const { activoId, tipo, cantidad } = req.body;
+      console.log(activoId, tipo, cantidad); // Agrega esta línea para verificar los valores recibidos en el consol
 
       // Validar los datos del formulario
       if (!activoId || !tipo || !cantidad) {

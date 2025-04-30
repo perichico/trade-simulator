@@ -1,10 +1,10 @@
 @echo off
 echo Starting Backend Server...
-cd c:\Users\perif\Documents\GitHub\trade-simulator\sources\servidorNode
+cd sources\servidorNode
 start cmd /k "node --watch app.js"
 
 echo Starting Angular Frontend...
-cd c:\Users\perif\Documents\GitHub\trade-simulator\sources\frontendAngular
+cd sources\frontendAngular
 start cmd /k "ng serve"
 
 echo Servers are starting...

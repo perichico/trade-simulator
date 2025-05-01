@@ -4,7 +4,7 @@ cd sources\servidorNode
 start cmd /k "node --watch app.js"
 
 echo Starting Angular Frontend...
-cd sources\frontendAngular
+cd ..\frontendAngular
 start cmd /k "ng serve"
 
 echo Servers are starting...

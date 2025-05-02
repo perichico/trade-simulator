@@ -5,9 +5,18 @@ exports.obtenerTransacciones = async (req, res) => {
   try {
     const transacciones = await Transaccion.findAll({
       include: [Usuario, Activo],
+      order: [["fecha", "DESC"]]
     });
-    res.json(transacciones);
+
+    // Transformar los datos para incluir el valorTotal
+    const transaccionesConValor = transacciones.map(transaccion => ({
+      ...transaccion.toJSON(),
+      valorTotal: transaccion.precio * Math.abs(transaccion.cantidad)
+    }));
+
+    res.status(200).json(transaccionesConValor);
   } catch (error) {
+    console.error('Error al obtener las transacciones:', error);
     res.status(500).json({ error: "Error al obtener las transacciones" });
   }
 };
@@ -18,11 +27,18 @@ exports.crearTransaccion = async (req, res) => {
     try {
       // Obtener los datos del formulario
       const { activoId, tipo, cantidad } = req.body;
-      console.log(activoId, tipo, cantidad); // Agrega esta línea para verificar los valores recibidos en el consol
 
-      // Validar los datos del formulario
+      // Validaciones iniciales
       if (!activoId || !tipo || !cantidad) {
         return res.status(400).json({ error: 'Datos incompletos para la transacción' });
+      }
+
+      if (!['compra', 'venta'].includes(tipo.toLowerCase())) {
+        return res.status(400).json({ error: 'Tipo de transacción inválido. Debe ser "compra" o "venta"' });
+      }
+
+      if (cantidad <= 0) {
+        return res.status(400).json({ error: 'La cantidad debe ser mayor a 0' });
       }
 
       // Obtener el usuarioId desde la sesión
@@ -87,8 +103,8 @@ exports.crearTransaccion = async (req, res) => {
   
         // Registrar transacción de compra
         const transaccion = await Transaccion.create({
-          usuarioId,
-          activoId,
+          usuario_id: usuarioId,
+          activo_id: activoId,
           tipo,
           cantidad,
           precio: precioEnTransaccion,
@@ -128,8 +144,8 @@ exports.crearTransaccion = async (req, res) => {
   
         // Registrar transacción de venta
         const transaccion = await Transaccion.create({
-          usuarioId,
-          activoId,
+          usuario_id: usuarioId,
+          activo_id: activoId,
           tipo,
           cantidad: -cantidad,
           precio: precioEnTransaccion,
@@ -171,14 +187,71 @@ exports.crearTransaccion = async (req, res) => {
 // Obtener transacciones de un usuario
 exports.obtenerTransaccionesPorUsuario = async (req, res) => {
   try {
+    // Verificar si el usuario está autenticado
+    if (!req.session.usuario) {
+      return res.status(401).json({ error: "Usuario no autenticado" });
+    }
+
+    const usuarioId = req.session.usuario.id;
+
+    // Verificar si el usuario existe
+    const usuario = await Usuario.findByPk(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
     const transacciones = await Transaccion.findAll({
-      where: { usuarioId: req.params.usuarioId },
-      include: [Activo],
+      where: { usuario_id: usuarioId },
+      include: [{
+        model: Activo,
+        attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+      }],
+      order: [["fecha", "DESC"]]
     });
-    res.json(transacciones);
+
+    // Importar el servicio de precios para obtener precios actualizados
+    const PreciosService = require('../services/preciosService');
+    const preciosService = new PreciosService();
+
+    // Transformar los datos y calcular valores actualizados
+    const transaccionesActualizadas = await Promise.all(transacciones.map(async (transaccion) => {
+      const transaccionJSON = transaccion.toJSON();
+      const valorTotal = transaccion.precio * Math.abs(transaccion.cantidad);
+
+      try {
+        // Obtener precio actual del activo
+        const precioActual = await preciosService.obtenerPrecioActual(transaccion.activo.simbolo);
+        const precioFinal = precioActual || transaccion.activo.ultimo_precio;
+
+        // Calcular rendimiento
+        const rendimiento = (precioFinal - transaccion.precio) * Math.abs(transaccion.cantidad);
+        const rendimientoPorcentual = ((precioFinal - transaccion.precio) / transaccion.precio) * 100;
+
+        return {
+          ...transaccionJSON,
+          valorTotal,
+          precioActual: precioFinal,
+          rendimiento,
+          rendimientoPorcentual
+        };
+      } catch (error) {
+        console.error(`Error al obtener precio actual para ${transaccion.activo.simbolo}:`, error);
+        return {
+          ...transaccionJSON,
+          valorTotal,
+          precioActual: transaccion.activo.ultimo_precio,
+          rendimiento: 0,
+          rendimientoPorcentual: 0
+        };
+      }
+    }));
+
+    res.status(200).json(transaccionesActualizadas);
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Error al obtener las transacciones del usuario" });
+    console.error('Error al obtener las transacciones del usuario:', error);
+    res.status(500).json({ 
+      error: "Error al obtener las transacciones del usuario",
+      detalles: error.message
+    });
   }
 };

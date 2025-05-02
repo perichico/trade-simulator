@@ -7,7 +7,7 @@ module.exports = (sequelize) => {
             autoIncrement: true, 
             primaryKey: true 
         },
-        usuarioId: { 
+        usuario_id: { 
             type: DataTypes.INTEGER, 
             allowNull: false, 
             references: {
@@ -16,7 +16,7 @@ module.exports = (sequelize) => {
             },
             onDelete: 'CASCADE' // Si un usuario se elimina, las transacciones asociadas también se eliminan
         },
-        activoId: { 
+        activo_id: { 
             type: DataTypes.INTEGER, 
             allowNull: false, 
             references: {

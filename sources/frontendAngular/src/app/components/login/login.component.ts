@@ -22,10 +22,12 @@ export class LoginComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Redirigir si ya está autenticado
-    if (this.authService.estaAutenticado()) {
-      this.router.navigate(['/dashboard']);
-    }
+    // Verificar sesión y redirigir si ya está autenticado
+    this.authService.verificarSesion().subscribe(estaAutenticado => {
+      if (estaAutenticado) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
 
     // Inicializar formulario
     this.loginForm = this.fb.group({
@@ -40,8 +42,9 @@ export class LoginComponent implements OnInit {
       const { email, password } = this.loginForm.value;
 
       this.authService.login(email, password).subscribe({
-        next: () => {
+        next: (respuesta) => {
           this.cargando = false;
+          this.snackBar.open('Inicio de sesión exitoso', 'Cerrar', { duration: 3000 });
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
@@ -54,5 +57,5 @@ export class LoginComponent implements OnInit {
         }
       });
     }
+    }
   }
-}

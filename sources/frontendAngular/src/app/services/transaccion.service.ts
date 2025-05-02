@@ -3,18 +3,19 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Transaccion } from '../models/transaccion.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TransaccionService {
-  private apiUrl = 'http://localhost:3000'; // URL del backend
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) { }
 
   // Obtener todas las transacciones del usuario actual
   obtenerTransaccionesPorUsuario(usuarioId: number): Observable<Transaccion[]> {
-    return this.http.post<Transaccion[]>(`${this.apiUrl}/transacciones/${usuarioId}`, {})
+    return this.http.get<Transaccion[]>(`${this.apiUrl}/transacciones/${usuarioId}`, { withCredentials: true })
       .pipe(
         map(transacciones => {
           // Añadir propiedades calculadas
@@ -33,11 +34,11 @@ export class TransaccionService {
 
   // Crear una nueva transacción (compra o venta)
   crearTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): Observable<Transaccion> {
-    return this.http.post<Transaccion>(`${this.apiUrl}/creartransaccion`, {
+    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/creartransaccion`, {
       activoId,
       tipo,
       cantidad
-    }).pipe(
+    }, { withCredentials: true }).pipe(
       catchError(error => {
         console.error('Error al crear transacción', error);
         let mensajeError = 'Error desconocido';

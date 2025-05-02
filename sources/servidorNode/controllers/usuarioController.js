@@ -3,14 +3,17 @@ const { sequelize, Usuario, Activo, Transaccion } = require("../models/index");
 
 // Verificar estado de autenticación
 exports.verificarAutenticacion = (req, res) => {
-    if (req.session.usuario) {
+    if (req.session && req.session.usuario) {
+        // Aseguramos que la respuesta siempre tenga el mismo formato
         res.status(200).json({
             autenticado: true,
             usuario: req.session.usuario
         });
     } else {
+        // Si no hay sesión, devolvemos autenticado: false
         res.status(200).json({
-            autenticado: false
+            autenticado: false,
+            mensaje: "No hay sesión activa"
         });
     }
 };
@@ -58,6 +61,11 @@ exports.logout = (req, res) => {
 // Obtener datos del dashboard 
 exports.obtenerDatosDashboard = async (req, res) => {
   try {
+    // Verificar si el usuario está autenticado
+    if (!req.session || !req.session.usuario) {
+      return res.status(401).json({ error: "Usuario no autenticado" });
+    }
+    
     const usuarioId = req.session.usuario.id;
 
     // Obtener usuario
@@ -70,6 +78,10 @@ exports.obtenerDatosDashboard = async (req, res) => {
       order: [["fecha", "DESC"]],
     });
 
+    // Importar el servicio de precios
+    const PreciosService = require('../services/preciosService');
+    const preciosService = new PreciosService();
+
     // Agrupar activos sumando la cantidad total por activo
     const activosAgrupados = {};
     transacciones.forEach((transaccion) => {
@@ -80,16 +92,38 @@ exports.obtenerDatosDashboard = async (req, res) => {
           id: activoId,
           nombre: activo.nombre,
           simbolo: activo.simbolo,
-          precio: activo.precio,
+          precio: activo.ultimo_precio,
           cantidadTotal: 0,
+          valorTotal: 0
         };
       }
       
       activosAgrupados[activoId].cantidadTotal += cantidad;
     });
 
-    // Convertir objeto en array
-    const activos = Object.values(activosAgrupados).filter(a => a.cantidadTotal > 0);
+    // Actualizar precios y calcular valores totales
+    for (const activoId in activosAgrupados) {
+      const activo = activosAgrupados[activoId];
+      if (activo.cantidadTotal > 0) {
+        try {
+          const precioActual = await preciosService.obtenerPrecioActual(activo.simbolo);
+          if (precioActual) {
+            activo.precio = precioActual;
+            activo.valorTotal = precioActual * activo.cantidadTotal;
+          }
+        } catch (error) {
+          console.error(`Error al obtener precio para ${activo.simbolo}:`, error);
+        }
+      }
+    }
+
+    // Convertir objeto en array y filtrar activos con cantidad > 0
+    const activos = Object.values(activosAgrupados)
+      .filter(a => a.cantidadTotal > 0)
+      .map(a => ({
+        ...a,
+        valorTotal: a.valorTotal || a.precio * a.cantidadTotal // Fallback al precio existente si no se pudo actualizar
+      }));
 
     res.status(200).json({
       usuario,

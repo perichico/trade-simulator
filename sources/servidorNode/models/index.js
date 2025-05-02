@@ -56,10 +56,10 @@ ActivoModel.hasMany(AlertaModel, { foreignKey: 'activo_id', constraints: false }
 AlertaModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
 // Relaciones de Transacciones
-UsuarioModel.hasMany(TransaccionModel, { foreignKey: 'usuarioId', constraints: false });
-TransaccionModel.belongsTo(UsuarioModel, { foreignKey: 'usuarioId', constraints: false });
-ActivoModel.hasMany(TransaccionModel, { foreignKey: 'activoId', constraints: false });
-TransaccionModel.belongsTo(ActivoModel, { foreignKey: 'activoId', constraints: false });
+UsuarioModel.hasMany(TransaccionModel, { foreignKey: 'usuario_id', constraints: false });
+TransaccionModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints: false });
+ActivoModel.hasMany(TransaccionModel, { foreignKey: 'activo_id', constraints: false });
+TransaccionModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
 module.exports = {
     sequelize,

@@ -27,9 +27,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   usuario: Usuario | null = null;
   portafolio$: Observable<Portafolio> | null = null;
+  portafolios: Portafolio[] = [];
+  portafolioSeleccionado: Portafolio | null = null;
   actualizacionSubscription!: Subscription;
   now: Date = new Date();
   historialPatrimonio: PatrimonioHistorico[] = [];
+  
+  // Variables para el formulario de nuevo portafolio
+  nuevoPortafolioNombre: string = '';
+  nuevoPortafolioDescripcion: string = '';
   
   constructor(
     private authService: AuthService,
@@ -71,12 +77,77 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     return valor >= 0 ? 'positive-value' : 'negative-value';
   }
 
-  // Método para cargar y actualizar el portafolio
+  // Método para cargar todos los portafolios del usuario
   cargarPortafolio(usuarioId: number): void {
+    // Primero cargamos la lista de portafolios
+    this.portafolioService.obtenerPortafolios(usuarioId).subscribe(portafolios => {
+      this.portafolios = portafolios;
+      
+      // Si no hay portafolios, creamos uno por defecto
+      if (portafolios.length === 0) {
+        this.crearPortafolioPorDefecto(usuarioId);
+      } else {
+        // Seleccionamos el primer portafolio o el último seleccionado
+        const portafolioIdGuardado = localStorage.getItem(`usuario_${usuarioId}_portafolio`);
+        const portafolioId = portafolioIdGuardado ? parseInt(portafolioIdGuardado) : portafolios[0].id;
+        
+        if (portafolioId) {
+          this.seleccionarPortafolio(portafolioId);
+        } else {
+          this.seleccionarPortafolio(portafolios[0].id!);
+        }
+      }
+    });
+  }
+  
+  // Método para crear un portafolio por defecto si el usuario no tiene ninguno
+  crearPortafolioPorDefecto(usuarioId: number): void {
+    this.portafolioService.crearPortafolio(usuarioId, 'Portafolio Principal', 'Mi portafolio principal de inversiones')
+      .subscribe(portafolio => {
+        this.portafolios = [portafolio];
+        this.seleccionarPortafolio(portafolio.id!);
+      });
+  }
+  
+  // Método para seleccionar un portafolio específico
+  seleccionarPortafolio(portafolioId: number): void {
+    if (!this.usuario) return;
+    
+    // Guardar la selección en localStorage
+    localStorage.setItem(`usuario_${this.usuario.id}_portafolio`, portafolioId.toString());
+    
+    // Actualizar el portafolio seleccionado
     this.portafolio$ = interval(10000).pipe(
       startWith(0),
-      switchMap(() => this.portafolioService.obtenerPortafolio(usuarioId))
+      switchMap(() => this.portafolioService.obtenerPortafolioPorId(portafolioId))
     );
+    
+    // Suscribirse al portafolio actual
+    this.portafolioService.seleccionarPortafolio(portafolioId).subscribe(portafolio => {
+      this.portafolioSeleccionado = portafolio;
+    });
+  }
+  
+  // Método para crear un nuevo portafolio
+  crearNuevoPortafolio(nombre: string, descripcion?: string): void {
+    if (!this.usuario) return;
+    
+    this.portafolioService.crearPortafolio(this.usuario.id, nombre, descripcion)
+      .subscribe(nuevoPortafolio => {
+        this.portafolios.push(nuevoPortafolio);
+        this.seleccionarPortafolio(nuevoPortafolio.id!);
+        this.snackBar.open(`Portafolio "${nombre}" creado con éxito`, 'Cerrar', {
+          duration: 3000
+        });
+        // Limpiar el formulario después de crear el portafolio
+        this.resetearFormularioPortafolio();
+      });
+  }
+  
+  // Método para resetear el formulario de nuevo portafolio
+  resetearFormularioPortafolio(): void {
+    this.nuevoPortafolioNombre = '';
+    this.nuevoPortafolioDescripcion = '';
   }
 
   // Método para cerrar sesión
@@ -88,12 +159,24 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para convertir ActivoEnPortafolio a Activo
   private convertirAActivo(activoPortafolio: any): Activo {
+    if (!activoPortafolio || !activoPortafolio.activoId) {
+      console.warn('Intento de convertir un activo inválido:', activoPortafolio);
+      // Crear un activo con valores predeterminados para evitar errores
+      return {
+        id: 0,
+        nombre: 'Activo inválido',
+        simbolo: 'N/A',
+        ultimo_precio: 0,
+        tipo: 'accion'
+      };
+    }
+    
     return {
       id: activoPortafolio.activoId,
-      nombre: activoPortafolio.nombre,
-      simbolo: activoPortafolio.simbolo,
-      ultimo_precio: activoPortafolio.precioActual,
-      tipo: activoPortafolio.tipo
+      nombre: activoPortafolio.nombre || 'Activo sin nombre',
+      simbolo: activoPortafolio.simbolo || 'N/A',
+      ultimo_precio: activoPortafolio.precioActual || 0,
+      tipo: activoPortafolio.tipo || 'accion'
     };
   }
 
@@ -101,6 +184,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   abrirDialogoTransaccion(activoPortafolio: any, tipo: 'compra' | 'venta'): void {
     if (!this.usuario) {
       this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
+
+    // Validar que el activo tenga un ID válido
+    if (!activoPortafolio || !activoPortafolio.activoId) {
+      this.snackBar.open('Símbolo o ID de activo no proporcionado', 'Cerrar', {
         duration: 3000
       });
       return;
@@ -127,6 +218,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
   }
+  
 
   // Método para realizar la transacción
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {

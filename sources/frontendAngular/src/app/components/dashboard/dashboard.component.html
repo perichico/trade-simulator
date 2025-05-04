@@ -19,6 +19,38 @@
       </p>
     </div>
   </div>
+  
+  <!-- Selector de Portafolios -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-briefcase text-primary me-2 fs-4"></i>
+              <h5 class="mb-0">Mis Portafolios</h5>
+            </div>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nuevoPortafolioModal">
+              <i class="bi bi-plus-circle me-1"></i>Nuevo Portafolio
+            </button>
+          </div>
+          
+          <div class="mt-3">
+            <div class="btn-group w-100" role="group" aria-label="Portafolios">
+              <ng-container *ngFor="let portafolio of portafolios">
+                <button type="button" class="btn" 
+                  [class.btn-primary]="portafolioSeleccionado?.id === portafolio.id"
+                  [class.btn-outline-primary]="portafolioSeleccionado?.id !== portafolio.id"
+                  (click)="seleccionarPortafolio(portafolio.id!)">
+                  {{ portafolio.nombre }}
+                </button>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="row g-4 mb-4" *ngIf="portafolio$ | async as portafolio">
     <div class="col-12 mb-4">
@@ -102,8 +134,8 @@
                    <tr *ngFor="let activo of portafolio.activos">
                      <td>
                        <div class="d-flex align-items-center">
-                         <strong class="me-2">{{activo.simbolo}}</strong>
-                         <small class="text-muted">{{activo.nombre}}</small>
+                         <strong class="me-2">{{activo.simbolo || 'N/A'}}</strong>
+                         <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
                        </div>
                      </td>
                      <td>{{activo.cantidad}}</td>
@@ -145,6 +177,34 @@
          </div>
        </div>
      </div>
+
+<!-- Modal para crear nuevo portafolio -->
+<div class="modal fade" id="nuevoPortafolioModal" tabindex="-1" aria-labelledby="nuevoPortafolioModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nuevoPortafolioModalLabel">Crear Nuevo Portafolio</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <form #nuevoPortafolioForm="ngForm">
+          <div class="mb-3">
+            <label for="nombrePortafolio" class="form-label">Nombre del Portafolio</label>
+            <input type="text" class="form-control" id="nombrePortafolio" name="nombrePortafolio" [(ngModel)]="nuevoPortafolioNombre" required>
+          </div>
+          <div class="mb-3">
+            <label for="descripcionPortafolio" class="form-label">Descripción (opcional)</label>
+            <textarea class="form-control" id="descripcionPortafolio" name="descripcionPortafolio" [(ngModel)]="nuevoPortafolioDescripcion" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="!nuevoPortafolioNombre" (click)="crearNuevoPortafolio(nuevoPortafolioNombre, nuevoPortafolioDescripcion)" data-bs-dismiss="modal">Crear Portafolio</button>
+      </div>
+    </div>
+  </div>
+</div>
 </div>
 
 <div class="login-required" *ngIf="!usuario">

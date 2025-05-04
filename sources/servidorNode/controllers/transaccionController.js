@@ -1,4 +1,5 @@
 const { sequelize, Usuario, Activo, Transaccion } = require("../models/index");
+const portafolioController = require('./portafolioController');
 
 // Obtener todas las transacciones
 exports.obtenerTransacciones = async (req, res) => {
@@ -110,6 +111,9 @@ exports.crearTransaccion = async (req, res) => {
           precio: precioEnTransaccion,
           fecha: new Date()
         }, { transaction });
+        
+        // Actualizar el portafolio del usuario
+        await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidad, transaction);
 
         await transaction.commit();
   
@@ -127,8 +131,8 @@ exports.crearTransaccion = async (req, res) => {
         // Verificar cuántos activos tiene el usuario
         const cantidadActivosUsuario = await Transaccion.sum("cantidad", {
           where: {
-            usuarioId,
-            activoId,
+            usuario_id: usuarioId,
+            activo_id: activoId,
           },
           transaction
         });
@@ -151,6 +155,9 @@ exports.crearTransaccion = async (req, res) => {
           precio: precioEnTransaccion,
           fecha: new Date()
         }, { transaction });
+        
+        // Actualizar el portafolio del usuario (con cantidad negativa para venta)
+        await portafolioController.actualizarPortafolio(usuarioId, activoId, -cantidad, transaction);
 
         await transaction.commit();
   

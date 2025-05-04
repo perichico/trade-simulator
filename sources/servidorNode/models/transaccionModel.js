@@ -36,6 +36,13 @@ module.exports = (sequelize) => {
         fecha: { 
             type: DataTypes.DATE, 
             allowNull: false // Nueva columna para la fecha de la transacción
+        },
+        tipo: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            validate: {
+                isIn: [['compra', 'venta']]
+            }
         }
     }, {
         tableName: "transacciones", // Nombre de la tabla

@@ -190,17 +190,16 @@
         <form #nuevoPortafolioForm="ngForm">
           <div class="mb-3">
             <label for="nombrePortafolio" class="form-label">Nombre del Portafolio</label>
-            <input type="text" class="form-control" id="nombrePortafolio" name="nombrePortafolio" [(ngModel)]="nuevoPortafolioNombre" required>
-          </div>
-          <div class="mb-3">
-            <label for="descripcionPortafolio" class="form-label">Descripción (opcional)</label>
-            <textarea class="form-control" id="descripcionPortafolio" name="descripcionPortafolio" [(ngModel)]="nuevoPortafolioDescripcion" rows="3"></textarea>
+            <input type="text" class="form-control" id="nombrePortafolio" name="nombrePortafolio" [(ngModel)]="nuevoPortafolioNombre" required minlength="3" maxlength="50" placeholder="Ingrese el nombre del portafolio">
+            <div class="form-text text-muted">
+              El nombre debe tener entre 3 y 50 caracteres
+            </div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!nuevoPortafolioNombre" (click)="crearNuevoPortafolio(nuevoPortafolioNombre, nuevoPortafolioDescripcion)" data-bs-dismiss="modal">Crear Portafolio</button>
+        <button type="button" class="btn btn-primary" [disabled]="!nuevoPortafolioNombre" (click)="crearNuevoPortafolio(nuevoPortafolioNombre)" data-bs-dismiss="modal">Crear Portafolio</button>
       </div>
     </div>
   </div>

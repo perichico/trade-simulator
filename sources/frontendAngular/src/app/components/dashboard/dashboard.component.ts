@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 import { PortafolioService } from '../../services/portafolio.service';
 import { PatrimonioService, PatrimonioHistorico } from '../../services/patrimonio.service';
 import { Chart, registerables } from 'chart.js';
+import * as bootstrap from 'bootstrap';
 
 Chart.register(...registerables);
 
@@ -35,7 +36,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   
   // Variables para el formulario de nuevo portafolio
   nuevoPortafolioNombre: string = '';
-  nuevoPortafolioDescripcion: string = '';
   
   constructor(
     private authService: AuthService,
@@ -56,6 +56,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       if (usuario) {
         this.cargarPortafolio(usuario.id);
         this.cargarHistorialPatrimonio(usuario.id);
+        
+        // Inicializar el modal de Bootstrap
+        const modalElement = document.getElementById('nuevoPortafolioModal');
+        if (modalElement) {
+          new bootstrap.Modal(modalElement);
+        }
       } else {
         this.router.navigate(['/login']);
       }
@@ -102,7 +108,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   
   // Método para crear un portafolio por defecto si el usuario no tiene ninguno
   crearPortafolioPorDefecto(usuarioId: number): void {
-    this.portafolioService.crearPortafolio(usuarioId, 'Portafolio Principal', 'Mi portafolio principal de inversiones')
+    this.portafolioService.crearPortafolio(usuarioId, 'Portafolio Principal')
       .subscribe(portafolio => {
         this.portafolios = [portafolio];
         this.seleccionarPortafolio(portafolio.id!);
@@ -129,10 +135,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   }
   
   // Método para crear un nuevo portafolio
-  crearNuevoPortafolio(nombre: string, descripcion?: string): void {
+  crearNuevoPortafolio(nombre: string): void {
     if (!this.usuario) return;
     
-    this.portafolioService.crearPortafolio(this.usuario.id, nombre, descripcion)
+    this.portafolioService.crearPortafolio(this.usuario.id, nombre)
       .subscribe(nuevoPortafolio => {
         this.portafolios.push(nuevoPortafolio);
         this.seleccionarPortafolio(nuevoPortafolio.id!);
@@ -147,7 +153,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   // Método para resetear el formulario de nuevo portafolio
   resetearFormularioPortafolio(): void {
     this.nuevoPortafolioNombre = '';
-    this.nuevoPortafolioDescripcion = '';
   }
 
   // Método para cerrar sesión

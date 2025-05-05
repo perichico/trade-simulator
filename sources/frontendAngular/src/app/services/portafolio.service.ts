@@ -48,11 +48,10 @@ export class PortafolioService {
   }
 
   // Crear un nuevo portafolio para el usuario
-  crearPortafolio(usuarioId: number, nombre: string, descripcion?: string): Observable<Portafolio> {
+  crearPortafolio(usuarioId: number, nombre: string): Observable<Portafolio> {
     return this.http.post<Portafolio>(`${this.apiUrl}/crear`, {
       usuarioId,
       nombre,
-      descripcion,
       fechaCreacion: new Date()
     }).pipe(
       catchError(error => {
@@ -128,7 +127,7 @@ export class PortafolioService {
           valorTotal: response.valorTotal || 0,
           rendimientoTotal,
           fechaCreacion: response.fechaCreacion ? new Date(response.fechaCreacion) : new Date(),
-          descripcion: response.descripcion || ''
+
         };
       }),
       catchError(error => {
@@ -141,7 +140,7 @@ export class PortafolioService {
           valorTotal: 0,
           rendimientoTotal: 0,
           fechaCreacion: new Date(),
-          descripcion: ''
+
         });
       })
     );

@@ -18,5 +18,4 @@ export interface Portafolio {
   valorTotal: number; // Suma del valor de todos los activos
   rendimientoTotal: number; // Suma de los rendimientos
   fechaCreacion?: Date; // Fecha de creación del portafolio
-  descripcion?: string; // Descripción opcional del portafolio
 }

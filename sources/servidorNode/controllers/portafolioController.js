@@ -288,7 +288,7 @@ exports.crearPortafolio = async (req, res) => {
         }
 
         const usuarioId = req.session.usuario.id;
-        const { nombre, descripcion } = req.body;
+        const { nombre } = req.body;
 
         if (!nombre) {
             return res.status(400).json({ error: "El nombre del portafolio es obligatorio" });
@@ -297,14 +297,12 @@ exports.crearPortafolio = async (req, res) => {
         // Crear el nuevo portafolio
         const nuevoPortafolio = await Portafolio.create({
             nombre,
-            descripcion,
             usuario_id: usuarioId
         });
 
         res.status(201).json({
             id: nuevoPortafolio.id,
             nombre: nuevoPortafolio.nombre,
-            descripcion: nuevoPortafolio.descripcion,
             fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
             valorTotal: 0,
             activos: []

@@ -52,8 +52,17 @@ export class PortafolioService {
     return this.http.post<Portafolio>(`${this.apiUrl}/crear`, {
       usuarioId,
       nombre,
-      fechaCreacion: new Date()
+      fechaCreacion: new Date(),
+      activos: [],
+      valorTotal: 10000,
+      rendimientoTotal: 0
     }).pipe(
+      map(portafolio => ({
+        ...portafolio,
+        activos: [],
+        valorTotal: 10000,
+        rendimientoTotal: 0
+      })),
       catchError(error => {
         console.error('Error al crear nuevo portafolio', error);
         throw error;

@@ -105,8 +105,9 @@ exports.obtenerPortafolio = async (req, res) => {
             console.log(`Transacciones del usuario: ${transaccionesUsuario.length}`);
             
             // Si hay transacciones pero no hay activos en el portafolio, ejecutar migración manual
-            if (transaccionesUsuario.length > 0) {
-                console.log('Ejecutando migración manual de transacciones a portafolio...');
+            // Solo para el portafolio principal, los nuevos portafolios deben empezar vacíos
+            if (transaccionesUsuario.length > 0 && portafolio.nombre === 'Portafolio Principal') {
+                console.log('Ejecutando migración manual de transacciones a portafolio principal...');
                 
                 // Agrupar transacciones por activo
                 const activosPorId = {};
@@ -300,12 +301,16 @@ exports.crearPortafolio = async (req, res) => {
             usuario_id: usuarioId
         });
 
+        // Guardar el ID del nuevo portafolio en la sesión del usuario
+        req.session.portafolioSeleccionado = nuevoPortafolio.id;
+
+        // Asignar un saldo inicial fijo de 10,000 para cada nuevo portafolio
         res.status(201).json({
             id: nuevoPortafolio.id,
             nombre: nuevoPortafolio.nombre,
             fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
-            valorTotal: 0,
-            activos: []
+            valorTotal: 10000, // Saldo inicial fijo de 10,000
+            activos: [] // Sin activos iniciales
         });
     } catch (error) {
         console.error('Error al crear nuevo portafolio:', error);
@@ -313,15 +318,53 @@ exports.crearPortafolio = async (req, res) => {
     }
 };
 
+// Seleccionar un portafolio como activo
+exports.seleccionarPortafolio = async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session.usuario) {
+            return res.status(401).json({ error: "Usuario no autenticado" });
+        }
+
+        const usuarioId = req.session.usuario.id;
+        const portafolioId = parseInt(req.params.id);
+
+        // Verificar que el portafolio exista y pertenezca al usuario
+        const portafolio = await Portafolio.findOne({
+            where: { 
+                id: portafolioId,
+                usuario_id: usuarioId 
+            }
+        });
+
+        if (!portafolio) {
+            return res.status(404).json({ error: "Portafolio no encontrado" });
+        }
+
+        // Guardar el ID del portafolio seleccionado en la sesión del usuario
+        req.session.portafolioSeleccionado = portafolioId;
+        console.log(`Usuario ${usuarioId} seleccionó el portafolio ${portafolioId}`);
+
+        res.status(200).json({
+            mensaje: "Portafolio seleccionado correctamente",
+            portafolioId
+        });
+    } catch (error) {
+        console.error('Error al seleccionar portafolio:', error);
+        res.status(500).json({ error: "Error al seleccionar el portafolio" });
+    }
+};
+
 // Actualizar el portafolio después de una transacción
 exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction, portafolioId = null) => {
     try {
-        console.log(`Actualizando portafolio - Usuario: ${usuarioId}, Activo: ${activoId}, Cantidad: ${cantidad}`);
+        console.log(`Actualizando portafolio - Usuario: ${usuarioId}, Activo: ${activoId}, Cantidad: ${cantidad}, PortafolioID: ${portafolioId}`);
         
-        // Si no se especifica un portafolio, usar el portafolio principal
+        // Si no se especifica un portafolio, usar el portafolio principal o el último seleccionado
         let portafolio;
         
         if (portafolioId) {
+            // Buscar el portafolio específico
             portafolio = await Portafolio.findOne({
                 where: { 
                     id: portafolioId,
@@ -333,8 +376,12 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
         
         // Si no se encontró el portafolio específico o no se proporcionó ID, usar el principal
         if (!portafolio) {
+            // Buscar el portafolio principal del usuario
             [portafolio] = await Portafolio.findOrCreate({
-                where: { usuario_id: usuarioId },
+                where: { 
+                    usuario_id: usuarioId,
+                    nombre: "Portafolio Principal"
+                },
                 defaults: {
                     nombre: "Portafolio Principal",
                     usuario_id: usuarioId,
@@ -342,7 +389,6 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
                 },
                 transaction
             });
-        }
 
         console.log(`Portafolio encontrado/creado: ${portafolio.id}`);
 
@@ -352,8 +398,9 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
                 portafolio_id: portafolio.id,
                 activo_id: activoId
             },
-            transaction
         });
+            transaction
+        };
 
         if (activoEnPortafolio) {
             // Actualizar la cantidad

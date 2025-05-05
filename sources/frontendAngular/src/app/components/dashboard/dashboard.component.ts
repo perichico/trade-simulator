@@ -140,9 +140,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     
     this.portafolioService.crearPortafolio(this.usuario.id, nombre)
       .subscribe(nuevoPortafolio => {
+        // Añadimos el nuevo portafolio a la lista sin modificar sus propiedades
+        // El servicio ya se encarga de inicializar correctamente los valores
         this.portafolios.push(nuevoPortafolio);
         this.seleccionarPortafolio(nuevoPortafolio.id!);
-        this.snackBar.open(`Portafolio "${nombre}" creado con éxito`, 'Cerrar', {
+        this.snackBar.open(`Portafolio "${nombre}" creado con éxito con un saldo inicial de 10.000€`, 'Cerrar', {
           duration: 3000
         });
         // Limpiar el formulario después de crear el portafolio

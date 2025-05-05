@@ -113,7 +113,9 @@ exports.crearTransaccion = async (req, res) => {
         }, { transaction });
         
         // Actualizar el portafolio del usuario
-        await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidad, transaction);
+        // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
+        const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
+        await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidad, transaction, portafolioSeleccionado);
 
         await transaction.commit();
   
@@ -157,7 +159,9 @@ exports.crearTransaccion = async (req, res) => {
         }, { transaction });
         
         // Actualizar el portafolio del usuario (con cantidad negativa para venta)
-        await portafolioController.actualizarPortafolio(usuarioId, activoId, -cantidad, transaction);
+        // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
+        const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
+        await portafolioController.actualizarPortafolio(usuarioId, activoId, -cantidad, transaction, portafolioSeleccionado);
 
         await transaction.commit();
   

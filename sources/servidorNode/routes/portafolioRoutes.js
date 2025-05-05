@@ -20,4 +20,7 @@ router.get("/:id", verificarAutenticacion, portafolioController.obtenerPortafoli
 // Crear un nuevo portafolio
 router.post("/crear", verificarAutenticacion, portafolioController.crearPortafolio);
 
+// Seleccionar un portafolio como activo
+router.post("/seleccionar/:id", verificarAutenticacion, portafolioController.seleccionarPortafolio);
+
 module.exports = router;

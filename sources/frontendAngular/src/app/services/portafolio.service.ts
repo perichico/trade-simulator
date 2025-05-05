@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { Portafolio, ActivoEnPortafolio } from '../models/portafolio.model';
 import { Transaccion } from '../models/transaccion.model';
 import { Activo } from '../models/activo.model';
@@ -52,15 +52,13 @@ export class PortafolioService {
     return this.http.post<Portafolio>(`${this.apiUrl}/crear`, {
       usuarioId,
       nombre,
-      fechaCreacion: new Date(),
-      activos: [],
-      valorTotal: 10000,
-      rendimientoTotal: 0
+      fechaCreacion: new Date()
+      // No enviamos activos ni valorTotal, estos se establecerán en el backend
     }).pipe(
       map(portafolio => ({
         ...portafolio,
-        activos: [],
-        valorTotal: 10000,
+        activos: [], // Aseguramos que no haya activos iniciales
+        valorTotal: portafolio.valorTotal || 10000, // Usamos el valor del backend o 10000 por defecto
         rendimientoTotal: 0
       })),
       catchError(error => {
@@ -73,9 +71,17 @@ export class PortafolioService {
   // Seleccionar un portafolio como activo
   seleccionarPortafolio(portafolioId: number): Observable<Portafolio> {
     this.portafolioSeleccionadoId = portafolioId;
-    return this.obtenerPortafolioPorId(portafolioId).pipe(
+    
+    // Llamar al endpoint del backend para seleccionar el portafolio
+    return this.http.post<any>(`${this.apiUrl}/seleccionar/${portafolioId}`, {}).pipe(
+      switchMap(() => this.obtenerPortafolioPorId(portafolioId)),
       tap(portafolio => {
         this.portafolioActualSubject.next(portafolio);
+      }),
+      catchError(error => {
+        console.error('Error al seleccionar portafolio', error);
+        // Si hay un error, intentar obtener el portafolio de todos modos
+        return this.obtenerPortafolioPorId(portafolioId);
       })
     );
   }

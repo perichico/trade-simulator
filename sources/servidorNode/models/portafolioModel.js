@@ -12,7 +12,8 @@ module.exports = (sequelize) => {
                 key: "id"
             },
             onDelete: 'CASCADE'
-        }
+        },
+        saldo: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 10000.00 }
     }, {
         tableName: "portafolio",
         timestamps: false

@@ -70,6 +70,35 @@ exports.obtenerDatosDashboard = async (req, res) => {
 
     // Obtener usuario
     const usuario = await Usuario.findByPk(usuarioId);
+    
+    // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
+    const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
+    
+    // Obtener el portafolio del usuario
+    const { Portafolio } = require("../models/index");
+    let portafolio;
+    
+    if (portafolioSeleccionado) {
+      portafolio = await Portafolio.findOne({
+        where: { 
+          id: portafolioSeleccionado,
+          usuario_id: usuarioId 
+        }
+      });
+    } else {
+      // Si no hay portafolio seleccionado, usar el portafolio principal
+      portafolio = await Portafolio.findOne({
+        where: { usuario_id: usuarioId },
+        order: [['id', 'ASC']]
+      });
+    }
+    
+    if (!portafolio) {
+      return res.status(404).json({ error: "Portafolio no encontrado" });
+    }
+    
+    // Añadir el saldo del portafolio al objeto usuario para mantener compatibilidad
+    usuario.dataValues.balance = portafolio.saldo || 10000.00;
 
     // Obtener transacciones del usuario con los datos del activo asociado
     const transacciones = await Transaccion.findAll({

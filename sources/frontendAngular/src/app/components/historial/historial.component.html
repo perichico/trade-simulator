@@ -5,7 +5,7 @@
     </button>
     <span>Historial de Transacciones</span>
     <span class="spacer"></span>
-    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(usuario.balance) }}</span>
+    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(portafolioSeleccionado?.valorTotal || 0) }}</span>
     <button mat-icon-button aria-label="Cerrar sesión">
       <mat-icon>exit_to_app</mat-icon>
     </button>

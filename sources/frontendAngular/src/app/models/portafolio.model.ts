@@ -17,5 +17,6 @@ export interface Portafolio {
   activos: ActivoEnPortafolio[];
   valorTotal: number; // Suma del valor de todos los activos
   rendimientoTotal: number; // Suma de los rendimientos
+  saldo: number; // Balance disponible en el portafolio
   fechaCreacion?: Date; // Fecha de creación del portafolio
 }

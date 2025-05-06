@@ -3,5 +3,6 @@ export interface Usuario {
   nombre: string;
   email: string;
   balance: number;
+  portafolioSeleccionado: any;
   // No incluimos contraseña por seguridad
 }

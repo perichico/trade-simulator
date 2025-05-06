@@ -24,6 +24,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   activoId!: number;
   activo$!: Observable<Activo>;
   usuario: Usuario | null = null;
+  portafolioSeleccionado: any = null;
   cargando = true;
   error = false;
   actualizacionSubscription!: Subscription;
@@ -61,6 +62,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
 
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
+      if (usuario && usuario.portafolioSeleccionado) {
+        this.portafolioSeleccionado = usuario.portafolioSeleccionado;
+      }
     });
   }
 
@@ -273,7 +277,16 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   calcularMontoTotal(): void {
     if (this.activo?.precio && this.cantidadCompra) {
       this.montoCompra = this.cantidadCompra * this.activo.precio;
-      this.maxCantidadPosible = this.usuario ? Math.floor(this.usuario.balance / this.activo.precio * 100000000) / 100000000 : 0;
+      // Actualizar la cantidad máxima posible basada en el saldo del portafolio
+      if (this.portafolioSeleccionado && this.portafolioSeleccionado.saldo) {
+        this.maxCantidadPosible = Math.floor(this.portafolioSeleccionado.saldo / this.activo.precio * 100000000) / 100000000;
+        // Actualizar el balance mostrado en la UI
+        if (this.usuario) {
+          this.usuario.balance = this.portafolioSeleccionado.saldo;
+        }
+      } else {
+        this.maxCantidadPosible = 0;
+      }
     }
   }
 
@@ -304,8 +317,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
 
     if (tipo === 'compra') {
       const montoTotal = cantidad * this.activo.precio;
-      if (montoTotal > (this.usuario?.balance || 0)) {
-        this.snackBar.open('Error: Saldo insuficiente', 'Cerrar', { duration: 3000 });
+      if (montoTotal > (this.portafolioSeleccionado?.saldo || 0)) {
+        this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
         return;
       }
     }

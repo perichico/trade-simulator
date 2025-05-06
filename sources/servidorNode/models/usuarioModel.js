@@ -5,7 +5,6 @@ module.exports = (sequelize) => {
         id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
         nombre: { type: DataTypes.STRING, allowNull: false },
         email: { type: DataTypes.STRING, allowNull: false },
-        balance: { type: DataTypes.DECIMAL(10, 2), allowNull: false, defaultValue: 10000.00 },
         contrasena: { type: DataTypes.STRING, allowNull: false },
     }, {
         tableName: "usuarios",

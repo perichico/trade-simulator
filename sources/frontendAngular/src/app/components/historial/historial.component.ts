@@ -3,8 +3,10 @@ import { BehaviorSubject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../services/auth.service';
 import { TransaccionService } from '../../services/transaccion.service';
+import { PortafolioService } from '../../services/portafolio.service';
 import { Usuario } from '../../models/usuario.model';
 import { Transaccion } from '../../models/transaccion.model';
+import { Portafolio } from '../../models/portafolio.model';
 
 @Component({
   selector: 'app-historial',
@@ -13,6 +15,7 @@ import { Transaccion } from '../../models/transaccion.model';
 })
 export class HistorialComponent implements OnInit {
   usuario: Usuario | null = null;
+  portafolioSeleccionado: Portafolio | null = null;
   private transaccionesSubject = new BehaviorSubject<Transaccion[]>([]);
   transacciones$ = this.transaccionesSubject.asObservable();
   columnasMostradas: string[] = ['fecha', 'activo', 'tipo', 'cantidad', 'precio', 'total'];
@@ -21,6 +24,7 @@ export class HistorialComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private transaccionService: TransaccionService,
+    private portafolioService: PortafolioService,
     private snackBar: MatSnackBar
   ) { }
 
@@ -29,10 +33,16 @@ export class HistorialComponent implements OnInit {
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
       
-      // Si hay un usuario autenticado, cargar sus transacciones
+      // Si hay un usuario autenticado, cargar sus transacciones y portafolio
       if (usuario) {
         this.cargarTransacciones();
+        this.cargarPortafolioSeleccionado();
       }
+    });
+
+    // Suscribirse a cambios en el portafolio seleccionado
+    this.portafolioService.portafolioActual$.subscribe(portafolio => {
+      this.portafolioSeleccionado = portafolio;
     });
   }
 
@@ -56,9 +66,16 @@ export class HistorialComponent implements OnInit {
     }
   }
 
+  // Cargar el portafolio seleccionado
+  cargarPortafolioSeleccionado(): void {
+    this.portafolioService.obtenerPortafolioActual().subscribe(portafolio => {
+      this.portafolioSeleccionado = portafolio;
+    });
+  }
+
   // Método para formatear valores monetarios
   formatearDinero(valor: number): string {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor);
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor || 0);
   }
 
   // Método para formatear fechas

@@ -21,7 +21,8 @@ exports.obtenerPortafoliosUsuario = async (req, res) => {
             const nuevoPortafolio = await Portafolio.create({
                 nombre: "Portafolio Principal",
                 usuario_id: usuarioId,
-                descripcion: "Mi portafolio principal de inversiones"
+                descripcion: "Mi portafolio principal de inversiones",
+                saldo: 10000.00 // Saldo inicial por defecto
             });
             portafolios.push(nuevoPortafolio);
         }
@@ -34,7 +35,8 @@ exports.obtenerPortafoliosUsuario = async (req, res) => {
                 nombre: portafolio.nombre,
                 descripcion: portafolio.descripcion,
                 fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
-                valorTotal
+                valorTotal,
+                saldo: portafolio.saldo // <-- Añadido saldo aquí
             };
         }));
 
@@ -237,9 +239,12 @@ exports.obtenerPortafolio = async (req, res) => {
 
         console.log(`Enviando respuesta con ${activos.length} activos`);
         
+        // Incluir el saldo del portafolio en la respuesta
         res.status(200).json({
             id: portafolio.id,
             nombre: portafolio.nombre,
+            descripcion: portafolio.descripcion,
+            saldo: portafolio.saldo,
             activos,
             valorTotal,
             rendimientoTotal
@@ -357,6 +362,27 @@ exports.seleccionarPortafolio = async (req, res) => {
 
 // Actualizar el portafolio después de una transacción
 exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction, portafolioId = null) => {
+    // Obtener el portafolio del usuario
+    let portafolio;
+    
+    if (portafolioId) {
+        portafolio = await Portafolio.findOne({
+            where: { 
+                id: portafolioId,
+                usuario_id: usuarioId 
+            }
+        });
+    } else {
+        // Si no hay portafolio seleccionado, usar el portafolio principal
+        portafolio = await Portafolio.findOne({
+            where: { usuario_id: usuarioId },
+            order: [['id', 'ASC']]
+        });
+    }
+    
+    if (!portafolio) {
+        throw new Error("Portafolio no encontrado");
+    }
     try {
         console.log(`Actualizando portafolio - Usuario: ${usuarioId}, Activo: ${activoId}, Cantidad: ${cantidad}, PortafolioID: ${portafolioId}`);
         

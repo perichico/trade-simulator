@@ -27,7 +27,7 @@ exports.crearTransaccion = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
       // Obtener los datos del formulario
-      const { activoId, tipo, cantidad } = req.body;
+      const { activoId, tipo, cantidad, portafolioSeleccionado } = req.body;
 
       // Validaciones iniciales
       if (!activoId || !tipo || !cantidad) {
@@ -96,11 +96,37 @@ exports.crearTransaccion = async (req, res) => {
   
       // Lógica de compra
       if (tipo === "compra") {
-        if (usuario.balance < costoTotal) {
-          await transaction.rollback();
-          return res.status(400).json({ error: "Saldo insuficiente" });
+        
+        // Obtener el portafolio del usuario
+        const { Portafolio } = require("../models/index");
+        let portafolio;
+        
+        if (portafolioSeleccionado) {
+          portafolio = await Portafolio.findOne({
+            where: { 
+              id: portafolioSeleccionado,
+              usuario_id: usuarioId 
+            }
+          });
+        } else {
+          // Si no hay portafolio seleccionado, usar el portafolio principal
+          portafolio = await Portafolio.findOne({
+            where: { usuario_id: usuarioId },
+            order: [['id', 'ASC']]
+          });
         }
-        await usuario.update({ balance: usuario.balance - costoTotal }, { transaction });
+        
+        if (!portafolio) {
+          await transaction.rollback();
+          return res.status(404).json({ error: "Portafolio no encontrado" });
+        }
+        
+        if (portafolio.saldo < costoTotal) {
+          await transaction.rollback();
+          return res.status(400).json({ error: "Saldo insuficiente en el portafolio" });
+        }
+        
+        await portafolio.update({ saldo: portafolio.saldo - costoTotal }, { transaction });
   
         // Registrar transacción de compra
         const transaccion = await Transaccion.create({
@@ -113,8 +139,6 @@ exports.crearTransaccion = async (req, res) => {
         }, { transaction });
         
         // Actualizar el portafolio del usuario
-        // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
-        const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
         await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidad, transaction, portafolioSeleccionado);
 
         await transaction.commit();
@@ -144,9 +168,34 @@ exports.crearTransaccion = async (req, res) => {
           await transaction.rollback();
           return res.status(400).json({ error: "No tienes suficientes activos para vender" });
         }
+        
+        
+        // Obtener el portafolio del usuario
+        const { Portafolio } = require("../models/index");
+        let portafolio;
+        
+        if (portafolioSeleccionado) {
+          portafolio = await Portafolio.findOne({
+            where: { 
+              id: portafolioSeleccionado,
+              usuario_id: usuarioId 
+            }
+          });
+        } else {
+          // Si no hay portafolio seleccionado, usar el portafolio principal
+          portafolio = await Portafolio.findOne({
+            where: { usuario_id: usuarioId },
+            order: [['id', 'ASC']]
+          });
+        }
+        
+        if (!portafolio) {
+          await transaction.rollback();
+          return res.status(404).json({ error: "Portafolio no encontrado" });
+        }
   
-        // Actualizar el balance del usuario
-        await usuario.update({ balance: usuario.balance + costoTotal }, { transaction });
+        // Actualizar el saldo del portafolio
+        await portafolio.update({ saldo: portafolio.saldo + costoTotal }, { transaction });
   
         // Registrar transacción de venta
         const transaccion = await Transaccion.create({
@@ -159,8 +208,6 @@ exports.crearTransaccion = async (req, res) => {
         }, { transaction });
         
         // Actualizar el portafolio del usuario (con cantidad negativa para venta)
-        // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
-        const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
         await portafolioController.actualizarPortafolio(usuarioId, activoId, -cantidad, transaction, portafolioSeleccionado);
 
         await transaction.commit();

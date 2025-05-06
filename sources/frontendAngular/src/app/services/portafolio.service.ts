@@ -142,6 +142,7 @@ export class PortafolioService {
           valorTotal: response.valorTotal || 0,
           rendimientoTotal,
           fechaCreacion: response.fechaCreacion ? new Date(response.fechaCreacion) : new Date(),
+          saldo: response.saldo || 0,
 
         };
       }),
@@ -155,6 +156,7 @@ export class PortafolioService {
           valorTotal: 0,
           rendimientoTotal: 0,
           fechaCreacion: new Date(),
+          saldo: 0,
 
         });
       })

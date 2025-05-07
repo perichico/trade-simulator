@@ -38,6 +38,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   modoCantidad: boolean = true;
   maxCantidadPosible: number = 0;
   procesando: boolean = false;
+  tipoTransaccion: 'compra' | 'venta' = 'compra';
 
   constructor(
     private route: ActivatedRoute,
@@ -244,30 +245,12 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     });
   }
 
-  abrirDialogoTransaccion(activo: Activo, tipo: 'compra' | 'venta'): void {
-    if (tipo === 'compra') {
-      // Ahora la compra se maneja directamente en el formulario integrado, no hacer nada
-      return;
-    }
-    if (!this.usuario) {
-      this.snackBar.open('Debes iniciar sesión para realizar transacciones', 'Cerrar', {
-        duration: 3000
-      });
-      return;
-    }
-    const dialogRef = this.dialog.open(TransaccionDialogComponent, {
-      width: '400px',
-      data: {
-        activo,
-        tipo,
-        balanceUsuario: this.portafolioActual?.saldo || 0
-      }
-    });
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.realizarTransaccion(activo.id, tipo, result.cantidad);
-      }
-    });
+  cambiarTipoTransaccion(tipo: 'compra' | 'venta'): void {
+    this.tipoTransaccion = tipo;
+    this.actualizarMaxCantidadPosible();
+    // Resetear los valores del formulario al cambiar el tipo de transacción
+    this.cantidadCompra = 0;
+    this.montoCompra = 0;
   }
 
   cambiarModoCompra(esPorCantidad: boolean): void {
@@ -286,11 +269,21 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     }
   }
 
-  private actualizarMaxCantidadPosible(): void {
-    if (this.activo?.precio && this.portafolioActual?.saldo) {
-      this.maxCantidadPosible = Math.floor(this.portafolioActual.saldo / this.activo.precio * 100000000) / 100000000;
-    } else {
+  public actualizarMaxCantidadPosible(): void {
+    if (!this.activo?.precio || !this.portafolioActual) {
       this.maxCantidadPosible = 0;
+      return;
+    }
+
+    if (this.tipoTransaccion === 'compra') {
+      // Para compras, la cantidad máxima depende del saldo disponible
+      this.maxCantidadPosible = this.portafolioActual && this.activo?.precio ? Math.floor((this.portafolioActual?.saldo || 0) / this.activo.precio * 100000000) / 100000000 : 0;
+      const activoEnPortafolio = this.portafolioActual?.activos?.find(a => a.activoId === this.activo?.id);
+      this.maxCantidadPosible = activoEnPortafolio?.cantidad || 0;
+    } else {
+      // Para ventas, la cantidad máxima depende de cuántas unidades del activo tiene el usuario
+      const activoEnPortafolio = this.portafolioActual.activos?.find(a => a.activoId === this.activo?.id);
+      this.maxCantidadPosible = activoEnPortafolio?.cantidad || 0;
     }
   }
 
@@ -325,7 +318,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
         this.snackBar.open('Error: No hay un portafolio seleccionado', 'Cerrar', { duration: 3000 });
         return;
       }
-      if (montoTotal > (this.portafolioActual.saldo || 0)) {
+      if (!this.portafolioActual || montoTotal > (this.portafolioActual?.saldo || 0)) {
         this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
         return;
       }

@@ -126,7 +126,11 @@ exports.crearTransaccion = async (req, res) => {
           return res.status(400).json({ error: "Saldo insuficiente en el portafolio" });
         }
         
-        await portafolio.update({ saldo: portafolio.saldo - costoTotal }, { transaction });
+        // Asegurar que el saldo tenga formato decimal válido
+        const saldoActual = parseFloat(portafolio.saldo) || 0;
+        const costoTotalNumerico = parseFloat(costoTotal) || 0;
+        const nuevoSaldo = parseFloat((saldoActual - costoTotalNumerico).toFixed(2));
+        await portafolio.update({ saldo: nuevoSaldo }, { transaction });
   
         // Registrar transacción de compra
         const transaccion = await Transaccion.create({
@@ -195,7 +199,11 @@ exports.crearTransaccion = async (req, res) => {
         }
   
         // Actualizar el saldo del portafolio
-        await portafolio.update({ saldo: portafolio.saldo + costoTotal }, { transaction });
+        // Asegurar que el saldo tenga formato decimal válido
+        const saldoActual = parseFloat(portafolio.saldo) || 0;
+        const costoTotalNumerico = parseFloat(costoTotal) || 0;
+        const nuevoSaldo = parseFloat((saldoActual + costoTotalNumerico).toFixed(2));
+        await portafolio.update({ saldo: nuevoSaldo }, { transaction });
   
         // Registrar transacción de venta
         const transaccion = await Transaccion.create({

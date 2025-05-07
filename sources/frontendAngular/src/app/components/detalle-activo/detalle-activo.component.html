@@ -5,7 +5,7 @@
     </button>
     <span class="title">Detalle de Activo</span>
     <span class="spacer"></span>
-    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(portafolioActual?.saldo || 0) }}</span>
+    <span class="user-info">{{ usuario.nombre }} | {{ portafolioActual ? formatearDinero(portafolioActual.saldo) : 'N/A' }}</span>
     <button class="icon-button" aria-label="Cerrar sesión">
       <span class="icon">⤴</span>
     </button>
@@ -68,16 +68,37 @@
               <i class="bi bi-wallet2 text-blue-600 text-xl"></i>
               <div>
                 <p class="text-sm text-blue-500 font-medium">Balance del portafolio</p>
-                <p class="text-2xl font-bold text-blue-700">{{ formatearDinero(portafolioActual?.saldo || 0) }}</p>
+                <p class="text-2xl font-bold text-blue-700">{{ portafolioActual ? formatearDinero(portafolioActual.saldo) : 'N/A' }}</p>
               </div>
             </div>
-            <div class="modo-compra-toggle flex rounded-xl overflow-hidden mb-8 border border-gray-200 shadow-sm">
+            <div class="tipo-transaccion-toggle flex rounded-xl overflow-hidden mb-4 border border-gray-200 shadow-sm">
+              <button 
+                [class.active]="tipoTransaccion === 'compra'" 
+                (click)="tipoTransaccion = 'compra'; actualizarMaxCantidadPosible()" 
+                class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium"
+                [class.bg-blue-600]="tipoTransaccion === 'compra'"
+                [class.text-white]="tipoTransaccion === 'compra'"
+                [class.bg-gray-50]="tipoTransaccion !== 'compra'">
+                Comprar
+              </button>
+              <button 
+                [class.active]="tipoTransaccion === 'venta'" 
+                (click)="tipoTransaccion = 'venta'; actualizarMaxCantidadPosible()" 
+                class="toggle-button flex-1 py-3 px-4 transition-colors duration-200"
+                [class.bg-red-500]="tipoTransaccion === 'venta'"
+                [class.text-white]="tipoTransaccion === 'venta'"
+                [class.bg-gray-50]="tipoTransaccion !== 'venta'">
+                Vender
+              </button>
+            </div>
+            <div class="modo-compra-toggle flex rounded-xl overflow-hidden mb-4 border border-gray-200 shadow-sm">
               <button 
                 [class.active]="modoCantidad" 
                 (click)="cambiarModoCompra(true)" 
                 class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium"
-                [class.bg-blue-600]="modoCantidad"
-                [class.text-black]="true"
+                [class.bg-blue-600]="modoCantidad && tipoTransaccion === 'compra'"
+                [class.bg-red-500]="modoCantidad && tipoTransaccion === 'venta'"
+                [class.text-white]="modoCantidad"
                 [class.bg-gray-50]="!modoCantidad">
                 Por Cantidad
               </button>
@@ -85,13 +106,14 @@
                 [class.active]="!modoCantidad" 
                 (click)="cambiarModoCompra(false)" 
                 class="toggle-button flex-1 py-2 px-4 transition-colors duration-200"
-                [class.bg-blue-500]="!modoCantidad"
-                [class.text-black]="true"
-                [class.bg-white]="modoCantidad">
+                [class.bg-blue-600]="!modoCantidad && tipoTransaccion === 'compra'"
+                [class.bg-red-500]="!modoCantidad && tipoTransaccion === 'venta'"
+                [class.text-white]="!modoCantidad"
+                [class.bg-gray-50]="modoCantidad">
                 Por Monto
               </button>
             </div>
-            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, 'compra', cantidadCompra)" class="form-compra space-y-4">
+            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, tipoTransaccion, cantidadCompra)" class="form-compra space-y-4">
               <div class="form-group mb-6" *ngIf="modoCantidad">
                 <label for="cantidadCompra" class="block text-sm font-medium text-gray-600 mb-2">Cantidad de activos</label>
                 <div class="relative">
@@ -124,24 +146,27 @@
                        step="0.01"
                        required 
                        class="input-cantidad" 
-                       [max]="portafolioActual?.saldo || 0">
+                       [max]="portafolioActual?.saldo ?? 0">
                 <p class="calculo-info" *ngIf="montoCompra && activo?.precio">
                   Cantidad de activos: {{ cantidadCompra | number:'1.8-8' }}
                 </p>
               </div>
               <button 
                 type="submit" 
-                class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-black font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
-                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (portafolioActual?.saldo || 0) : montoCompra > (portafolioActual?.saldo || 0))"
-                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (portafolioActual?.saldo || 0) : montoCompra > (portafolioActual?.saldo || 0))">
+                class="w-full font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                [ngClass]="{
+                  'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white': tipoTransaccion === 'compra',
+                  'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white': tipoTransaccion === 'venta'
+                }"
+                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || 
+                  (tipoTransaccion === 'compra' && portafolioActual && (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > portafolioActual.saldo : montoCompra > portafolioActual.saldo))"
+                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || 
+                  (tipoTransaccion === 'compra' && portafolioActual && (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > portafolioActual.saldo : montoCompra > portafolioActual.saldo))">
                 <i class="bi bi-check-circle" *ngIf="!procesando"></i>
                 <i class="bi bi-arrow-repeat animate-spin" *ngIf="procesando"></i>
-                {{ procesando ? 'Procesando transacción...' : 'Confirmar Compra' }}
+                {{ procesando ? 'Procesando transacción...' : 'Confirmar ' + (tipoTransaccion === 'compra' ? 'Compra' : 'Venta') }}
               </button>
             </form>
-            <button class="button warn" (click)="abrirDialogoTransaccion(activo, 'venta')" class="accion-button">
-              <span class="icon">🗑️</span> Vender
-            </button>
           </div>
         </div>
       </div>

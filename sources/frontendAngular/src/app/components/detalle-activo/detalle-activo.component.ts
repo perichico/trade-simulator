@@ -287,8 +287,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   private actualizarMaxCantidadPosible(): void {
-    if (this.activo?.precio && this.portafolioActual?.valorTotal) {
-      this.maxCantidadPosible = Math.floor(this.portafolioActual.valorTotal / this.activo.precio * 100000000) / 100000000;
+    if (this.activo?.precio && this.portafolioActual?.saldo) {
+      this.maxCantidadPosible = Math.floor(this.portafolioActual.saldo / this.activo.precio * 100000000) / 100000000;
     } else {
       this.maxCantidadPosible = 0;
     }
@@ -325,7 +325,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
         this.snackBar.open('Error: No hay un portafolio seleccionado', 'Cerrar', { duration: 3000 });
         return;
       }
-      if (montoTotal > (this.portafolioActual.valorTotal || 0)) {
+      if (montoTotal > (this.portafolioActual.saldo || 0)) {
         this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
         return;
       }
@@ -334,7 +334,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     this.procesando = true;
     console.log(`Enviando transacción: Activo ID=${activoId}, Tipo=${tipo}, Cantidad=${cantidad}`);
     
-    this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
+    // Pasar el ID del portafolio seleccionado al servicio de transacciones
+    const portafolioId = this.portafolioActual?.id;
+    this.transaccionService.crearTransaccion(activoId, tipo, cantidad, portafolioId)
       .subscribe({
         next: () => {
           this.procesando = false;

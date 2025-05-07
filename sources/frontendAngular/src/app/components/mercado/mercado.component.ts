@@ -5,9 +5,11 @@ import { Observable, Subscription, interval } from 'rxjs';
 import { startWith, switchMap, map } from 'rxjs/operators';
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
+import { Portafolio } from '../../models/portafolio.model';
 import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
 import { TransaccionService } from '../../services/transaccion.service';
+import { PortafolioService } from '../../services/portafolio.service';
 import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-dialog.component';
 import { Router } from '@angular/router';
 
@@ -20,6 +22,7 @@ export class MercadoComponent implements OnInit, OnDestroy {
   activos$!: Observable<Activo[]>;
   activosFiltrados$!: Observable<Activo[]>;
   usuario: Usuario | null = null;
+  portafolioActual: Portafolio | null = null;
   columnasMostradas: string[] = ['simbolo', 'nombre', 'precio', 'variacion'];
 
   tiposActivo = [
@@ -43,6 +46,7 @@ export class MercadoComponent implements OnInit, OnDestroy {
     private activoService: ActivoService,
     private authService: AuthService,
     private transaccionService: TransaccionService,
+    private portafolioService: PortafolioService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     public router: Router
@@ -52,6 +56,11 @@ export class MercadoComponent implements OnInit, OnDestroy {
     // Obtener usuario actual
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
+    });
+
+    // Obtener portafolio actual
+    this.portafolioService.portafolioActual$.subscribe(portafolio => {
+      this.portafolioActual = portafolio;
     });
 
     // Cargar activos y actualizar cada 10 segundos
@@ -89,7 +98,7 @@ export class MercadoComponent implements OnInit, OnDestroy {
       data: {
         activo,
         tipo,
-        balanceUsuario: this.usuario.balance
+        balanceUsuario: this.portafolioActual?.saldo || 0
       }
     });
 
@@ -102,7 +111,9 @@ export class MercadoComponent implements OnInit, OnDestroy {
 
   // Método para realizar la transacción
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
-    this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
+    // Usar el portafolio actual que ya está disponible como propiedad del componente
+    const portafolioId = this.portafolioActual?.id;
+    this.transaccionService.crearTransaccion(activoId, tipo, cantidad, portafolioId)
       .subscribe({
         next: (respuesta) => {
           this.snackBar.open(

@@ -33,11 +33,12 @@ export class TransaccionService {
   }
 
   // Crear una nueva transacción (compra o venta)
-  crearTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): Observable<Transaccion> {
+  crearTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number, portafolioSeleccionado?: number): Observable<Transaccion> {
     return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/creartransaccion`, {
       activoId,
       tipo,
-      cantidad
+      cantidad,
+      portafolioSeleccionado
     }, { withCredentials: true }).pipe(
       catchError(error => {
         console.error('Error al crear transacción', error);

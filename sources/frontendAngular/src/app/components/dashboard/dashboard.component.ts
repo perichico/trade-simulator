@@ -215,7 +215,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       data: {
         activo,
         tipo,
-        balanceUsuario: this.usuario.balance
+        balanceUsuario: this.portafolioSeleccionado?.saldo || 0
       }
     });
 
@@ -229,7 +229,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para realizar la transacción
   realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
-    this.transaccionService.crearTransaccion(activoId, tipo, cantidad)
+    // Pasar el ID del portafolio seleccionado al servicio de transacciones
+    const portafolioId = this.portafolioSeleccionado?.id;
+    this.transaccionService.crearTransaccion(activoId, tipo, cantidad, portafolioId)
       .subscribe({
         next: (respuesta) => {
           this.snackBar.open(

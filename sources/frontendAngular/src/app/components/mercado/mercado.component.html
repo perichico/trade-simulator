@@ -20,7 +20,7 @@
         <div class="d-flex align-items-center" *ngIf="usuario">
           <span class="badge bg-success me-3">
             <i class="bi bi-wallet2 me-1"></i>
-            {{ formatearDinero(usuario.balance || 0) }}
+            {{ formatearDinero(portafolioActual?.saldo || 0) }}
           </span>
           <span class="badge bg-info me-2">{{ usuario.nombre }}</span>
         </div>

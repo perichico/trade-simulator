@@ -386,11 +386,10 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
     try {
         console.log(`Actualizando portafolio - Usuario: ${usuarioId}, Activo: ${activoId}, Cantidad: ${cantidad}, PortafolioID: ${portafolioId}`);
         
-        // Si no se especifica un portafolio, usar el portafolio principal o el último seleccionado
-        let portafolio;
-        
+        // Reutilizamos la variable portafolio ya declarada al inicio del método
+        // Si se proporcionó un ID de portafolio específico, actualizar la búsqueda con transaction
         if (portafolioId) {
-            // Buscar el portafolio específico
+            // Buscar el portafolio específico con transaction
             portafolio = await Portafolio.findOne({
                 where: { 
                     id: portafolioId,
@@ -415,6 +414,7 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
                 },
                 transaction
             });
+        }
 
         console.log(`Portafolio encontrado/creado: ${portafolio.id}`);
 
@@ -424,9 +424,8 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
                 portafolio_id: portafolio.id,
                 activo_id: activoId
             },
-        });
             transaction
-        };
+        });
 
         if (activoEnPortafolio) {
             // Actualizar la cantidad

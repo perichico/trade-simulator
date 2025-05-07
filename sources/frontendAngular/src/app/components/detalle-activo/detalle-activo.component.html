@@ -5,7 +5,7 @@
     </button>
     <span class="title">Detalle de Activo</span>
     <span class="spacer"></span>
-    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(usuario.balance || 0) }}</span>
+    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(portafolioActual?.saldo || 0) }}</span>
     <button class="icon-button" aria-label="Cerrar sesión">
       <span class="icon">⤴</span>
     </button>
@@ -67,8 +67,8 @@
             <div class="balance-info mb-6 p-4 bg-blue-50 rounded-xl flex items-center gap-3 border border-blue-100">
               <i class="bi bi-wallet2 text-blue-600 text-xl"></i>
               <div>
-                <p class="text-sm text-blue-500 font-medium">Balance disponible</p>
-                <p class="text-2xl font-bold text-blue-700">{{ formatearDinero(usuario.balance || 0) }}</p>
+                <p class="text-sm text-blue-500 font-medium">Balance del portafolio</p>
+                <p class="text-2xl font-bold text-blue-700">{{ formatearDinero(portafolioActual?.saldo || 0) }}</p>
               </div>
             </div>
             <div class="modo-compra-toggle flex rounded-xl overflow-hidden mb-8 border border-gray-200 shadow-sm">
@@ -124,7 +124,7 @@
                        step="0.01"
                        required 
                        class="input-cantidad" 
-                       [max]="usuario.balance">
+                       [max]="portafolioActual?.saldo || 0">
                 <p class="calculo-info" *ngIf="montoCompra && activo?.precio">
                   Cantidad de activos: {{ cantidadCompra | number:'1.8-8' }}
                 </p>
@@ -132,8 +132,8 @@
               <button 
                 type="submit" 
                 class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-black font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
-                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))"
-                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (usuario.balance || 0) : montoCompra > (usuario.balance || 0))">
+                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (portafolioActual?.saldo || 0) : montoCompra > (portafolioActual?.saldo || 0))"
+                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > (portafolioActual?.saldo || 0) : montoCompra > (portafolioActual?.saldo || 0))">
                 <i class="bi bi-check-circle" *ngIf="!procesando"></i>
                 <i class="bi bi-arrow-repeat animate-spin" *ngIf="procesando"></i>
                 {{ procesando ? 'Procesando transacción...' : 'Confirmar Compra' }}

@@ -108,13 +108,13 @@ CREATE TABLE transacciones (
 );
 
 -- Insertar tipos de activo
-INSERT INTO tipo_activo (nombre, descripcion) VALUES
-('Acciones', 'Títulos de renta variable que representan una parte del capital de una empresa'),
-('ETFs', 'Fondos cotizados que siguen índices o sectores específicos'),
-('Bonos', 'Títulos de deuda que pagan intereses'),
-('Materias Primas', 'Commodities y recursos naturales'),
-('Criptomonedas', 'Activos digitales basados en blockchain'),
-('Forex', 'Mercado de divisas');
+INSERT INTO tipo_activo (nombre) VALUES
+('Acciones'),
+('ETFs'),
+('Bonos'),
+('Materias Primas'),
+('Criptomonedas'),
+('Forex');
 
 -- Insertar activos
 INSERT INTO activos (nombre, simbolo, tipo_activo_id) VALUES

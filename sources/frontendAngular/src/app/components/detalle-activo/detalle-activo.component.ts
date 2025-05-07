@@ -7,11 +7,13 @@ import { startWith, switchMap } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
+import { Portafolio } from '../../models/portafolio.model';
 import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
 import { TransaccionDialogComponent } from '../transaccion-dialog/transaccion-dialog.component';
 import { TransaccionService } from '../../services/transaccion.service';
 import { HistorialPreciosService } from '../../services/historial-precios.service';
+import { PortafolioService } from '../../services/portafolio.service';
 
 Chart.register(...registerables);
 
@@ -24,7 +26,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   activoId!: number;
   activo$!: Observable<Activo>;
   usuario: Usuario | null = null;
-  portafolioSeleccionado: any = null;
+  portafolioActual: Portafolio | null = null;
   cargando = true;
   error = false;
   actualizacionSubscription!: Subscription;
@@ -45,7 +47,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     private transaccionService: TransaccionService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private historialPreciosService: HistorialPreciosService
+    private historialPreciosService: HistorialPreciosService,
+    private portafolioService: PortafolioService
   ) {}
 
   ngOnInit(): void {
@@ -62,9 +65,11 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
 
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
-      if (usuario && usuario.portafolioSeleccionado) {
-        this.portafolioSeleccionado = usuario.portafolioSeleccionado;
-      }
+    });
+
+    this.portafolioService.portafolioActual$.subscribe(portafolio => {
+      this.portafolioActual = portafolio;
+      this.actualizarMaxCantidadPosible();
     });
   }
 
@@ -255,7 +260,7 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       data: {
         activo,
         tipo,
-        balanceUsuario: this.usuario.balance
+        balanceUsuario: this.portafolioActual?.saldo || 0
       }
     });
     dialogRef.afterClosed().subscribe(result => {
@@ -277,16 +282,15 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   calcularMontoTotal(): void {
     if (this.activo?.precio && this.cantidadCompra) {
       this.montoCompra = this.cantidadCompra * this.activo.precio;
-      // Actualizar la cantidad máxima posible basada en el saldo del portafolio
-      if (this.portafolioSeleccionado && this.portafolioSeleccionado.saldo) {
-        this.maxCantidadPosible = Math.floor(this.portafolioSeleccionado.saldo / this.activo.precio * 100000000) / 100000000;
-        // Actualizar el balance mostrado en la UI
-        if (this.usuario) {
-          this.usuario.balance = this.portafolioSeleccionado.saldo;
-        }
-      } else {
-        this.maxCantidadPosible = 0;
-      }
+      this.actualizarMaxCantidadPosible();
+    }
+  }
+
+  private actualizarMaxCantidadPosible(): void {
+    if (this.activo?.precio && this.portafolioActual?.valorTotal) {
+      this.maxCantidadPosible = Math.floor(this.portafolioActual.valorTotal / this.activo.precio * 100000000) / 100000000;
+    } else {
+      this.maxCantidadPosible = 0;
     }
   }
 
@@ -317,7 +321,11 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
 
     if (tipo === 'compra') {
       const montoTotal = cantidad * this.activo.precio;
-      if (montoTotal > (this.portafolioSeleccionado?.saldo || 0)) {
+      if (!this.portafolioActual) {
+        this.snackBar.open('Error: No hay un portafolio seleccionado', 'Cerrar', { duration: 3000 });
+        return;
+      }
+      if (montoTotal > (this.portafolioActual.valorTotal || 0)) {
         this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
         return;
       }

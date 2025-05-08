@@ -291,4 +291,23 @@ export class PortafolioService {
     
     return (portafolio.rendimientoTotal / inversionTotal) * 100;
   }
+
+  // Eliminar un portafolio y sus activos asociados
+  eliminarPortafolio(portafolioId: number): Observable<any> {
+    // Primero eliminamos los activos del portafolio y luego el portafolio en sí
+    return this.http.delete(`${this.apiUrl}/${portafolioId}/activos`).pipe(
+      switchMap(() => this.http.delete(`${this.apiUrl}/${portafolioId}`)),
+      tap(() => {
+        // Si el portafolio eliminado era el seleccionado, limpiar la selección
+        if (this.portafolioSeleccionadoId === portafolioId) {
+          this.portafolioSeleccionadoId = null;
+          this.portafolioActualSubject.next(null);
+        }
+      }),
+      catchError(error => {
+        console.error('Error al eliminar el portafolio o sus activos', error);
+        throw error;
+      })
+    );
+  }
 }

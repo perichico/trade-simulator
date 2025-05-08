@@ -23,4 +23,10 @@ router.post("/crear", verificarAutenticacion, portafolioController.crearPortafol
 // Seleccionar un portafolio como activo
 router.post("/seleccionar/:id", verificarAutenticacion, portafolioController.seleccionarPortafolio);
 
+// Eliminar todos los activos asociados a un portafolio
+router.delete('/:id/activos', verificarAutenticacion, portafolioController.eliminarActivosDePortafolio);
+
+// Eliminar un portafolio completo
+router.delete('/:id', verificarAutenticacion, portafolioController.eliminarPortafolio);
+
 module.exports = router;

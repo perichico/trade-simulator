@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } fr
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import * as bootstrap from 'bootstrap';
 import { Observable, Subscription, interval } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 import { Usuario } from '../../models/usuario.model';
@@ -13,7 +14,6 @@ import { AuthService } from '../../services/auth.service';
 import { PortafolioService } from '../../services/portafolio.service';
 import { PatrimonioService, PatrimonioHistorico } from '../../services/patrimonio.service';
 import { Chart, registerables } from 'chart.js';
-import * as bootstrap from 'bootstrap';
 
 Chart.register(...registerables);
 
@@ -36,6 +36,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   
   // Variables para el formulario de nuevo portafolio
   nuevoPortafolioNombre: string = '';
+  
+  // Variable para el modal de eliminación de portafolio
+  portafolioAEliminar: number | null = null;
   
   constructor(
     private authService: AuthService,
@@ -60,7 +63,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         // Inicializar el modal de Bootstrap
         const modalElement = document.getElementById('nuevoPortafolioModal');
         if (modalElement) {
-          new bootstrap.Modal(modalElement);
+          const modal = new bootstrap.Modal(modalElement as HTMLElement);
         }
       } else {
         this.router.navigate(['/login']);
@@ -134,6 +137,81 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
   
+  // Método para seleccionar un portafolio a eliminar en el modal
+  seleccionarPortafolioAEliminar(portafolioId: number): void {
+    this.portafolioAEliminar = portafolioId;
+  }
+  
+  // Método para confirmar la eliminación del portafolio seleccionado
+  confirmarEliminarPortafolio(): void {
+    if (!this.usuario || !this.portafolioAEliminar) return;
+    
+    // Evitar eliminar el último portafolio
+    if (this.portafolios.length <= 1) {
+      this.snackBar.open('No puedes eliminar el único portafolio disponible', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
+    
+    // Guardar el ID del portafolio a eliminar en una variable local
+    const portafolioId = this.portafolioAEliminar;
+    
+    this.portafolioService.eliminarPortafolio(portafolioId).subscribe({
+      next: () => {
+        // Cerrar el modal de eliminación usando Bootstrap
+        const modalElement = document.getElementById('eliminarPortafolioModal');
+        if (modalElement) {
+          const modalInstance = bootstrap.Modal.getInstance(modalElement);
+          if (modalInstance) {
+            modalInstance.hide();
+            // Eliminar el backdrop manualmente
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+              backdrop.remove();
+            }
+            // Restaurar el scroll y eliminar la clase modal-open del body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+          }
+        }
+
+        // Eliminar el portafolio de la lista local
+        this.portafolios = this.portafolios.filter(p => p.id !== portafolioId);
+        
+        // Si el portafolio eliminado era el seleccionado, seleccionar otro
+        if (this.portafolioSeleccionado?.id === portafolioId) {
+          this.seleccionarPortafolio(this.portafolios[0].id!);
+        }
+
+        // Mostrar mensaje de éxito
+        this.snackBar.open('Portafolio eliminado con éxito', 'Cerrar', {
+          duration: 3000
+        });
+
+        // Resetear la variable de portafolio a eliminar
+        this.portafolioAEliminar = null;
+      },
+      error: (error) => {
+        console.error('Error al eliminar el portafolio:', error);
+        this.snackBar.open(
+          `Error al eliminar el portafolio: ${error.error?.message || error.error?.error || 'Error desconocido'}`,
+          'Cerrar',
+          { duration: 5000 }
+        );
+        // Resetear la variable de portafolio a eliminar en caso de error
+        this.portafolioAEliminar = null;
+      }
+    });
+  }
+  
+  // Método para eliminar un portafolio (mantener para compatibilidad)
+  eliminarPortafolio(portafolioId: number): void {
+    this.portafolioAEliminar = portafolioId;
+    this.confirmarEliminarPortafolio();
+  }
+  
   // Método para crear un nuevo portafolio
   crearNuevoPortafolio(nombre: string): void {
     if (!this.usuario) return;
@@ -155,6 +233,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   // Método para resetear el formulario de nuevo portafolio
   resetearFormularioPortafolio(): void {
     this.nuevoPortafolioNombre = '';
+    this.portafolioAEliminar = null;
   }
 
   // Método para cerrar sesión

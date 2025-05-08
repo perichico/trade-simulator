@@ -459,3 +459,88 @@ exports.actualizarPortafolio = async (usuarioId, activoId, cantidad, transaction
         throw error;
     }
 };
+
+// Eliminar todos los activos asociados a un portafolio
+exports.eliminarActivosDePortafolio = async (req, res) => {
+    try {
+        if (!req.session.usuario) {
+            return res.status(401).json({ error: "Usuario no autenticado" });
+        }
+        const usuarioId = req.session.usuario.id;
+        const portafolioId = req.params.id;
+        // Verificar que el portafolio pertenezca al usuario
+        const portafolio = await Portafolio.findOne({
+            where: { id: portafolioId, usuario_id: usuarioId }
+        });
+        if (!portafolio) {
+            return res.status(404).json({ error: "Portafolio no encontrado" });
+        }
+        // Eliminar todos los activos asociados a este portafolio
+        await PortafolioActivo.destroy({ where: { portafolio_id: portafolioId } });
+        return res.status(200).json({ mensaje: "Activos eliminados correctamente del portafolio" });
+    } catch (error) {
+        console.error('Error al eliminar los activos del portafolio:', error);
+        return res.status(500).json({ error: "Error al eliminar los activos del portafolio" });
+    }
+};
+
+// Eliminar un portafolio completo (incluyendo sus activos)
+exports.eliminarPortafolio = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        if (!req.session.usuario) {
+            await transaction.rollback();
+            return res.status(401).json({ error: "Usuario no autenticado" });
+        }
+        
+        const usuarioId = req.session.usuario.id;
+        const portafolioId = req.params.id;
+        
+        console.log(`Intentando eliminar portafolio ID: ${portafolioId} del usuario ID: ${usuarioId}`);
+        
+        // Verificar que el portafolio pertenezca al usuario
+        const portafolio = await Portafolio.findOne({
+            where: { id: portafolioId, usuario_id: usuarioId },
+            transaction
+        });
+        
+        if (!portafolio) {
+            await transaction.rollback();
+            return res.status(404).json({ error: "Portafolio no encontrado" });
+        }
+        
+        // Verificar que no sea el portafolio principal
+        const esPortafolioPrincipal = await Portafolio.findOne({
+            where: { usuario_id: usuarioId },
+            order: [['id', 'ASC']],
+            limit: 1,
+            transaction
+        });
+        
+        if (esPortafolioPrincipal && esPortafolioPrincipal.id === parseInt(portafolioId)) {
+            await transaction.rollback();
+            return res.status(400).json({ error: "No se puede eliminar el portafolio principal" });
+        }
+        
+        // Primero eliminar todos los activos asociados a este portafolio
+        await PortafolioActivo.destroy({ 
+            where: { portafolio_id: portafolioId },
+            transaction 
+        });
+        
+        console.log(`Activos del portafolio ${portafolioId} eliminados correctamente`);
+        
+        // Luego eliminar el portafolio
+        await portafolio.destroy({ transaction });
+        
+        console.log(`Portafolio ${portafolioId} eliminado correctamente`);
+        
+        await transaction.commit();
+        
+        return res.status(200).json({ mensaje: "Portafolio eliminado correctamente" });
+    } catch (error) {
+        await transaction.rollback();
+        console.error('Error al eliminar el portafolio:', error);
+        return res.status(500).json({ error: "Error al eliminar el portafolio" });
+    }
+};

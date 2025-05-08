@@ -278,8 +278,6 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     if (this.tipoTransaccion === 'compra') {
       // Para compras, la cantidad máxima depende del saldo disponible
       this.maxCantidadPosible = this.portafolioActual && this.activo?.precio ? Math.floor((this.portafolioActual?.saldo || 0) / this.activo.precio * 100000000) / 100000000 : 0;
-      const activoEnPortafolio = this.portafolioActual?.activos?.find(a => a.activoId === this.activo?.id);
-      this.maxCantidadPosible = activoEnPortafolio?.cantidad || 0;
     } else {
       // Para ventas, la cantidad máxima depende de cuántas unidades del activo tiene el usuario
       const activoEnPortafolio = this.portafolioActual.activos?.find(a => a.activoId === this.activo?.id);
@@ -312,14 +310,24 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       return;
     }
 
+    if (!this.portafolioActual) {
+      this.snackBar.open('Error: No hay un portafolio seleccionado', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
     if (tipo === 'compra') {
       const montoTotal = cantidad * this.activo.precio;
-      if (!this.portafolioActual) {
-        this.snackBar.open('Error: No hay un portafolio seleccionado', 'Cerrar', { duration: 3000 });
+      if (montoTotal > (this.portafolioActual?.saldo || 0)) {
+        this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
         return;
       }
-      if (!this.portafolioActual || montoTotal > (this.portafolioActual?.saldo || 0)) {
-        this.snackBar.open('Error: Saldo insuficiente en el portafolio', 'Cerrar', { duration: 3000 });
+    } else if (tipo === 'venta') {
+      // Verificar si el usuario tiene suficientes unidades del activo para vender
+      const activoEnPortafolio = this.portafolioActual.activos?.find(a => a.activoId === activoId);
+      const cantidadDisponible = activoEnPortafolio?.cantidad || 0;
+      
+      if (cantidad > cantidadDisponible) {
+        this.snackBar.open('Error: No tienes suficientes activos para vender', 'Cerrar', { duration: 3000 });
         return;
       }
     }

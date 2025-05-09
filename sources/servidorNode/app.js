@@ -15,9 +15,11 @@ const app = express();
 
 // Configuración de CORS para Angular
 app.use(cors({
-    origin: 'http://localhost:4200',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
     credentials: true
 }));
+
+console.log(`CORS configurado para: ${process.env.CORS_ORIGIN || 'http://localhost:4200'}`);
 
 // Configuración básica
 app.use(express.json());

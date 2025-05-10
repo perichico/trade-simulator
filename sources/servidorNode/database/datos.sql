@@ -30,6 +30,7 @@ CREATE TABLE portafolio (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     usuario_id INT NOT NULL,
+    saldo DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 

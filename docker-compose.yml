@@ -45,7 +45,7 @@ services:
       - NODE_ENV=development
       - DB_HOST=mysql
       - DB_USER=usuario
-      - DB_PASSWORD=password
+      - DB_PASS=password
       - DB_NAME=Bolsa
       - DB_PORT=3306
     networks:

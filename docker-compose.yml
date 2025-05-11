@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Servicio de base de datos MySQL
   mysql:
@@ -17,9 +15,10 @@ services:
       # Volumen para datos de MySQL
       - mysql_data:/var/lib/mysql
     networks:
-      - backend_network
+      trade-network:
+        ipv4_address: 172.28.1.4
     ports:
-      - "3306:3306"
+      - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 10s
@@ -49,8 +48,10 @@ services:
       - DB_NAME=Bolsa
       - DB_PORT=3306
     networks:
-      - backend_network
-      - frontend_network
+      trade-network:
+        ipv4_address: 172.28.1.3
+      frontend_network:
+        ipv4_address: 172.29.1.3
     ports:
       - "3000:3000"
 
@@ -69,7 +70,8 @@ services:
       # Excluir node_modules del host
       - /app/node_modules
     networks:
-      - frontend_network
+      frontend_network:
+        ipv4_address: 172.29.1.2
     ports:
       - "4200:4200"
 
@@ -80,9 +82,15 @@ volumes:
 
 # Definición de redes
 networks:
-  # Red para conectar MySQL y Node.js
-  backend_network:
+  trade-network:
     driver: bridge
-  # Red para conectar Node.js y Angular
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
   frontend_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
+          gateway: 172.29.0.1

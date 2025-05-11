@@ -162,14 +162,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       
       // Actualizar el historial de patrimonio al cambiar de portafolio
       if (this.usuario) {
-        this.cargarHistorialPatrimonio(this.usuario.id);
+        this.cargarHistorialPatrimonio(this.usuario.id, portafolioId);
       }
     });
-    
-    // También forzamos una actualización inmediata del historial para ver cambios
-    if (this.usuario) {
-      this.cargarHistorialPatrimonio(this.usuario.id);
-    }
   }
   
   // Método para seleccionar un portafolio a eliminar en el modal
@@ -371,8 +366,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // Modificar este método para mejorar el manejo del cambio de portafolio
-  cargarHistorialPatrimonio(usuarioId: number): void {
-    const portafolioId = this.portafolioSeleccionado?.id;
+  cargarHistorialPatrimonio(usuarioId: number, portafolioId?: number): void {
+    if (!portafolioId) {
+      portafolioId = this.portafolioSeleccionado?.id;
+    }
     console.log(`Cargando historial de patrimonio para usuario ${usuarioId}, portafolio actual: ${portafolioId}`);
     
     this.patrimonioService.obtenerHistorialPatrimonio(usuarioId)
@@ -402,31 +399,70 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para crear datos de muestra mientras se resuelve el problema del endpoint
   crearDatosDeMuestraParaGrafico(usuarioId: number): void {
-    console.log('Creando datos de muestra para el gráfico');
+    if (this.portafolioSeleccionado) {
+      this.crearDatosSimuladosBasadosEnPortafolio(this.portafolioSeleccionado);
+    } else {
+      console.log('Creando datos de muestra genéricos para el gráfico');
+      const hoy = new Date();
+      const datosMuestra: PatrimonioHistorico[] = [];
+      
+      // Generar datos de muestra para los últimos 7 días
+      for (let i = 6; i >= 0; i--) {
+        const fecha = new Date();
+        fecha.setDate(hoy.getDate() - i);
+        
+        // Valor base más una variación aleatoria
+        const balanceBase = 5000 + Math.random() * 2000;
+        const valorPortafolioBase = 4000 + Math.random() * 3000;
+        
+        datosMuestra.push({
+          usuarioId: usuarioId,
+          fecha: fecha.toISOString(),
+          balance: balanceBase,
+          valorPortafolio: valorPortafolioBase,
+          patrimonioTotal: balanceBase + valorPortafolioBase
+        });
+      }
+      
+      this.historialPatrimonio = datosMuestra;
+    }
+  }
+  
+  // Método para crear datos simulados basados en el portafolio actual
+  crearDatosSimuladosBasadosEnPortafolio(portafolio: Portafolio): void {
+    console.log('Creando datos simulados basados en el portafolio actual');
     const hoy = new Date();
     const datosMuestra: PatrimonioHistorico[] = [];
+    
+    // Usar el valor actual del portafolio como base para generar datos históricos
+    const saldoActual = portafolio.saldo || 10000;
+    const valorPortafolioActual = portafolio.valorTotal || 0;
+    const patrimonioActual = saldoActual + valorPortafolioActual;
     
     // Generar datos de muestra para los últimos 7 días
     for (let i = 6; i >= 0; i--) {
       const fecha = new Date();
       fecha.setDate(hoy.getDate() - i);
       
-      // Valor base más una variación aleatoria
-      const balanceBase = 5000 + Math.random() * 2000;
-      const valorPortafolioBase = 4000 + Math.random() * 3000;
+      // Factor de variación que aumenta mientras más días hacia atrás
+      const factorVariacion = 1 - (i * 0.03); // 3% de variación por día
+      
+      // Calcular valores con variación
+      const balanceDia = saldoActual * factorVariacion * (0.95 + Math.random() * 0.1);
+      const valorPortafolioDia = valorPortafolioActual * factorVariacion * (0.95 + Math.random() * 0.1);
       
       datosMuestra.push({
-        usuarioId: usuarioId,
+        usuarioId: portafolio.usuarioId || 0,
         fecha: fecha.toISOString(),
-        balance: balanceBase,
-        valorPortafolio: valorPortafolioBase,
-        patrimonioTotal: balanceBase + valorPortafolioBase
+        balance: balanceDia,
+        valorPortafolio: valorPortafolioDia,
+        patrimonioTotal: balanceDia + valorPortafolioDia
       });
     }
     
     this.historialPatrimonio = datosMuestra;
   }
-  
+
   actualizarGrafico(): void {
     if (this.chart) {
       this.chart.destroy();

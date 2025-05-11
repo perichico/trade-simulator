@@ -140,8 +140,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   seleccionarPortafolio(portafolioId: number): void {
     if (!this.usuario) return;
     
+    console.log('Seleccionando portafolio:', portafolioId);
+    
     // Guardar la selección en localStorage
     localStorage.setItem(`usuario_${this.usuario.id}_portafolio`, portafolioId.toString());
+    
+    // Cancelar suscripciones anteriores para evitar fugas de memoria
+    if (this.actualizacionSubscription) {
+      this.actualizacionSubscription.unsubscribe();
+    }
     
     // Actualizar el portafolio seleccionado
     this.portafolio$ = interval(10000).pipe(
@@ -150,9 +157,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     );
     
     // Suscribirse al portafolio actual
-    this.portafolioService.seleccionarPortafolio(portafolioId).subscribe(portafolio => {
+    this.actualizacionSubscription = this.portafolioService.seleccionarPortafolio(portafolioId).subscribe(portafolio => {
       this.portafolioSeleccionado = portafolio;
+      
+      // Actualizar el historial de patrimonio al cambiar de portafolio
+      if (this.usuario) {
+        this.cargarHistorialPatrimonio(this.usuario.id);
+      }
     });
+    
+    // También forzamos una actualización inmediata del historial para ver cambios
+    if (this.usuario) {
+      this.cargarHistorialPatrimonio(this.usuario.id);
+    }
   }
   
   // Método para seleccionar un portafolio a eliminar en el modal
@@ -353,12 +370,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       });
   }
 
+  // Modificar este método para mejorar el manejo del cambio de portafolio
   cargarHistorialPatrimonio(usuarioId: number): void {
+    const portafolioId = this.portafolioSeleccionado?.id;
+    console.log(`Cargando historial de patrimonio para usuario ${usuarioId}, portafolio actual: ${portafolioId}`);
+    
     this.patrimonioService.obtenerHistorialPatrimonio(usuarioId)
       .subscribe({
         next: (historial) => {
           this.historialPatrimonio = historial;
-          console.log('Historial patrimonio cargado:', this.historialPatrimonio);
+          console.log(`Historial patrimonio cargado: ${historial.length} registros`);
           
           if (historial.length === 0) {
             console.warn('No hay datos de historial de patrimonio para el usuario');
@@ -366,13 +387,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
             this.crearDatosDeMuestraParaGrafico(usuarioId);
           }
           
-          // Esperar a que la vista se inicialice antes de actualizar el gráfico
-          setTimeout(() => this.actualizarGrafico(), 0);
+          // Actualizar el gráfico inmediatamente
+          this.actualizarGrafico();
         },
         error: (error) => {
           console.error('Error al cargar historial de patrimonio:', error);
           // Crear datos de muestra en caso de error
           this.crearDatosDeMuestraParaGrafico(usuarioId);
+          // Intentar actualizar el gráfico incluso en caso de error
+          this.actualizarGrafico();
         }
       });
   }

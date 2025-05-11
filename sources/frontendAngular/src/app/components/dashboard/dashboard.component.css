@@ -4,6 +4,13 @@
   height: 100vh;
 }
 
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
 .toolbar {
   position: fixed;
   top: 0;

@@ -3,12 +3,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { Activo } from '../models/activo.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ActivoService {
-  private apiUrl = 'http://localhost:3000'; // URL del backend
+  private apiUrl = environment.apiUrl; // URL del backend
 
   constructor(private http: HttpClient) { }
 

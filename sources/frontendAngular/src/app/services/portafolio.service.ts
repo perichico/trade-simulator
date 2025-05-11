@@ -7,13 +7,14 @@ import { Transaccion } from '../models/transaccion.model';
 import { Activo } from '../models/activo.model';
 import { TransaccionService } from './transaccion.service';
 import { ActivoService } from './activo.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PortafolioService {
 
-  private apiUrl = 'http://localhost:3000/portafolio';
+  private apiUrl = `${environment.apiUrl}/portafolio`;
   
   // BehaviorSubject para mantener el portafolio actualmente seleccionado
   private portafolioActualSubject = new BehaviorSubject<Portafolio | null>(null);

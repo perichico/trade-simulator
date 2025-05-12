@@ -25,6 +25,32 @@ const OrdenModel = Orden(sequelize);
 const AlertaModel = Alerta(sequelize);
 const TransaccionModel = Transaccion(sequelize);
 
+// Definir el orden de inicialización de modelos para evitar errores de clave foránea
+// Primero modelos base, luego modelos que dependen de ellos
+const modelDefinitions = [
+  'TipoActivo', 
+  'Usuario',
+  'Activo', 
+  'Portafolio', 
+  'HistorialPrecios',
+  'PortafolioActivo', 
+  'Dividendo', 
+  'Orden', 
+  'Alerta',
+  'Transaccion'
+];
+
+// Inicializar modelos en orden específico
+for (const modelName of modelDefinitions) {
+  const modelPath = `./${modelName.toLowerCase()}Model`;
+  try {
+    const modelFunction = require(modelPath);
+    models[modelName] = modelFunction(sequelize);
+  } catch (error) {
+    console.error(`Error al cargar modelo ${modelName}:`, error);
+  }
+}
+
 // Definir relaciones
 // Relaciones principales con índices optimizados
 TipoActivoModel.hasMany(ActivoModel, { foreignKey: 'tipo_activo_id', onDelete: 'RESTRICT', constraints: false });

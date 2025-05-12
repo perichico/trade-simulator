@@ -5,11 +5,17 @@ const cors = require("cors");
 require("dotenv").config();
 const helmet = require("helmet");
 
+// Importar la instancia de sequelize desde models/index.js
+const { sequelize } = require('./models/index');
+const DividendoService = require('./services/dividendoService');
+const GeneradorDividendosService = require("./services/generadorDividendosService");
+
 const usuarioRoutes = require("./routes/usuarioRoutes");
 const activoRoutes = require("./routes/activoRoutes");
 const transaccionRoutes = require("./routes/transaccionRoutes");
 const historialPreciosRoutes = require("./routes/historialPreciosRoutes");
 const portafolioRoutes = require("./routes/portafolioRoutes");
+const dividendoRoutes = require('./routes/dividendoRoutes');
 
 const app = express();
 
@@ -44,6 +50,33 @@ app.use("/activos", activoRoutes);
 app.use("/transacciones", transaccionRoutes);
 app.use("/historial-precios", historialPreciosRoutes);
 app.use("/portafolio", portafolioRoutes);
+app.use('/api/dividendos', dividendoRoutes);
+
+// Inicializar servicios después de que la aplicación esté lista
+app.on('ready', async () => {
+  try {
+    // Verificar conexión a la base de datos
+    await sequelize.authenticate();
+    console.log('Conexión exitosa a la base de datos');
+    
+    // Iniciar los servicios necesarios
+    const dividendoService = new DividendoService();
+    await dividendoService.iniciarServicio().catch(err => {
+      console.error('Error al iniciar el servicio de dividendos:', err);
+    });
+  } catch (err) {
+    console.error('Error al iniciar servicios:', err);
+  }
+});
+
+// Emitir evento 'ready' después de configurar todo
+setTimeout(() => {
+  app.emit('ready');
+}, 1000);
+
+// Iniciar servicio de generación automática de dividendos
+const generadorDividendos = new GeneradorDividendosService();
+generadorDividendos.iniciarServicio();
 
 // Manejo de errores globales
 app.use((err, req, res, next) => {

@@ -131,20 +131,35 @@ exports.obtenerActivoPorId = async (req, res) => {
 
 // Actualizar activo
 exports.actualizarActivo = async (req, res) => {
-    try {
-        const activo = await Activo.findByPk(req.params.id, {
-      include: [{
-        model: TipoActivo,
-        attributes: ['nombre']
-      }]
-    });
-        if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
+  try {
+    const { id } = req.params;
+    const { 
+      nombre, 
+      simbolo, 
+      tipo_activo_id, 
+      porcentaje_dividendo, 
+      frecuencia_dividendo, 
+      ultima_fecha_dividendo 
+    } = req.body;
 
-        await activo.update(req.body);
-        res.json(activo);
-    } catch (error) {
-        res.status(500).json({ error: "Error al actualizar el activo" });
+    const activo = await Activo.findByPk(id);
+    if (!activo) {
+      return res.status(404).json({ mensaje: "Activo no encontrado" });
     }
+
+    await activo.update({ 
+      nombre, 
+      simbolo, 
+      tipo_activo_id,
+      porcentaje_dividendo,
+      frecuencia_dividendo,
+      ultima_fecha_dividendo: ultima_fecha_dividendo ? new Date(ultima_fecha_dividendo) : activo.ultima_fecha_dividendo
+    });
+    res.status(200).json(activo);
+  } catch (error) {
+    console.error("Error al actualizar activo:", error);
+    res.status(500).json({ mensaje: "Error al actualizar activo", error: error.message });
+  }
 };
 
 // Eliminar activo

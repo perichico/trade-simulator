@@ -1,0 +1,111 @@
+<div class="container-fluid py-4" *ngIf="usuario">
+  <div class="row mb-4">
+    <div class="col">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">
+          <i class="bi bi-cash-coin text-success me-2"></i>
+          Dividendos
+        </h2>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-info me-2">{{ usuario.nombre }}</span>
+          <span class="badge bg-success me-2">{{ portafolioSeleccionado?.nombre || 'Sin portafolio' }}</span>
+        </div>
+      </div>
+      <p class="text-muted mt-2">
+        Historial de dividendos recibidos de tus inversiones
+      </p>
+    </div>
+  </div>
+
+  <!-- Tabla de dividendos -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+          <h5 class="mb-0">
+            <i class="bi bi-list-check text-success me-2"></i>
+            Mis Dividendos
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive" *ngIf="!cargando && dividendos.length > 0">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Activo</th>
+                  <th>Acciones</th>
+                  <th>Monto por acción</th>
+                  <th>Monto total</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let dividendo of dividendos">
+                  <td>{{ formatearFecha(dividendo.fecha) }}</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <strong class="me-2">{{ dividendo.activo?.simbolo || 'N/A' }}</strong>
+                      <small class="text-muted">{{ dividendo.activo?.nombre || 'Activo desconocido' }}</small>
+                    </div>
+                  </td>
+                  <td>{{ dividendo.cantidadAcciones }}</td>
+                  <td>{{ formatearDinero(dividendo.monto_por_accion) }}</td>
+                  <td>{{ formatearDinero(dividendo.montoTotal || 0) }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': dividendo.estado === 'pagado',
+                      'bg-warning': dividendo.estado === 'pendiente',
+                      'bg-danger': dividendo.estado === 'cancelado'
+                    }">
+                      {{ dividendo.estado === 'pagado' ? 'Pagado' : 
+                         dividendo.estado === 'pendiente' ? 'Pendiente' : 
+                         'Cancelado' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Estado de carga -->
+          <div class="text-center py-5" *ngIf="cargando">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando dividendos...</p>
+          </div>
+          
+          <!-- Sin dividendos -->
+          <div class="text-center py-5" *ngIf="!cargando && dividendos.length === 0">
+            <i class="bi bi-cash-coin text-muted display-1 mb-3"></i>
+            <h5 class="text-muted">No tienes dividendos en tu historial</h5>
+            <p class="text-muted">Invierte en acciones que paguen dividendos para verlos aquí</p>
+            <a routerLink="/mercado" class="btn btn-primary mt-3">
+              <i class="bi bi-cart-plus me-2"></i>Ir al Mercado
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje si no hay sesión -->
+<div class="login-required" *ngIf="!usuario">
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-shield-lock display-1 text-muted mb-3"></i>
+      <h3 class="text-muted">Acceso restringido</h3>
+      <p class="mb-4">Debes iniciar sesión para ver tus dividendos</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a routerLink="/login" class="btn btn-primary">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+        </a>
+        <a routerLink="/registro" class="btn btn-outline-secondary">
+          <i class="bi bi-person-plus me-2"></i>Registrarse
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

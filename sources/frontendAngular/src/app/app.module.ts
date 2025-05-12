@@ -29,6 +29,7 @@ import { LoginComponent } from './components/login/login.component';
 import { RegistroComponent } from './components/registro/registro.component';
 import { HistorialComponent } from './components/historial/historial.component';
 import { DetalleActivoComponent } from './components/detalle-activo/detalle-activo.component';
+import { DividendosComponent } from './components/dividendos/dividendos.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { DetalleActivoComponent } from './components/detalle-activo/detalle-acti
     LoginComponent,
     RegistroComponent,
     HistorialComponent,
-    DetalleActivoComponent
+    DetalleActivoComponent,
+    DividendosComponent
   ],
   imports: [
     BrowserModule,

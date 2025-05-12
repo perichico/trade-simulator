@@ -6,6 +6,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { MercadoComponent } from './components/mercado/mercado.component';
 import { HistorialComponent } from './components/historial/historial.component';
 import { DetalleActivoComponent } from './components/detalle-activo/detalle-activo.component';
+import { DividendosComponent } from './components/dividendos/dividendos.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
@@ -15,6 +16,7 @@ const routes: Routes = [
   { path: 'mercado', component: MercadoComponent, canActivate: [AuthGuard] },
   { path: 'historial', component: HistorialComponent, canActivate: [AuthGuard] },
   { path: 'detalle-activo/:id', component: DetalleActivoComponent, canActivate: [AuthGuard] },
+  { path: 'dividendos', component: DividendosComponent },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
 

@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
       }
     }
   }, {
-    tableName: 'dividendo',
+    tableName: 'dividendos', // Corregido: nombre de tabla en plural para coincidir con la base de datos
     timestamps: false,  // Desactivar timestamps automáticos para mayor compatibilidad
     indexes: [
       { fields: ['activo_id'] }

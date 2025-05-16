@@ -59,8 +59,9 @@ CREATE TABLE historial_precios (
 CREATE TABLE dividendos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     activo_id INT NOT NULL,
-    monto DECIMAL(10, 2) NOT NULL,
-    fecha_pago DATETIME NOT NULL,
+    fecha DATE NOT NULL,
+    monto_por_accion DECIMAL(15, 6) NOT NULL,
+    estado VARCHAR(255) DEFAULT 'pendiente',
     FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
 );
 
@@ -235,27 +236,27 @@ INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
 (4, 36, 0.25);   -- 0.25 Bitcoin
 
 -- Insertar dividendos de ejemplo para los activos del usuario test (ID 3)
-INSERT INTO dividendos (activo_id, monto, fecha_pago) VALUES
+INSERT INTO dividendos (activo_id, fecha, monto_por_accion, estado) VALUES
 -- Dividendos de Apple (activo_id 1)
-(1, 0.24, '2024-02-15 10:00:00'),  -- Dividendo trimestral de Apple
-(1, 0.24, '2024-05-15 10:00:00'),  -- Próximo dividendo trimestral de Apple
-(1, 0.25, '2024-08-15 10:00:00'),  -- Dividendo trimestral futuro con ligero aumento
+(1, '2024-02-15', 0.240000, 'pendiente'),  -- Dividendo trimestral de Apple
+(1, '2024-05-15', 0.240000, 'pendiente'),  -- Próximo dividendo trimestral de Apple
+(1, '2024-08-15', 0.250000, 'pendiente'),  -- Dividendo trimestral futuro con ligero aumento
 
 -- Dividendos de Microsoft (activo_id 2)
-(2, 0.68, '2024-03-10 10:00:00'),  -- Dividendo trimestral de Microsoft
-(2, 0.68, '2024-06-10 10:00:00'),  -- Próximo dividendo trimestral de Microsoft
+(2, '2024-03-10', 0.680000, 'pendiente'),  -- Dividendo trimestral de Microsoft
+(2, '2024-06-10', 0.680000, 'pendiente'),  -- Próximo dividendo trimestral de Microsoft
 
 -- Dividendos de NVIDIA (activo_id 7)
-(7, 0.04, '2024-03-25 10:00:00'),  -- Dividendo trimestral de NVIDIA
-(7, 0.04, '2024-06-25 10:00:00'),  -- Próximo dividendo trimestral de NVIDIA
+(7, '2024-03-25', 0.040000, 'pendiente'),  -- Dividendo trimestral de NVIDIA
+(7, '2024-06-25', 0.040000, 'pendiente'),  -- Próximo dividendo trimestral de NVIDIA
 
 -- Dividendos de Visa (activo_id 11)
-(11, 0.52, '2024-03-01 10:00:00'), -- Dividendo trimestral de Visa
-(11, 0.52, '2024-06-01 10:00:00'), -- Próximo dividendo trimestral de Visa
+(11, '2024-03-01', 0.520000, 'pendiente'), -- Dividendo trimestral de Visa
+(11, '2024-06-01', 0.520000, 'pendiente'), -- Próximo dividendo trimestral de Visa
 
 -- Dividendos de SPY ETF (activo_id 31)
-(31, 1.57, '2024-03-20 10:00:00'), -- Dividendo trimestral de SPY ETF
-(31, 1.60, '2024-06-20 10:00:00')  -- Próximo dividendo trimestral de SPY ETF con ligero aumento
+(31, '2024-03-20', 1.570000, 'pendiente'), -- Dividendo trimestral de SPY ETF
+(31, '2024-06-20', 1.600000, 'pendiente')  -- Próximo dividendo trimestral de SPY ETF con ligero aumento
 
 -- Drop all tables in the correct order (due to foreign key constraints)
 -- DROP TABLE IF EXISTS transacciones;

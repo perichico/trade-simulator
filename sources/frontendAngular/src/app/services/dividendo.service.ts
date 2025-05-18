@@ -24,7 +24,7 @@ export class DividendoService {
   constructor(private http: HttpClient) { }
 
   obtenerDividendos(): Observable<Dividendo[]> {
-    return this.http.get<Dividendo[]>(`${this.apiUrl}/dividendos`)
+    return this.http.get<Dividendo[]>(`${this.apiUrl}/api/dividendos`)
       .pipe(
         tap(data => console.log('Dividendos obtenidos:', data)),
         catchError(error => {
@@ -35,7 +35,7 @@ export class DividendoService {
   }
 
   obtenerDividendosPorUsuario(): Observable<Dividendo[]> {
-    return this.http.get<Dividendo[]>(`${this.apiUrl}/dividendos/usuario`)
+    return this.http.get<Dividendo[]>(`${this.apiUrl}/api/dividendos/usuario`)
       .pipe(
         tap(data => console.log('Dividendos del usuario obtenidos:', data)),
         catchError(error => {
@@ -46,7 +46,7 @@ export class DividendoService {
   }
 
   crearDividendo(dividendo: Dividendo): Observable<Dividendo> {
-    return this.http.post<Dividendo>(`${this.apiUrl}/dividendos`, dividendo)
+    return this.http.post<Dividendo>(`${this.apiUrl}/api/dividendos`, dividendo)
       .pipe(
         tap(data => console.log('Dividendo creado:', data)),
         catchError(error => {

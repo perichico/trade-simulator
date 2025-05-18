@@ -120,87 +120,87 @@ INSERT INTO tipo_activo (nombre) VALUES
 ('Forex');
 
 -- Insertar activos
-INSERT INTO activos (nombre, simbolo, tipo_activo_id, porcentaje_dividendo, frecuencia_dividendo, ultima_fecha_dividendo) VALUES
+INSERT INTO activos (nombre, simbolo, tipo_activo_id, porcentaje_dividendo, frecuencia_dividendo, ultima_fecha_dividendo, ultimo_precio, ultima_actualizacion) VALUES
 -- Acciones de empresas populares
-('Apple Inc.', 'AAPL', 1, 0.56, 'trimestral', '2023-11-10'),
-('Microsoft Corporation', 'MSFT', 1, 0.88, 'trimestral', '2023-11-15'),
-('Tesla, Inc.', 'TSLA', 1, 0.00, NULL, NULL),
-('Amazon.com Inc.', 'AMZN', 1, 0.00, NULL, NULL),
-('Alphabet Inc.', 'GOOGL', 1, 0.00, NULL, NULL),
-('Meta Platforms Inc.', 'META', 1, 0.00, NULL, NULL),
-('NVIDIA Corporation', 'NVDA', 1, 0.04, 'trimestral', '2023-12-05'),
-('Netflix Inc.', 'NFLX', 1, 0.00, NULL, NULL),
-('Intel Corporation', 'INTC', 1, 1.46, 'trimestral', '2023-11-07'),
-('Advanced Micro Devices Inc.', 'AMD', 1, 0.00, NULL, NULL),
-('Visa Inc.', 'V', 1, 0.78, 'trimestral', '2023-11-30'),
-('Mastercard Inc.', 'MA', 1, 0.60, 'trimestral', '2023-10-09'),
-('Johnson & Johnson', 'JNJ', 1, 3.00, 'trimestral', '2023-11-21'),
-('Coca-Cola Company', 'KO', 1, 3.20, 'trimestral', '2023-12-15'),
-('PepsiCo Inc.', 'PEP', 1, 2.75, 'trimestral', '2023-12-01'),
-('Berkshire Hathaway Inc.', 'BRK-B', 1, 0.00, NULL, NULL),
-('ExxonMobil Corporation', 'XOM', 1, 3.85, 'trimestral', '2023-11-13'),
-('Chevron Corporation', 'CVX', 1, 4.10, 'trimestral', '2023-11-17'),
-('Walmart Inc.', 'WMT', 1, 1.40, 'trimestral', '2023-12-06'),
-('McDonalds Corporation', 'MCD', 1, 2.30, 'trimestral', '2023-11-30'),
+('Apple Inc.', 'AAPL', 1, 0.56, 'trimestral', '2023-11-10', 211.26, '2024-05-16 16:00:01'),
+('Microsoft Corporation', 'MSFT', 1, 0.88, 'trimestral', '2023-11-15', 454.27, '2024-05-16 16:00:01'),
+('Tesla, Inc.', 'TSLA', 1, 0.00, NULL, NULL, 349.98, '2024-05-16 16:00:01'),
+('Amazon.com Inc.', 'AMZN', 1, 0.00, NULL, NULL, 205.59, '2024-05-16 16:00:01'),
+('Alphabet Inc.', 'GOOGL', 1, 0.00, NULL, NULL, 176.50, '2024-05-16 16:00:01'),
+('Meta Platforms Inc.', 'META', 1, 0.00, NULL, NULL, 472.75, '2024-05-16 16:00:01'),
+('NVIDIA Corporation', 'NVDA', 1, 0.04, 'trimestral', '2023-12-05', 135.40, '2024-05-16 16:00:01'),
+('Netflix Inc.', 'NFLX', 1, 0.00, NULL, NULL, 1191.53, '2024-05-16 16:00:01'),
+('Intel Corporation', 'INTC', 1, 1.46, 'trimestral', '2023-11-07', 21.66, '2024-05-16 16:00:01'),
+('Advanced Micro Devices Inc.', 'AMD', 1, 0.00, NULL, NULL, 76.06, '2024-05-16 16:00:01'),
+('Visa Inc.', 'V', 1, 0.78, 'trimestral', '2023-11-30', 291.91, '2024-05-16 16:00:01'),
+('Mastercard Inc.', 'MA', 1, 0.60, 'trimestral', '2023-10-09', 365.12, '2024-05-16 16:00:01'),
+('Johnson & Johnson', 'JNJ', 1, 3.00, 'trimestral', '2023-11-21', 151.33, '2024-05-16 16:00:01'),
+('Coca-Cola Company', 'KO', 1, 3.20, 'trimestral', '2023-12-15', 72.00, '2024-05-16 16:00:01'),
+('PepsiCo Inc.', 'PEP', 1, 2.75, 'trimestral', '2023-12-01', 163.28, '2024-05-16 16:00:01'),
+('Berkshire Hathaway Inc.', 'BRK-B', 1, 0.00, NULL, NULL, 273.63, '2024-05-16 16:00:01'),
+('ExxonMobil Corporation', 'XOM', 1, 3.85, 'trimestral', '2023-11-13', 108.19, '2024-05-16 16:00:01'),
+('Chevron Corporation', 'CVX', 1, 4.10, 'trimestral', '2023-11-17', 142.10, '2024-05-16 16:00:01'),
+('Walmart Inc.', 'WMT', 1, 1.40, 'trimestral', '2023-12-06', 98.24, '2024-05-16 16:00:01'),
+('McDonalds Corporation', 'MCD', 1, 2.30, 'trimestral', '2023-11-30', 318.61, '2024-05-16 16:00:01'),
 
 -- Índices bursátiles
-('S&P 500', '^GSPC', 2, 0.00, NULL, NULL),
-('Dow Jones Industrial Average', '^DJI', 2, 0.00, NULL, NULL),
-('Nasdaq 100', '^NDX', 2, 0.00, NULL, NULL),
-('Russell 2000', '^RUT', 2, 0.00, NULL, NULL),
-('DAX', '^GDAXI', 2, 0.00, NULL, NULL),
-('IBEX 35', '^IBEX', 2, 0.00, NULL, NULL),
-('FTSE 100', '^FTSE', 2, 0.00, NULL, NULL),
-('CAC 40', '^FCHI', 2, 0.00, NULL, NULL),
-('Nikkei 225', '^N225', 2, 0.00, NULL, NULL),
-('Hang Seng', '^HSI', 2, 0.00, NULL, NULL),
+('S&P 500', '^GSPC', 2, 0.00, NULL, NULL, 5958.37, '2024-05-16 16:00:01'),
+('Dow Jones Industrial Average', '^DJI', 2, 0.00, NULL, NULL, 39850.12, '2024-05-16 16:00:01'),
+('Nasdaq 100', '^NDX', 2, 0.00, NULL, NULL, 20861.00, '2024-05-16 16:00:01'),
+('Russell 2000', '^RUT', 2, 0.00, NULL, NULL, 2372.30, '2024-05-16 16:00:01'),
+('DAX', '^GDAXI', 2, 0.00, NULL, NULL, 18768.95, '2024-05-16 16:00:01'),
+('IBEX 35', '^IBEX', 2, 0.00, NULL, NULL, 11142.70, '2024-05-16 16:00:01'),
+('FTSE 100', '^FTSE', 2, 0.00, NULL, NULL, 8435.28, '2024-05-16 16:00:01'),
+('CAC 40', '^FCHI', 2, 0.00, NULL, NULL, 8187.65, '2024-05-16 16:00:01'),
+('Nikkei 225', '^N225', 2, 0.00, NULL, NULL, 38920.26, '2024-05-16 16:00:01'),
+('Hang Seng', '^HSI', 2, 0.00, NULL, NULL, 19274.08, '2024-05-16 16:00:01'),
 
 -- ETFs
-('SPDR S&P 500 ETF', 'SPY', 2, 1.42, 'trimestral', '2023-12-18'),
-('Invesco QQQ Trust', 'QQQ', 2, 0.55, 'trimestral', '2023-12-20'),
-('Vanguard Total Stock Market ETF', 'VTI', 2, 1.38, 'trimestral', '2023-12-22'),
-('iShares MSCI Emerging Markets ETF', 'EEM', 2, 2.10, 'semestral', '2023-12-15'),
-('ARK Innovation ETF', 'ARKK', 2, 0.00, NULL, NULL),
+('SPDR S&P 500 ETF', 'SPY', 2, 1.42, 'trimestral', '2023-12-18', 595.82, '2024-05-16 16:00:01'),
+('Invesco QQQ Trust', 'QQQ', 2, 0.55, 'trimestral', '2023-12-20', 478.25, '2024-05-16 16:00:01'),
+('Vanguard Total Stock Market ETF', 'VTI', 2, 1.38, 'trimestral', '2023-12-22', 262.45, '2024-05-16 16:00:01'),
+('iShares MSCI Emerging Markets ETF', 'EEM', 2, 2.10, 'semestral', '2023-12-15', 43.78, '2024-05-16 16:00:01'),
+('ARK Innovation ETF', 'ARKK', 2, 0.00, NULL, NULL, 62.33, '2024-05-16 16:00:01'),
 
 -- Criptomonedas
-('Bitcoin USD', 'BTC-USD', 5, 0.00, NULL, NULL),
-('Ethereum USD', 'ETH-USD', 5, 0.00, NULL, NULL),
-('Cardano USD', 'ADA-USD', 5, 0.00, NULL, NULL),
-('Solana USD', 'SOL-USD', 5, 0.00, NULL, NULL),
-('XRP USD', 'XRP-USD', 5, 0.00, NULL, NULL),
-('Binance Coin USD', 'BNB-USD', 5, 0.00, NULL, NULL),
-('Dogecoin USD', 'DOGE-USD', 5, 0.00, NULL, NULL),
-('Polkadot USD', 'DOT-USD', 5, 0.00, NULL, NULL),
-('Shiba Inu USD', 'SHIB-USD', 5, 0.00, NULL, NULL),
-('Litecoin USD', 'LTC-USD', 5, 0.00, NULL, NULL),
+('Bitcoin USD', 'BTC-USD', 5, 0.00, NULL, NULL, 106300.51, '2024-05-16 16:00:01'),
+('Ethereum USD', 'ETH-USD', 5, 0.00, NULL, NULL, 2579.24, '2024-05-16 16:00:01'),
+('Cardano USD', 'ADA-USD', 5, 0.00, NULL, NULL, 0.7716, '2024-05-16 16:00:01'),
+('Solana USD', 'SOL-USD', 5, 0.00, NULL, NULL, 176.26, '2024-05-16 16:00:01'),
+('XRP USD', 'XRP-USD', 5, 0.00, NULL, NULL, 2.44, '2024-05-16 16:00:01'),
+('Binance Coin USD', 'BNB-USD', 5, 0.00, NULL, NULL, 657.24, '2024-05-16 16:00:01'),
+('Dogecoin USD', 'DOGE-USD', 5, 0.00, NULL, NULL, 0.2361, '2024-05-16 16:00:01'),
+('Polkadot USD', 'DOT-USD', 5, 0.00, NULL, NULL, 4.88, '2024-05-16 16:00:01'),
+('Shiba Inu USD', 'SHIB-USD', 5, 0.00, NULL, NULL, 0.00001522, '2024-05-16 16:00:01'),
+('Litecoin USD', 'LTC-USD', 5, 0.00, NULL, NULL, 102.24, '2024-05-16 16:00:01'),
 
 -- Forex
-('EUR/USD', 'EURUSD=X', 6, 0.00, NULL, NULL),
-('USD/JPY', 'USDJPY=X', 6, 0.00, NULL, NULL),
-('GBP/USD', 'GBPUSD=X', 6, 0.00, NULL, NULL),
-('USD/MXN', 'USDMXN=X', 6, 0.00, NULL, NULL),
-('USD/BRL', 'USDBRL=X', 6, 0.00, NULL, NULL),
-('USD/CHF', 'USDCHF=X', 6, 0.00, NULL, NULL),
-('USD/CAD', 'USDCAD=X', 6, 0.00, NULL, NULL),
-('USD/CNY', 'USDCNY=X', 6, 0.00, NULL, NULL),
+('EUR/USD', 'EURUSD=X', 6, 0.00, NULL, NULL, 1.0865, '2024-05-16 16:00:01'),
+('USD/JPY', 'USDJPY=X', 6, 0.00, NULL, NULL, 155.82, '2024-05-16 16:00:01'),
+('GBP/USD', 'GBPUSD=X', 6, 0.00, NULL, NULL, 1.2675, '2024-05-16 16:00:01'),
+('USD/MXN', 'USDMXN=X', 6, 0.00, NULL, NULL, 16.7850, '2024-05-16 16:00:01'),
+('USD/BRL', 'USDBRL=X', 6, 0.00, NULL, NULL, 5.1420, '2024-05-16 16:00:01'),
+('USD/CHF', 'USDCHF=X', 6, 0.00, NULL, NULL, 0.9075, '2024-05-16 16:00:01'),
+('USD/CAD', 'USDCAD=X', 6, 0.00, NULL, NULL, 1.3645, '2024-05-16 16:00:01'),
+('USD/CNY', 'USDCNY=X', 6, 0.00, NULL, NULL, 7.2275, '2024-05-16 16:00:01'),
 
 -- Materias Primas
-('Oro', 'GC=F', 4, 0.00, NULL, NULL),
-('Plata', 'SI=F', 4, 0.00, NULL, NULL),
-('Cobre', 'HG=F', 4, 0.00, NULL, NULL),
-('Petróleo WTI', 'CL=F', 4, 0.00, NULL, NULL),
-('Petróleo Brent', 'BZ=F', 4, 0.00, NULL, NULL),
-('Gas Natural', 'NG=F', 4, 0.00, NULL, NULL),
-('Maíz', 'ZC=F', 4, 0.00, NULL, NULL),
-('Trigo', 'ZW=F', 4, 0.00, NULL, NULL),
-('Soja', 'ZS=F', 4, 0.00, NULL, NULL),
+('Oro', 'GC=F', 4, 0.00, NULL, NULL, 2385.20, '2024-05-16 16:00:01'),
+('Plata', 'SI=F', 4, 0.00, NULL, NULL, 30.25, '2024-05-16 16:00:01'),
+('Cobre', 'HG=F', 4, 0.00, NULL, NULL, 4.85, '2024-05-16 16:00:01'),
+('Petróleo WTI', 'CL=F', 4, 0.00, NULL, NULL, 78.65, '2024-05-16 16:00:01'),
+('Petróleo Brent', 'BZ=F', 4, 0.00, NULL, NULL, 82.85, '2024-05-16 16:00:01'),
+('Gas Natural', 'NG=F', 4, 0.00, NULL, NULL, 2.32, '2024-05-16 16:00:01'),
+('Maíz', 'ZC=F', 4, 0.00, NULL, NULL, 452.75, '2024-05-16 16:00:01'),
+('Trigo', 'ZW=F', 4, 0.00, NULL, NULL, 625.50, '2024-05-16 16:00:01'),
+('Soja', 'ZS=F', 4, 0.00, NULL, NULL, 1185.25, '2024-05-16 16:00:01'),
 
 -- Bonos
-('Bono del Tesoro EE.UU. 10 años', '^TNX', 3, 4.25, 'semestral', '2023-11-15'),
-('Bono del Tesoro EE.UU. 30 años', '^TYX', 3, 4.50, 'semestral', '2023-11-15'),
-('Bono del Tesoro EE.UU. 5 años', '^FVX', 3, 4.10, 'semestral', '2023-11-15'),
-('Bono alemán 10 años', '^DE10Y', 3, 2.75, 'anual', '2023-10-15'),
-('Bono japonés 10 años', '^JP10Y', 3, 0.85, 'semestral', '2023-09-20');
+('Bono del Tesoro EE.UU. 10 años', '^TNX', 3, 4.25, 'semestral', '2023-11-15', 4.38, '2024-05-16 16:00:01'),
+('Bono del Tesoro EE.UU. 30 años', '^TYX', 3, 4.50, 'semestral', '2023-11-15', 4.52, '2024-05-16 16:00:01'),
+('Bono del Tesoro EE.UU. 5 años', '^FVX', 3, 4.10, 'semestral', '2023-11-15', 4.25, '2024-05-16 16:00:01'),
+('Bono alemán 10 años', '^DE10Y', 3, 2.75, 'anual', '2023-10-15', 2.45, '2024-05-16 16:00:01'),
+('Bono japonés 10 años', '^JP10Y', 3, 0.85, 'semestral', '2023-09-20', 0.95, '2024-05-16 16:00:01');
 
 
 -- Insertar usuarios de prueba
@@ -237,24 +237,44 @@ INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
 
 -- Insertar dividendos de ejemplo para los activos del usuario test (ID 3)
 INSERT INTO dividendos (activo_id, fecha, monto_por_accion, estado) VALUES
--- Dividendos de Apple (activo_id 1)
+-- Dividendos históricos pagados de Apple (activo_id 1)
+(1, '2023-02-16', 0.230000, 'pagado'),  -- Dividendo histórico pagado de Apple
+(1, '2023-05-18', 0.230000, 'pagado'),  -- Dividendo histórico pagado de Apple
+(1, '2023-08-17', 0.240000, 'pagado'),  -- Dividendo histórico pagado de Apple
+(1, '2023-11-16', 0.240000, 'pagado'),  -- Dividendo histórico pagado de Apple
 (1, '2024-02-15', 0.240000, 'pendiente'),  -- Dividendo trimestral de Apple
 (1, '2024-05-15', 0.240000, 'pendiente'),  -- Próximo dividendo trimestral de Apple
 (1, '2024-08-15', 0.250000, 'pendiente'),  -- Dividendo trimestral futuro con ligero aumento
 
--- Dividendos de Microsoft (activo_id 2)
+-- Dividendos históricos pagados de Microsoft (activo_id 2)
+(2, '2023-03-09', 0.650000, 'pagado'),  -- Dividendo histórico pagado de Microsoft
+(2, '2023-06-08', 0.650000, 'pagado'),  -- Dividendo histórico pagado de Microsoft
+(2, '2023-09-14', 0.680000, 'pagado'),  -- Dividendo histórico pagado de Microsoft
+(2, '2023-12-14', 0.680000, 'pagado'),  -- Dividendo histórico pagado de Microsoft
 (2, '2024-03-10', 0.680000, 'pendiente'),  -- Dividendo trimestral de Microsoft
 (2, '2024-06-10', 0.680000, 'pendiente'),  -- Próximo dividendo trimestral de Microsoft
 
--- Dividendos de NVIDIA (activo_id 7)
+-- Dividendos históricos pagados de NVIDIA (activo_id 7)
+(7, '2023-03-22', 0.040000, 'pagado'),  -- Dividendo histórico pagado de NVIDIA
+(7, '2023-06-21', 0.040000, 'pagado'),  -- Dividendo histórico pagado de NVIDIA
+(7, '2023-09-20', 0.040000, 'pagado'),  -- Dividendo histórico pagado de NVIDIA
+(7, '2023-12-20', 0.040000, 'pagado'),  -- Dividendo histórico pagado de NVIDIA
 (7, '2024-03-25', 0.040000, 'pendiente'),  -- Dividendo trimestral de NVIDIA
 (7, '2024-06-25', 0.040000, 'pendiente'),  -- Próximo dividendo trimestral de NVIDIA
 
--- Dividendos de Visa (activo_id 11)
+-- Dividendos históricos pagados de Visa (activo_id 11)
+(11, '2023-03-03', 0.450000, 'pagado'), -- Dividendo histórico pagado de Visa
+(11, '2023-06-02', 0.450000, 'pagado'), -- Dividendo histórico pagado de Visa
+(11, '2023-09-01', 0.480000, 'pagado'), -- Dividendo histórico pagado de Visa
+(11, '2023-12-01', 0.520000, 'pagado'), -- Dividendo histórico pagado de Visa
 (11, '2024-03-01', 0.520000, 'pendiente'), -- Dividendo trimestral de Visa
 (11, '2024-06-01', 0.520000, 'pendiente'), -- Próximo dividendo trimestral de Visa
 
--- Dividendos de SPY ETF (activo_id 31)
+-- Dividendos históricos pagados de SPY ETF (activo_id 31)
+(31, '2023-03-17', 1.470000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
+(31, '2023-06-16', 1.480000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
+(31, '2023-09-15', 1.510000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
+(31, '2023-12-15', 1.550000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
 (31, '2024-03-20', 1.570000, 'pendiente'), -- Dividendo trimestral de SPY ETF
 (31, '2024-06-20', 1.600000, 'pendiente')  -- Próximo dividendo trimestral de SPY ETF con ligero aumento
 

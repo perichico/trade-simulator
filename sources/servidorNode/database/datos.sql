@@ -232,8 +232,7 @@ INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
 (4, 2, 8.00),    -- 8 acciones de Microsoft
 (4, 7, 5.00),    -- 5 acciones de NVIDIA
 (4, 11, 10.00),  -- 10 acciones de Visa
-(4, 31, 5.00),   -- 5 unidades de SPY ETF
-(4, 36, 0.25);   -- 0.25 Bitcoin
+(4, 31, 5.00);   -- 5 unidades de SPY ETF
 
 -- Insertar dividendos de ejemplo para los activos del usuario test (ID 3)
 INSERT INTO dividendos (activo_id, fecha, monto_por_accion, estado) VALUES

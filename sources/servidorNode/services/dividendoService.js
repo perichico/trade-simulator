@@ -5,7 +5,6 @@ class DividendoService {
   async iniciarServicio() {
     console.log('Iniciando servicio de dividendos...');
     try {
-      // En lugar de verificar la tabla, verificamos si podemos acceder al modelo
       try {
         await this.verificarModelosDisponibles();
       } catch (error) {

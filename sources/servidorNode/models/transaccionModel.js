@@ -35,7 +35,7 @@ module.exports = (sequelize) => {
         },
         fecha: { 
             type: DataTypes.DATE, 
-            allowNull: false // Nueva columna para la fecha de la transacción
+            allowNull: false 
         },
         tipo: {
             type: DataTypes.STRING,
@@ -46,6 +46,6 @@ module.exports = (sequelize) => {
         }
     }, {
         tableName: "transacciones", // Nombre de la tabla
-        timestamps: false // No se utilizan createdAt y updatedAt en este modelo
+        timestamps: false 
     });
 };

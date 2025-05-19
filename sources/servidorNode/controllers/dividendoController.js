@@ -36,7 +36,7 @@ exports.obtenerDividendosPorUsuario = async (req, res) => {
   }
 };
 
-// Procesar dividendos automáticos (para uso del sistema o admin)
+// Procesar dividendos automáticos
 exports.procesarDividendosAutomaticos = async (req, res) => {
   try {
     const dividendos = await dividendoService.procesarDividendosAutomaticos();

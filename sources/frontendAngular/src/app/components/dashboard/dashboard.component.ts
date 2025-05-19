@@ -51,7 +51,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   ) { }
 
   ngOnInit(): void {
-    // Suscribirse al usuario current
+    // Suscribirse al usuario actual
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
       

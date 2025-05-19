@@ -70,7 +70,7 @@ exports.crearActivo = async (req, res) => {
       return res.status(400).json({ error: "Faltan datos requeridos" });
     }
     
-    // Obtener el precio inicial desde Google Finance
+    // Obtener el precio inicial
     const precio_inicial = await preciosService.obtenerPrecioActual(simbolo);
     
     if (!precio_inicial) {

@@ -19,7 +19,6 @@ export class ActivoService {
     return this.http.get<Activo[]>(`${this.apiUrl}/activos`, params)
       .pipe(
         map(activos => {
-          // Usar los precios reales del backend que ya consulta Yahoo Finance
           return activos.map(activo => {
             return {
               ...activo,

@@ -11,6 +11,5 @@ export interface Transaccion {
   usuario?: any; // Información del usuario
   activo?: any; // Información del activo
   
-  // Propiedades calculadas para la UI
   valorTotal?: number; // Precio * cantidad
 }

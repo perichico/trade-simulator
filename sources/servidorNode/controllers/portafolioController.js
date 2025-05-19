@@ -13,7 +13,7 @@ exports.obtenerPortafoliosUsuario = async (req, res) => {
         // Buscar todos los portafolios del usuario
         const portafolios = await Portafolio.findAll({
             where: { usuario_id: usuarioId },
-            order: [['id', 'ASC']] // Cambiado de 'createdAt' a 'id' ya que la tabla no tiene timestamps
+            order: [['id', 'ASC']]
         });
 
         // Si no tiene portafolios, crear uno por defecto
@@ -36,7 +36,7 @@ exports.obtenerPortafoliosUsuario = async (req, res) => {
                 descripcion: portafolio.descripcion,
                 fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
                 valorTotal,
-                saldo: portafolio.saldo // <-- Añadido saldo aquí
+                saldo: portafolio.saldo
             };
         }));
 
@@ -105,9 +105,7 @@ exports.obtenerPortafolio = async (req, res) => {
             });
             
             console.log(`Transacciones del usuario: ${transaccionesUsuario.length}`);
-            
-            // Si hay transacciones pero no hay activos en el portafolio, ejecutar migración manual
-            // Solo para el portafolio principal, los nuevos portafolios deben empezar vacíos
+
             if (transaccionesUsuario.length > 0 && portafolio.nombre === 'Portafolio Principal') {
                 console.log('Ejecutando migración manual de transacciones a portafolio principal...');
                 
@@ -156,7 +154,7 @@ exports.obtenerPortafolio = async (req, res) => {
                     }
                 }
                 
-                // Volver a obtener los activos después de la migración
+                // Volver a obtener los activos
                 const activosActualizados = await PortafolioActivo.findAll({
                     where: { portafolio_id: portafolio.id }
                 });
@@ -255,7 +253,7 @@ exports.obtenerPortafolio = async (req, res) => {
     }
 };
 
-// Método auxiliar para calcular el valor total de un portafolio
+// Método para calcular el valor total de un portafolio
 exports.calcularValorPortafolio = async (portafolioId) => {
     try {
         const activosEnPortafolio = await PortafolioActivo.findAll({
@@ -314,7 +312,7 @@ exports.crearPortafolio = async (req, res) => {
             id: nuevoPortafolio.id,
             nombre: nuevoPortafolio.nombre,
             fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
-            valorTotal: 10000, // Saldo inicial fijo de 10,000
+            valorTotal: 10000, // Saldo inicial fijo de 10.000
             activos: [] // Sin activos iniciales
         });
     } catch (error) {

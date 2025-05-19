@@ -151,7 +151,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
       .filter(a => a.cantidadTotal > 0)
       .map(a => ({
         ...a,
-        valorTotal: a.valorTotal || a.precio * a.cantidadTotal // Fallback al precio existente si no se pudo actualizar
+        valorTotal: a.valorTotal || a.precio * a.cantidadTotal
       }));
 
     res.status(200).json({

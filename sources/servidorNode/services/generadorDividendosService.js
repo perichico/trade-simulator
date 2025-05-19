@@ -7,9 +7,6 @@ class GeneradorDividendosService {
         this.INTERVALO_VERIFICACION = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
     }
 
-    /**
-     * Iniciar el servicio de generación automática de dividendos
-     */
     iniciarServicio() {
         console.log('Iniciando servicio de generación automática de dividendos...');
         

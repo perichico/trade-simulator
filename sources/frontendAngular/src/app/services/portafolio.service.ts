@@ -16,7 +16,7 @@ export class PortafolioService {
 
   private apiUrl = `${environment.apiUrl}/portafolio`;
   
-  // BehaviorSubject para mantener el portafolio actualmente seleccionado
+  // Mantener el portafolio actualmente seleccionado
   private portafolioActualSubject = new BehaviorSubject<Portafolio | null>(null);
   portafolioActual$ = this.portafolioActualSubject.asObservable();
   

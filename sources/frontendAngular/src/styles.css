@@ -1,204 +1,48 @@
-/* Estilos globales para el simulador de inversión en bolsa */
-
-html, body { height: 100%; }
-body { 
-  margin: 0; 
-  font-family: Roboto, "Helvetica Neue", sans-serif; 
-  background-color: #f5f5f5;
+\n/* Estilos personalizados para la navegación */
+.bg-primary-dark {
+  background-color: rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Colores personalizados para el simulador */
-:root {
-  --primary-color: #1e88e5; /* Azul principal */
-  --secondary-color: #43a047; /* Verde para ganancias */
-  --danger-color: #e53935; /* Rojo para pérdidas */
-  --background-light: #ffffff;
-  --background-dark: #f5f5f5;
-  --text-primary: #212121;
-  --text-secondary: #757575;
+.navbar .nav-link {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Estilos para tarjetas y contenedores */
-.card {
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+.navbar .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+.navbar .nav-link:active {
+  transform: translateY(0);
 }
 
-/* Estilos para valores positivos y negativos */
-.positive-value {
-  color: var(--secondary-color);
-  font-weight: 500;
+.navbar .nav-link i {
+  transition: transform 0.3s ease;
 }
 
-.negative-value {
-  color: var(--danger-color);
-  font-weight: 500;
+.navbar .nav-link:hover i {
+  transform: scale(1.1);
 }
 
-/* Estilos para contenedores principales */
-.content-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+.navbar-brand {
+  transition: transform 0.3s ease;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .content-container {
-    padding: 10px;
-  }
+.navbar-brand:hover {
+  transform: scale(1.05);
 }
 
-body.dark-mode {
-  background-color: #181a1b !important;
-  color: #e0e0e0 !important;
+.navbar-toggler {
+  transition: transform 0.2s ease;
 }
 
-body.dark-mode, body.dark-mode .card, body.dark-mode .content-container, body.dark-mode .navbar, body.dark-mode .login-required mat-card {
-  background-color: #181a1b !important;
-  color: #ffffff !important;
+.navbar-toggler:hover {
+  transform: scale(1.1);
 }
 
-body.dark-mode .navbar, body.dark-mode .navbar-brand, body.dark-mode .nav-link {
-  background-color: #23272b !important;
-  color: #ffffff !important;
-}
-
-body.dark-mode .card {
-  background-color: #23272b !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-
-body.dark-mode .positive-value {
-  color: #43a047 !important;
-}
-
-body.dark-mode .negative-value {
-  color: #e53935 !important;
-}
-
-body.dark-mode .btn, body.dark-mode .btn-primary, body.dark-mode .btn-secondary { background-color: #ffffff !important; color: #000000 !important; border-color: #444 !important; }
-
-body.dark-mode .btn-outline-light {
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-}
-
-body.dark-mode .mat-card {
-  background-color: #23272b !important;
-  color: #ffffff !important;
-}
-
-body.dark-mode .table, body.dark-mode .mercado-table {
-  background-color: #23272b !important;
-  color: #ffffff !important;
-}
-
-body.dark-mode .form-control, body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
-  background-color: #ffffff !important;
-  color: #212121 !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode .bg-primary {
-  background-color: #23272b !important;
-}
-
-body.dark-mode .bg-light {
-  background-color: #23272b !important;
-}
-
-body.dark-mode .bg-white {
-  background-color: #23272b !important;
-}
-
-body.dark-mode .mat-toolbar {
-  background: #23272b !important;
-  color: #ffffff !important;
-}
-
-body.dark-mode .mat-dialog-container {
-  background: #23272b !important;
-  color: #e0e0e0 !important;
-}
-
-body.dark-mode .mercado-filter {
-  background-color: #000000 !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-body.dark-mode .btn-primary:hover {
-  background-color: #90ee90 !important;
-  color: #000000 !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-.btn-comprar:hover, .btn-vender:hover {
-  background-color: rgba(173, 216, 230, 0.5); /* Mantener efecto de hover */
-}
-
-body.dark-mode .mercado-filter {
-  background-color: #000000 !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-body.dark-mode .mat-dialog-container {
-  background: #23272b !important;
-  color: #e0e0e0 !important;
-}
-
-body.dark-mode .mercado-filter {
-  background-color: #000000 !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-body.dark-mode .btn-primary:hover {
-  background-color: #90ee90 !important;
-}
-
-body.dark-mode .btn-outline-danger:hover {
-  background-color: #ffcccb !important;
-}
-
-.btn-comprar:hover, .btn-vender:hover {
-  background-color: rgba(173, 216, 230, 0.5); /* Mantener efecto de hover */
-}
-
-body {
-  color: #333333;
-}
-
-.text-muted {
-  color: #666666 !important;
-}
-
-body.dark-mode .logo {
-  filter: invert(1);
-}
-
-body:not(.dark-mode) .logo {
-  filter: invert(0);
+.btn-outline-light:hover {
+  transform: rotate(180deg);
+  transition: transform 0.5s ease;
 }

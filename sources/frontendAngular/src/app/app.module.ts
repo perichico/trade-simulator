@@ -5,6 +5,8 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing.module';
+import { AlertasComponent } from './components/alertas/alertas.component';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 // Angular Material
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -41,7 +43,8 @@ import { DividendosComponent } from './components/dividendos/dividendos.componen
     RegistroComponent,
     HistorialComponent,
     DetalleActivoComponent,
-    DividendosComponent
+    DividendosComponent,
+    AlertasComponent
   ],
   imports: [
     BrowserModule,
@@ -63,7 +66,8 @@ import { DividendosComponent } from './components/dividendos/dividendos.componen
     MatSnackBarModule,
     MatTabsModule,
     MatProgressSpinnerModule,
-    MatDialogModule
+    MatDialogModule,
+    MatSlideToggleModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }

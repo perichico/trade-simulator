@@ -1,32 +1,37 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">
-      <i class="bi bi-graph-up-arrow me-2"></i>
+    <a class="navbar-brand fw-bold" href="#">
+      <i class="bi bi-graph-up-arrow me-2 fs-4"></i>
       BullStreet
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+        <li class="nav-item mx-1">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/dashboard" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-speedometer2 me-2 fs-5"></i> Dashboard
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/mercado" routerLinkActive="active">
-            <i class="bi bi-currency-exchange me-1"></i> Mercado
+        <li class="nav-item mx-1">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/mercado" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-currency-exchange me-2 fs-5"></i> Mercado
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/historial" routerLinkActive="active">
-            <i class="bi bi-clock-history me-1"></i> Historial
+        <li class="nav-item mx-1">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/historial" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-clock-history me-2 fs-5"></i> Historial
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" routerLink="/dividendos" routerLinkActive="active">
-            <i class="bi bi-cash-coin me-1"></i> Dividendos
+        <li class="nav-item mx-1">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/dividendos" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-cash-coin me-2 fs-5"></i> Dividendos
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/alertas" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-bell me-2 fs-5"></i> Alertas
           </a>
         </li>
       </ul>

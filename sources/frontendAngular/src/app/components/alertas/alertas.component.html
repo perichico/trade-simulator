@@ -1,0 +1,173 @@
+<div class="alertas-container">
+  <div class="row">
+    <div class="col-lg-4 mb-4">
+      <mat-card class="form-card h-100 shadow">
+        <mat-card-header class="bg-primary text-white py-3 rounded-top">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-bell-fill fs-4 me-3"></i>
+            <mat-card-title class="mb-0">Crear Nueva Alerta</mat-card-title>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="p-4">
+          <form [formGroup]="alertaForm" (ngSubmit)="crearAlerta()">
+            <mat-form-field appearance="outline" class="w-100 mb-3">
+              <mat-label>Seleccionar Activo</mat-label>
+              <mat-select formControlName="activoId">
+                <mat-option *ngFor="let activo of activos" [value]="activo.id">
+                  <div class="d-flex align-items-center">
+                    <span class="me-2">{{ activo.simbolo }}</span>
+                    <span>{{ activo.nombre }}</span>
+                  </div>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>trending_up</mat-icon>
+              <mat-error *ngIf="alertaForm.get('activoId')?.hasError('required')">
+                Selecciona un activo para configurar la alerta
+              </mat-error>
+            </mat-form-field>
+
+            <div class="row">
+              <div class="col-md-6">
+                <mat-form-field appearance="outline" class="w-100 mb-3">
+                  <mat-label>Precio Objetivo</mat-label>
+                  <input matInput type="number" formControlName="precioObjetivo" 
+                         [min]="0.01" [step]="0.01">
+                  <span matPrefix>$&nbsp;</span>
+                  <mat-hint *ngIf="mostrarPrecioActual()" align="end">
+                    Precio actual: {{ getPrecioActual() | currency }}
+                  </mat-hint>
+                  <mat-error *ngIf="alertaForm.get('precioObjetivo')?.hasError('required')">
+                    Indica un precio objetivo
+                  </mat-error>
+                  <mat-error *ngIf="alertaForm.get('precioObjetivo')?.hasError('min')">
+                    El precio debe ser mayor a 0
+                  </mat-error>
+                </mat-form-field>
+              </div>
+              <div class="col-md-6">
+                <mat-form-field appearance="outline" class="w-100 mb-3">
+                  <mat-label>Cantidad a Vender</mat-label>
+                  <input matInput type="number" formControlName="cantidadVenta" [min]="1" [step]="1">
+                  <mat-icon matPrefix>inventory_2</mat-icon>
+                  <mat-hint *ngIf="mostrarCantidadDisponible()" align="end">
+                    Disponible: {{ getCantidadDisponible() }} unidades
+                  </mat-hint>
+                  <mat-error *ngIf="alertaForm.get('cantidadVenta')?.hasError('required')">
+                    Indica la cantidad a vender
+                  </mat-error>
+                  <mat-error *ngIf="alertaForm.get('cantidadVenta')?.hasError('min')">
+                    La cantidad debe ser mayor a 0
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button mat-raised-button color="primary" type="submit" 
+                      [disabled]="!alertaForm.valid" class="py-2">
+                <i class="bi bi-plus-circle-fill me-2"></i>
+                Crear Alerta
+              </button>
+              <button mat-stroked-button type="button" 
+                      (click)="limpiarFormulario()" class="py-2">
+                <i class="bi bi-x-circle me-2"></i>
+                Limpiar
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+          <i class="bi bi-list-check me-2 text-primary"></i>
+          Mis Alertas Configuradas
+        </h2>
+        <div class="d-flex gap-2">
+          <mat-form-field appearance="outline" class="m-0" style="width: 200px">
+            <mat-label>Filtrar</mat-label>
+            <input matInput (keyup)="aplicarFiltro($event)" placeholder="Buscar alerta...">
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+          <button mat-stroked-button color="primary" (click)="actualizarAlertas()">
+            <i class="bi bi-arrow-clockwise me-2"></i>
+            Actualizar
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="alertas.length === 0" class="text-center py-5 bg-light rounded shadow-sm">
+        <i class="bi bi-bell-slash fs-1 text-muted mb-3"></i>
+        <h3 class="text-muted">No tienes alertas configuradas</h3>
+        <p class="text-muted">Crea una nueva alerta para monitorear el precio de tus activos</p>
+      </div>
+
+      <div class="alertas-grid">
+        <mat-card *ngFor="let alerta of alertas" class="alerta-card shadow-sm position-relative">
+          <div class="ribbon" 
+               [ngClass]="{'ribbon-success': esPrecioFavorable(alerta), 'ribbon-warning': !esPrecioFavorable(alerta)}"
+               *ngIf="getPrecioActualDelActivo(alerta.activoId) !== 0">
+            <span>{{ getPrecioActualDelActivo(alerta.activoId) | currency }}</span>
+          </div>
+
+          <div class="alerta-header p-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+              <h3 class="mb-0 fw-bold">{{getNombreActivo(alerta.activoId)}}</h3>
+              <span class="simbolo-badge">{{getSimboloActivo(alerta.activoId)}}</span>
+            </div>
+          </div>
+          
+          <div class="alerta-content p-3">
+            <div class="row mb-2">
+              <div class="col-md-6">
+                <div class="detail-label">Precio Objetivo</div>
+                <div class="precio-objetivo fs-4 fw-bold">
+                  {{alerta.precioObjetivo | currency}}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-label">Cantidad a Vender</div>
+                <div class="cantidad-venta">
+                  <i class="bi bi-box-seam me-2"></i>
+                  {{alerta.cantidadVenta}} unidades
+                </div>
+              </div>
+            </div>
+            
+            <div class="progress mb-2" style="height: 10px;" *ngIf="mostrarProgreso(alerta)">
+              <div class="progress-bar" 
+                   [ngClass]="{'bg-success': esPrecioFavorable(alerta), 'bg-warning': !esPrecioFavorable(alerta)}"
+                   [style.width.%]="calcularPorcentajeProgreso(alerta)">
+              </div>
+            </div>
+            
+            <div class="small text-muted" *ngIf="mostrarProgreso(alerta)">
+              {{ calcularPorcentajeProgreso(alerta) }}% del objetivo
+            </div>
+          </div>
+
+          <div class="alerta-footer p-3 bg-light border-top d-flex justify-content-between align-items-center">
+            <div [class]="'estado-badge ' + (alerta.activa ? 'estado-activa' : 'estado-inactiva')">
+              <i class="bi" [class.bi-check-circle-fill]="alerta.activa" [class.bi-pause-circle-fill]="!alerta.activa"></i>
+              {{alerta.activa ? 'Activa' : 'Pausada'}}
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+              <mat-slide-toggle
+                [checked]="alerta.activa"
+                (change)="toggleAlerta(alerta)"
+                color="primary">
+              </mat-slide-toggle>
+              
+              <button mat-mini-fab color="warn" class="acciones-btn" (click)="eliminarAlerta(alerta.id!)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+</div>

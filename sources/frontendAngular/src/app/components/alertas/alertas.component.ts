@@ -31,30 +31,13 @@ export class AlertasComponent implements OnInit {
     this.alertaForm = this.formBuilder.group({
       activoId: ['', Validators.required],
       precioObjetivo: ['', [Validators.required, Validators.min(0)]],
-      cantidadVenta: ['', [Validators.required, Validators.min(1)]]
+      cantidadVenta: ['', [Validators.min(1)]]
     });
   }
 
   ngOnInit(): void {
-    this.verificarConexion();
     this.cargarAlertas();
     this.cargarActivos();
-  }
-
-  verificarConexion(): void {
-    // Hacemos una petición simple para verificar la conectividad
-    this.http.get(`${environment.apiUrl}/health`, { responseType: 'text' })
-      .pipe(
-        timeout(5000),
-        catchError(error => {
-          console.error('Error de conectividad con el servidor:', error);
-          this.mostrarError(`No se puede conectar con el servidor: ${error.message || 'Error desconocido'}`);
-          return throwError(() => error);
-        })
-      )
-      .subscribe(response => {
-        console.log('Conectividad con el servidor: OK', response);
-      });
   }
 
   cargarAlertas(): void {

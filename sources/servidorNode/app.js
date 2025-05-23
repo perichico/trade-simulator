@@ -16,6 +16,7 @@ const transaccionRoutes = require("./routes/transaccionRoutes");
 const historialPreciosRoutes = require("./routes/historialPreciosRoutes");
 const portafolioRoutes = require("./routes/portafolioRoutes");
 const dividendoRoutes = require('./routes/dividendoRoutes');
+const alertasRoutes = require('./routes/alertas.routes');
 
 const app = express();
 
@@ -44,6 +45,11 @@ app.use(session({
     }
 }));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // Rutas
 app.use("/", usuarioRoutes);
 app.use("/activos", activoRoutes);
@@ -51,6 +57,7 @@ app.use("/transacciones", transaccionRoutes);
 app.use("/historial-precios", historialPreciosRoutes);
 app.use("/portafolio", portafolioRoutes);
 app.use('/api/dividendos', dividendoRoutes);
+app.use('/api/alertas', alertasRoutes);
 
 // Inicializar servicios después de que la aplicación esté lista
 app.on('ready', async () => {

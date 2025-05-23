@@ -3,8 +3,10 @@ export interface Alerta {
     usuarioId: number;
     activoId: number;
     precioObjetivo: number;
-    cantidadVenta: number;
+    cantidadVenta?: number;
+    condicion?: 'mayor' | 'menor';
+    estado?: 'activa' | 'disparada' | 'cancelada';
     activa: boolean;
     fechaCreacion?: Date;
-    fechaActivacion?: Date;
+    fechaDisparo?: Date;
 }

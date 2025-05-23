@@ -37,8 +37,8 @@ router.post('/', async (req, res) => {
       cantidadVenta
     });
     
-    if (!activoId || !precioObjetivo || !cantidadVenta) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
+    if (!activoId || !precioObjetivo) {
+      return res.status(400).json({ message: 'Activo y precio objetivo son obligatorios' });
     }
     
     const alerta = await Alerta.create({

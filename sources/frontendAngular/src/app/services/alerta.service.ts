@@ -35,121 +35,47 @@ export class AlertaService {
   obtenerAlertasUsuario(): Observable<Alerta[]> {
     console.log('Solicitando alertas al servidor:', this.apiUrl);
     
-    // Implementar datos de prueba para desarrollo mientras se resuelve el problema con el backend
-    if (environment.useTestData) {
-      console.log('Usando datos de prueba para alertas');
-      return of(this.getMockAlertas()).pipe(
-        // Simular retraso de red
-        delay(500)
-      );
-    }
-    
     return this.http.get<Alerta[]>(this.apiUrl)
       .pipe(
         timeout(10000),
         retry(1),
-        catchError((error) => {
-          this.handleError(error);
-          // Si hay error, intentar cargar datos de prueba como fallback
-          console.log('Error en API real, usando datos de prueba como fallback');
-          return of(this.getMockAlertas());
-        })
+        catchError(this.handleError)
       );
   }
 
   crearAlerta(alerta: Alerta): Observable<Alerta> {
     console.log('Enviando nueva alerta al servidor:', alerta);
     
-    // Si estamos usando datos de prueba o hay problemas con la API
-    if (environment.useTestData) {
-      console.log('Usando simulación para crear alerta');
-      // Simulamos la creación con un ID aleatorio
-      const nuevaAlerta: Alerta = {
-        ...alerta,
-        id: Math.floor(Math.random() * 1000) + 10,
-        activa: true
-      };
-      
-      // Añadimos al array de datos de prueba
-      const alertas = this.getMockAlertas();
-      alertas.push(nuevaAlerta);
-      
-      // Devolvemos la alerta simulada después de un pequeño retraso
-      return of(nuevaAlerta).pipe(delay(500));
-    }
-    
     return this.http.post<Alerta>(this.apiUrl, alerta)
       .pipe(
-        catchError((error) => {
-          this.handleError(error);
-          console.log('Error en API real, simulando creación como fallback');
-          
-          // Simulamos la creación como fallback
-          const nuevaAlerta: Alerta = {
-            ...alerta,
-            id: Math.floor(Math.random() * 1000) + 10,
-            activa: true
-          };
-          
-          return of(nuevaAlerta);
-        })
+        catchError(this.handleError)
       );
   }
 
   activarAlerta(id: number): Observable<any> {
     console.log(`Activando alerta ${id}`);
     
-    // Si estamos usando datos de prueba o hay problemas con la API
-    if (environment.useTestData) {
-      console.log('Usando simulación para activar alerta');
-      return of({ success: true }).pipe(delay(300));
-    }
-    
     return this.http.patch(`${this.apiUrl}/${id}/activar`, {})
       .pipe(
-        catchError((error) => {
-          this.handleError(error);
-          console.log('Error en API real, simulando activación como fallback');
-          return of({ success: true });
-        })
+        catchError(this.handleError)
       );
   }
 
   desactivarAlerta(id: number): Observable<any> {
     console.log(`Desactivando alerta ${id}`);
     
-    // Si estamos usando datos de prueba o hay problemas con la API
-    if (environment.useTestData) {
-      console.log('Usando simulación para desactivar alerta');
-      return of({ success: true }).pipe(delay(300));
-    }
-    
     return this.http.patch(`${this.apiUrl}/${id}/desactivar`, {})
       .pipe(
-        catchError((error) => {
-          this.handleError(error);
-          console.log('Error en API real, simulando desactivación como fallback');
-          return of({ success: true });
-        })
+        catchError(this.handleError)
       );
   }
 
   eliminarAlerta(id: number): Observable<any> {
     console.log(`Eliminando alerta ${id}`);
     
-    // Si estamos usando datos de prueba o hay problemas con la API
-    if (environment.useTestData) {
-      console.log('Usando simulación para eliminar alerta');
-      return of({ success: true }).pipe(delay(300));
-    }
-    
     return this.http.delete(`${this.apiUrl}/${id}`)
       .pipe(
-        catchError((error) => {
-          this.handleError(error);
-          console.log('Error en API real, simulando eliminación como fallback');
-          return of({ success: true });
-        })
+        catchError(this.handleError)
       );
   }
   

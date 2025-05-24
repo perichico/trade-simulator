@@ -1,212 +1,202 @@
-<div class="detalle-container" *ngIf="usuario && (activo$ | async) as activo">
-  <nav class="toolbar primary">
-    <button class="icon-button" aria-label="Volver al mercado" routerLink="/mercado">
-      <span class="icon">←</span>
-    </button>
-    <span class="title">Detalle de Activo</span>
-    <span class="spacer"></span>
-    <span class="user-info">{{ usuario.nombre }} | {{ portafolioActual ? formatearDinero(portafolioActual.saldo) : 'N/A' }}</span>
-    <button class="icon-button" aria-label="Cerrar sesión">
-      <span class="icon">⤴</span>
-    </button>
-  </nav>
-
-  <div class="content-container">
-    <div class="detalle-header">
-      <h1>{{ activo?.nombre ?? 'N/A' }} ({{ activo?.simbolo ?? 'N/A' }})</h1>
-      <div class="precio-container">
-        <span class="precio-actual">{{ formatearDinero(activo?.precio ?? 0) }}</span>
+<div class="detalle-activo-container" *ngIf="activo">
+  <!-- Header del activo -->
+  <div class="activo-header">
+    <div class="activo-info">
+      <div class="activo-titulo">
+        <h1>{{ activo.nombre }}</h1>
+        <span class="activo-simbolo">{{ activo.simbolo }}</span>
+      </div>
+      <div class="activo-precio">
+        <span class="precio-actual">${{ activo.ultimo_precio | number:'1.2-2' }}</span>
+        <div class="variacion-container" [ngClass]="getTendenciaClass(activo.variacion || 0)">
+          <i class="bi" [ngClass]="getIconoTendencia(activo.variacion || 0)"></i>
+          <span>{{ activo.variacion | number:'1.2-2' }}%</span>
+        </div>
       </div>
     </div>
+    <div class="activo-acciones">
+      <button mat-raised-button color="primary" (click)="comprarActivo()" class="btn-accion">
+        <i class="bi bi-cart-plus me-2"></i>
+        Comprar
+      </button>
+      <button mat-raised-button color="warn" (click)="venderActivo()" class="btn-accion">
+        <i class="bi bi-cart-dash me-2"></i>
+        Vender
+      </button>
+      <button mat-raised-button color="accent" (click)="crearAlerta()" class="btn-accion">
+        <i class="bi bi-bell me-2"></i>
+        Alerta
+      </button>
+    </div>
+  </div>
 
-    <div class="detalle-content">
-      <div class="detalle-cards">
-        <div class="mat-card info-card">
-          <div class="card-header">
-            <h2 class="card-title">Información del Activo</h2>
-          </div>
-          <div class="mat-card-content">
-            <div class="info-item">
-              <span class="info-label">Símbolo:</span>
-              <span class="info-value">{{ activo?.simbolo ?? 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Nombre:</span>
-              <span class="info-value">{{ activo?.nombre ?? 'N/A' }} ({{ activo?.simbolo ?? 'N/A' }})</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Precio actual:</span>
-              <span class="info-value">{{ formatearDinero(activo?.precio ?? 0) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Variación:</span>
-              <span class="info-value" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)">
-                {{ (activo?.variacion ?? 0) > 0 ? '+' : '' }}{{ activo?.variacion ?? 0 }}%
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Tendencia:</span>
-              <span class="info-value">
-                <span class="material-icons tendencia-icon" [class]="obtenerClaseVariacion(activo?.variacion ?? 0)">
-                  {{ obtenerIconoTendencia(activo?.tendencia ?? 'estable') }}
+  <!-- Estadísticas principales -->
+  <div class="estadisticas-grid">
+    <mat-card class="stat-card">
+      <div class="stat-content">
+        <div class="stat-icon precio-icon">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Precio Actual</h3>
+          <p>${{ activo.ultimo_precio | number:'1.2-2' }}</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-content">
+        <div class="stat-icon variacion-icon" [ngClass]="getTendenciaClass(activo.variacion || 0)">
+          <i class="bi" [ngClass]="getIconoTendencia(activo.variacion || 0)"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Variación</h3>
+          <p [ngClass]="getTendenciaClass(activo.variacion || 0)">{{ activo.variacion | number:'1.2-2' }}%</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-content">
+        <div class="stat-icon tipo-icon">
+          <i class="bi bi-bookmark"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Tipo</h3>
+          <p>{{ activo.tipoActivo?.nombre || 'N/A' }}</p>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-content">
+        <div class="stat-icon fecha-icon">
+          <i class="bi bi-clock"></i>
+        </div>
+        <div class="stat-info">
+          <h3>Última Actualización</h3>
+          <p>{{ activo.ultima_actualizacion | date:'short' }}</p>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Información detallada en tabs -->
+  <mat-tab-group class="detalle-tabs">
+    <mat-tab label="Resumen">
+      <div class="tab-content">
+        <div class="resumen-grid">
+          <mat-card class="info-card">
+            <mat-card-header>
+              <mat-card-title>Información General</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-row">
+                <span class="label">Símbolo:</span>
+                <span class="value">{{ activo.simbolo }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Nombre:</span>
+                <span class="value">{{ activo.nombre }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Tipo:</span>
+                <span class="value">{{ activo.tipoActivo?.nombre || 'N/A' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Precio:</span>
+                <span class="value precio-destacado">${{ activo.ultimo_precio | number:'1.2-2' }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="info-card">
+            <mat-card-header>
+              <mat-card-title>Rendimiento</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-row">
+                <span class="label">Variación:</span>
+                <span class="value" [ngClass]="getTendenciaClass(activo.variacion || 0)">
+                  {{ activo.variacion | number:'1.2-2' }}%
                 </span>
-                {{ activo?.tendencia === 'alza' ? 'Alcista' : activo?.tendencia === 'baja' ? 'Bajista' : 'Estable' }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="acciones-card card shadow-2xl rounded-3xl overflow-hidden border-0 bg-gradient-to-br from-blue-50 via-white to-blue-100 transition-all duration-300 hover:shadow-3xl p-0 md:p-0">
-          <div class="card-header bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 p-6 text-white flex items-center gap-3 rounded-t-3xl shadow-md">
-            <i class="bi bi-currency-exchange text-3xl"></i>
-            <h2 class="card-title text-2xl font-bold">Realizar Transacción</h2>
-          </div>
-          <div class="card-content p-8 bg-white rounded-b-3xl">
-            <div class="balance-info mb-6 p-4 bg-blue-100 rounded-xl flex items-center gap-3 border border-blue-200 shadow-sm">
-              <i class="bi bi-wallet2 text-blue-700 text-2xl"></i>
-              <div>
-                <p class="text-sm text-blue-600 font-semibold">Balance del portafolio</p>
-                <p class="text-2xl font-bold text-blue-800">{{ portafolioActual ? formatearDinero(portafolioActual.saldo) : 'N/A' }}</p>
               </div>
-            </div>
-            <div class="tipo-transaccion-toggle flex rounded-xl overflow-hidden mb-4 border border-gray-200 shadow-md">
-              <button 
-                [class.active]="tipoTransaccion === 'compra'" 
-                (click)="tipoTransaccion = 'compra'; actualizarMaxCantidadPosible()" 
-                class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium text-lg"
-                [class.bg-blue-600]="tipoTransaccion === 'compra'"
-                [class.text-white]="tipoTransaccion === 'compra'"
-                [class.bg-gray-50]="tipoTransaccion !== 'compra'">
-                <i class="bi bi-cart-plus me-2"></i>Comprar
-              </button>
-              <button 
-                [class.active]="tipoTransaccion === 'venta'" 
-                (click)="tipoTransaccion = 'venta'; actualizarMaxCantidadPosible()" 
-                class="toggle-button flex-1 py-3 px-4 transition-colors duration-200 text-lg"
-                [class.bg-red-500]="tipoTransaccion === 'venta'"
-                [class.text-white]="tipoTransaccion === 'venta'"
-                [class.bg-gray-50]="tipoTransaccion !== 'venta'">
-                <i class="bi bi-cash-coin me-2"></i>Vender
-              </button>
-            </div>
-            <div class="modo-compra-toggle flex rounded-xl overflow-hidden mb-4 border border-gray-200 shadow-md">
-              <button 
-                [class.active]="modoCantidad" 
-                (click)="cambiarModoCompra(true)" 
-                class="toggle-button flex-1 py-3 px-4 transition-all duration-300 font-medium text-base"
-                [class.bg-blue-600]="modoCantidad && tipoTransaccion === 'compra'"
-                [class.bg-red-500]="modoCantidad && tipoTransaccion === 'venta'"
-                [class.text-white]="modoCantidad"
-                [class.bg-gray-50]="!modoCantidad">
-                <i class="bi bi-123 me-1"></i>Por Cantidad
-              </button>
-              <button 
-                [class.active]="!modoCantidad" 
-                (click)="cambiarModoCompra(false)" 
-                class="toggle-button flex-1 py-3 px-4 transition-colors duration-200 text-base"
-                [class.bg-blue-600]="!modoCantidad && tipoTransaccion === 'compra'"
-                [class.bg-red-500]="!modoCantidad && tipoTransaccion === 'venta'"
-                [class.text-white]="!modoCantidad"
-                [class.bg-gray-50]="modoCantidad">
-                <i class="bi bi-cash-stack me-1"></i>Por Monto
-              </button>
-            </div>
-            <form #formCompra="ngForm" (ngSubmit)="realizarTransaccion(activo?.id ?? 0, tipoTransaccion, cantidadCompra)" class="form-compra space-y-4">
-              <div class="form-group mb-6" *ngIf="modoCantidad">
-                <label for="cantidadCompra" class="block text-sm font-medium text-gray-700 mb-2">Cantidad de activos</label>
-                <div class="relative">
-                  <input 
-                    type="number" 
-                    id="cantidadCompra" 
-                    name="cantidadCompra"
-                    [(ngModel)]="cantidadCompra" 
-                    (ngModelChange)="calcularMontoTotal()"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg" 
-                    min="0.00000001" 
-                    step="0.00000001"
-                    required
-                    [max]="maxCantidadPosible"
-                    placeholder="0.00">
-                  <span class="absolute right-3 top-3 text-gray-400">{{activo?.simbolo ?? ''}}</span>
+              <div class="info-row">
+                <span class="label">Tendencia:</span>
+                <span class="value" [ngClass]="getTendenciaClass(activo.variacion || 0)">
+                  {{ getTendenciaTexto(activo.variacion || 0) }}
+                </span>
+              </div>
+              <div class="progress-container">
+                <span class="progress-label">Volatilidad</span>
+                <div class="custom-progress-bar">
+                  <div class="progress-fill" 
+                       [style.width.%]="getVolatilidadPorcentaje(activo.variacion || 0)"
+                       [ngClass]="'progress-' + getColorVolatilidad(activo.variacion || 0)">
+                  </div>
                 </div>
-                <p class="mt-1 text-sm text-blue-600 font-semibold" *ngIf="cantidadCompra && activo?.precio">
-                  Monto total: {{ formatearDinero(cantidadCompra * (activo?.precio ?? 0)) }}
-                </p>
+                <span class="progress-value">{{ getVolatilidadPorcentaje(activo.variacion || 0) }}%</span>
               </div>
-              <div class="form-group mb-6" *ngIf="!modoCantidad">
-                <label for="montoCompra" class="block text-sm font-medium text-gray-700 mb-2">Monto a invertir:</label>
-                <div class="relative">
-                  <input type="number" 
-                         id="montoCompra" 
-                         name="montoCompra" 
-                         [(ngModel)]="montoCompra" 
-                         (ngModelChange)="calcularCantidad()"
-                         min="0.01" 
-                         step="0.01"
-                         required 
-                         class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg" 
-                         [max]="portafolioActual?.saldo ?? 0">
-                  <span class="absolute right-3 top-3 text-gray-400">{{activo?.simbolo ?? ''}}</span>
-                </div>
-                <p class="mt-1 text-sm text-blue-600 font-semibold" *ngIf="montoCompra && activo?.precio">
-                  Cantidad de activos: {{ cantidadCompra | number:'1.8-8' }}
-                </p>
-              </div>
-              <button 
-                type="submit" 
-                class="w-full font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2 text-lg"
-                [ngClass]="{
-                  'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white': tipoTransaccion === 'compra',
-                  'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white': tipoTransaccion === 'venta'
-                }"
-                [disabled]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || 
-                  (tipoTransaccion === 'compra' && portafolioActual && (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > portafolioActual.saldo : montoCompra > portafolioActual.saldo))"
-                [class.opacity-50]="!formCompra.form.valid || !cantidadCompra || cantidadCompra <= 0 || !portafolioActual || 
-                  (tipoTransaccion === 'compra' && portafolioActual && (modoCantidad ? (cantidadCompra * (activo?.precio || 0)) > portafolioActual.saldo : montoCompra > portafolioActual.saldo))">
-                <i class="bi bi-check-circle" *ngIf="!procesando"></i>
-                <i class="bi bi-arrow-repeat animate-spin" *ngIf="procesando"></i>
-                {{ procesando ? 'Procesando transacción...' : 'Confirmar ' + (tipoTransaccion === 'compra' ? 'Compra' : 'Venta') }}
-              </button>
-            </form>
-          </div>
+            </mat-card-content>
+          </mat-card>
         </div>
       </div>
+    </mat-tab>
 
-      <div class="grafico-card card">
-        <div class="card-header">
-          <h2 class="card-title">Evolución del Precio</h2>
+    <mat-tab label="Gráfico" *ngIf="historialPrecios && historialPrecios.length > 0">
+      <div class="tab-content">
+      <mat-card class="chart-card">
+        <mat-card-header>
+        <mat-card-title>Historial de Precios</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+        <!-- Aquí iría el componente del gráfico -->
+        <div class="chart-placeholder">
+          <i class="bi bi-graph-up chart-icon"></i>
+          <p>Gráfico de precios próximamente</p>
         </div>
-        <div class="card-content">
-          <div class="grafico-container" style="height: 300px; width: 100%;">
-            <canvas #preciosChart width="400" height="300"></canvas>
-          </div>
-        </div>
+        </mat-card-content>
+      </mat-card>
       </div>
-    </div>
-  </div>
+    </mat-tab>
 
-<div class="loading-container" *ngIf="cargando">
-  <div class="spinner"></div>
+    <mat-tab label="Transacciones">
+      <div class="tab-content">
+        <mat-card class="transacciones-card">
+          <mat-card-header>
+            <mat-card-title>Mis Transacciones</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div *ngIf="transacciones.length === 0" class="empty-state">
+              <i class="bi bi-receipt empty-icon"></i>
+              <p>No hay transacciones para este activo</p>
+            </div>
+            <div *ngIf="transacciones.length > 0" class="transacciones-list">
+              <!-- Lista de transacciones -->
+              <div *ngFor="let transaccion of transacciones" class="transaccion-item">
+                <div class="transaccion-info">
+                  <span class="transaccion-tipo" [ngClass]="transaccion.tipo">
+                    {{ transaccion.tipo | titlecase }}
+                  </span>
+                  <span class="transaccion-cantidad">{{ transaccion.cantidad }} unidades</span>
+                </div>
+                <div class="transaccion-precio">
+                  ${{ transaccion.precio | number:'1.2-2' }}
+                </div>
+                <div class="transaccion-fecha">
+                  {{ transaccion.fecha | date:'short' }}
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<!-- Loading state -->
+<div *ngIf="!activo" class="loading-container">
+  <mat-spinner></mat-spinner>
   <p>Cargando información del activo...</p>
-</div>
-
-<div class="error-container" *ngIf="error && !cargando">
-  <span class="icon error-icon">⚠️</span>
-  <h2>No se pudo cargar el activo</h2>
-  <p>Lo sentimos, no pudimos encontrar la información solicitada.</p>
-  <button class="button primary" routerLink="/mercado">
-    Volver al Mercado
-  </button>
-</div>
-
-<div class="login-required" *ngIf="!usuario && !cargando && !error">
-  <div class="card">
-    <div class="card-content">
-      <p>Debes iniciar sesión para ver detalles de activos.</p>
-      <div class="login-buttons">
-        <button class="button primary" routerLink="/login">Iniciar Sesión</button>
-        <button class="button" routerLink="/registro">Registrarse</button>
-      </div>
-    </div>
-  </div>
 </div>

@@ -283,7 +283,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         nombre: 'Activo inválido',
         simbolo: 'N/A',
         ultimo_precio: 0,
-        tipo: 'accion'
+        ultima_actualizacion: new Date(),
+        tipo: 'accion',
+        tipoActivo: { id: 1, nombre: 'Acción' },
+        variacion: 0
       };
     }
     
@@ -292,7 +295,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       nombre: activoPortafolio.nombre || 'Activo sin nombre',
       simbolo: activoPortafolio.simbolo || 'N/A',
       ultimo_precio: activoPortafolio.precioActual || 0,
-      tipo: activoPortafolio.tipo || 'accion'
+      ultima_actualizacion: activoPortafolio.ultima_actualizacion ? new Date(activoPortafolio.ultima_actualizacion) : new Date(),
+      tipo: activoPortafolio.tipo || 'accion',
+      tipoActivo: activoPortafolio.tipoActivo || { id: 1, nombre: 'Acción' },
+      variacion: activoPortafolio.variacion || 0
     };
   }
 
@@ -601,5 +607,33 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     if (this.actualizacionSubscription) {
       this.actualizacionSubscription.unsubscribe();
     }
+  }
+
+  // Corregir el método que está fallando alrededor de la línea 281
+  private crearActivoMock(id: number, nombre: string, simbolo: string, precio: number): Activo {
+    return {
+      id,
+      nombre,
+      simbolo,
+      ultimo_precio: precio,
+      ultima_actualizacion: new Date(), // Añadir esta propiedad
+      tipo: 'accion',
+      tipoActivo: { id: 1, nombre: 'Acción' }, // Añadir esta propiedad también
+      variacion: Math.random() * 10 - 5 // Variación aleatoria entre -5 y 5
+    };
+  }
+
+  // También corregir cualquier otro lugar donde se cree un objeto Activo
+  private mapearDatosActivo(datos: any): Activo {
+    return {
+      id: datos.id,
+      nombre: datos.nombre,
+      simbolo: datos.simbolo,
+      ultimo_precio: datos.ultimo_precio,
+      ultima_actualizacion: datos.ultima_actualizacion ? new Date(datos.ultima_actualizacion) : new Date(), // Añadir esta línea
+      tipo: datos.tipo || 'accion',
+      tipoActivo: datos.tipoActivo || { id: 1, nombre: 'Acción' }, // Añadir esta línea
+      variacion: datos.variacion || 0
+    };
   }
 }

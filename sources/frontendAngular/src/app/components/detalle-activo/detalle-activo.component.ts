@@ -20,7 +20,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-detalle-activo',
   templateUrl: './detalle-activo.component.html',
-  styleUrls: ['./detalle-activo.component.css']
+  styleUrls: ['./detalle-activo.component.scss'] // Asegurar que apunta al archivo SCSS
 })
 export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit {
   activoId!: number;
@@ -39,6 +39,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   maxCantidadPosible: number = 0;
   procesando: boolean = false;
   tipoTransaccion: 'compra' | 'venta' = 'compra';
+  historialPrecios: any[] = [];
+  transacciones: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -379,5 +381,51 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       case 'baja': return 'trending_down';
       default: return 'trending_flat';
     }
+  }
+
+  // Añadir estos métodos para mejorar la funcionalidad
+
+  getTendenciaClass(variacion: number): string {
+    if (variacion > 0) return 'positivo';
+    if (variacion < 0) return 'negativo';
+    return 'neutro';
+  }
+
+  getIconoTendencia(variacion: number): string {
+    if (variacion > 0) return 'bi-arrow-up';
+    if (variacion < 0) return 'bi-arrow-down';
+    return 'bi-dash';
+  }
+
+  getTendenciaTexto(variacion: number): string {
+    if (variacion > 0) return 'Al alza';
+    if (variacion < 0) return 'A la baja';
+    return 'Estable';
+  }
+
+  getVolatilidadPorcentaje(variacion: number): number {
+    return Math.min(Math.abs(variacion) * 10, 100);
+  }
+
+  getColorVolatilidad(variacion: number): 'primary' | 'accent' | 'warn' {
+    const abs = Math.abs(variacion);
+    if (abs < 2) return 'primary';
+    if (abs < 5) return 'accent';
+    return 'warn';
+  }
+
+  comprarActivo(): void {
+    console.log('Comprar activo:', this.activo);
+    // Implementar lógica de compra
+  }
+
+  venderActivo(): void {
+    console.log('Vender activo:', this.activo);
+    // Implementar lógica de venta
+  }
+
+  crearAlerta(): void {
+    console.log('Crear alerta para:', this.activo);
+    // Navegar al componente de alertas o abrir modal
   }
 }

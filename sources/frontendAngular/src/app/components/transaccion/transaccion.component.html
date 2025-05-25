@@ -1,0 +1,116 @@
+<div class="transaccion-container">
+  <!-- Información del activo -->
+  <div class="activo-info" *ngIf="activo">
+    <h2>{{activo?.nombre}} ({{activo?.simbolo}})</h2>
+    <div class="precio-actual">{{formatearPrecio(getPrecioActivo())}}</div>
+  </div>
+
+  <!-- Formulario de transacción -->
+  <div class="transaccion-form">
+    <!-- Selector de tipo de transacción -->
+    <div class="tipo-selector">
+      <div 
+        class="tipo-option compra"
+        [class.active]="tipo === 'compra'"
+        (click)="tipo = 'compra'; calcularCantidadDisponible(); calcularCostoTotal()">
+        Comprar
+      </div>
+      <div 
+        class="tipo-option venta"
+        [class.active]="tipo === 'venta'"
+        (click)="tipo = 'venta'; calcularCantidadDisponible(); calcularCostoTotal()">
+        Vender
+      </div>
+    </div>
+
+    <!-- Información disponible para ventas -->
+    <div class="info-disponible" *ngIf="tipo === 'venta'">
+      Cantidad disponible: {{cantidadDisponible}} unidades
+    </div>
+
+    <!-- Campo de cantidad -->
+    <div class="form-group">
+      <label for="cantidad">Cantidad:</label>
+      <input 
+        type="number" 
+        id="cantidad"
+        [value]="cantidad"
+        (input)="onCantidadInput($event)"
+        (change)="onCantidadChange()"
+        min="1"
+        [max]="tipo === 'venta' ? cantidadDisponible : undefined">
+    </div>
+
+    <!-- Resumen de la transacción -->
+    <div class="resumen">
+      <div class="resumen-row">
+        <span>Precio por unidad:</span>
+        <span>{{formatearPrecio(getPrecioActivo())}}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Cantidad:</span>
+        <span>{{cantidad}}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Costo total:</span>
+        <span class="costo-total">{{formatearPrecio(costoTotal)}}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Saldo actual:</span>
+        <span>{{formatearPrecio(saldoActual)}}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Saldo restante:</span>
+        <span class="saldo-restante" [class.positivo]="saldoRestante >= 0" [class.negativo]="saldoRestante < 0">
+          {{formatearPrecio(saldoRestante)}}
+        </span>
+      </div>
+    </div>
+
+    <!-- Mensaje de error si no se puede realizar la transacción -->
+    <div class="error-message" *ngIf="!puedeRealizarTransaccion() && !procesandoTransaccion">
+      <span *ngIf="tipo === 'compra' && saldoActual < costoTotal">
+        Saldo insuficiente para realizar esta compra
+      </span>
+      <span *ngIf="tipo === 'venta' && cantidadDisponible < cantidad">
+        No tienes suficientes unidades para realizar esta venta
+      </span>
+      <span *ngIf="!activo || getPrecioActivo() <= 0">
+        No se puede procesar la transacción. Precio del activo no disponible.
+      </span>
+    </div>
+
+    <!-- Mensaje de confirmación -->
+    <div class="confirmacion" *ngIf="puedeRealizarTransaccion()">
+      <p>{{getMensajeConfirmacion()}}</p>
+    </div>
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="acciones">
+    <button 
+      type="button" 
+      class="btn btn-secondary" 
+      (click)="cancelar()"
+      [disabled]="procesandoTransaccion">
+      Cancelar
+    </button>
+    
+    <button 
+      type="button" 
+      class="btn btn-primary"
+      [class.compra]="tipo === 'compra'"
+      [class.venta]="tipo === 'venta'"
+      [disabled]="!puedeRealizarTransaccion()"
+      (click)="confirmarTransaccion()">
+      
+      <span *ngIf="procesandoTransaccion" class="loading">
+        <div class="spinner"></div>
+        Procesando...
+      </span>
+      <span *ngIf="!procesandoTransaccion">
+        {{tipo === 'compra' ? 'Confirmar Compra' : 'Confirmar Venta'}}
+      </span>
+    </button>
+  </div>
+</div>

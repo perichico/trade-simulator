@@ -1,62 +1,210 @@
-<div class="card border-0 shadow-sm">
-  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-    <h2 class="mb-0 fs-5">{{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}</h2>
-    <span class="badge bg-light text-dark">{{ data.activo.simbolo }}</span>
+<div class="modal-content">
+  <!-- Header del modal -->
+  <div class="modal-header" [ngClass]="{
+    'bg-success': data.tipo === 'compra',
+    'bg-danger': data.tipo === 'venta'
+  }">
+    <div class="d-flex align-items-center">
+      <i class="bi me-2 fs-3" [ngClass]="{
+        'bi-cart-plus': data.tipo === 'compra',
+        'bi-cart-dash': data.tipo === 'venta'
+      }"></i>
+      <div>
+        <h4 class="modal-title mb-0 text-white">
+          {{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }} {{ data.activo.nombre }}
+        </h4>
+        <small class="text-white-50">{{ data.activo.simbolo }}</small>
+      </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" (click)="dialogRef.close()" aria-label="Cerrar"></button>
   </div>
 
-  <div class="card-body">
-    <div class="info-activo mb-4 p-3 bg-light rounded">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="text-muted">Precio actual:</span>
-        <span class="fw-bold">{{ formatearDinero(data.activo.precio) }}</span>
-      </div>
-      <div class="alert alert-info d-flex align-items-center gap-2" *ngIf="data.tipo === 'compra'">
-        <i class="bi bi-wallet2"></i>
-        <span>Balance disponible: <strong>{{ formatearDinero(data.balanceUsuario) }}</strong></span>
+  <!-- Información del activo -->
+  <div class="modal-body">
+    <div class="activo-info-card mb-4">
+      <div class="row g-3">
+        <div class="col-6">
+          <div class="info-item">
+            <i class="bi bi-currency-dollar info-icon text-primary"></i>
+            <div>
+              <label class="info-label">Precio Actual</label>
+              <div class="info-value">{{ formatearDinero(data.activo.precio) }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="info-item">
+            <i class="bi bi-graph-up-arrow info-icon" [ngClass]="{
+              'text-success': (data.activo.variacion || 0) > 0,
+              'text-danger': (data.activo.variacion || 0) < 0,
+              'text-secondary': (data.activo.variacion || 0) === 0
+            }"></i>
+            <div>
+              <label class="info-label">Variación</label>
+              <div class="info-value" [ngClass]="{
+                'text-success': (data.activo.variacion || 0) > 0,
+                'text-danger': (data.activo.variacion || 0) < 0,
+                'text-secondary': (data.activo.variacion || 0) === 0
+              }">
+                {{ (data.activo.variacion || 0) | number:'1.2-2' }}%
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <form [formGroup]="transaccionForm" class="transaccion-form">
-      <div class="form-floating mb-4">
-        <input 
-          id="cantidad"
-          type="number" 
-          class="form-control" 
-          [class.is-invalid]="transaccionForm.get('cantidad')?.invalid && transaccionForm.get('cantidad')?.touched"
-          formControlName="cantidad" 
-          min="1" 
-          step="1"
-          placeholder=" ">
-        <label for="cantidad">Cantidad</label>
-        <div class="invalid-feedback">
-          <span *ngIf="transaccionForm.get('cantidad')?.hasError('required')">La cantidad es obligatoria</span>
-          <span *ngIf="transaccionForm.get('cantidad')?.hasError('min')">La cantidad debe ser mayor a 0</span>
-          <span *ngIf="transaccionForm.get('cantidad')?.hasError('fondosInsuficientes')">No tienes suficiente balance para esta compra</span>
+    <!-- Información del balance disponible -->
+    <div class="alert" [ngClass]="{
+      'alert-info': data.tipo === 'compra',
+      'alert-warning': data.tipo === 'venta'
+    }" role="alert">
+      <div class="d-flex align-items-center">
+        <i class="bi me-2" [ngClass]="{
+          'bi-wallet2': data.tipo === 'compra',
+          'bi-briefcase': data.tipo === 'venta'
+        }"></i>
+        <div class="flex-grow-1">
+          <strong>
+            {{ data.tipo === 'compra' ? 'Balance disponible' : 'Cantidad disponible' }}:
+          </strong>
+          <span class="ms-2">
+            {{ data.tipo === 'compra' ? formatearDinero(data.balanceUsuario) : (data.cantidadDisponible || 0) + ' unidades' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de transacción -->
+    <form [formGroup]="transaccionForm" class="transaction-form">
+      <div class="mb-4">
+        <label for="cantidad" class="form-label fw-bold">
+          <i class="bi bi-hash me-1"></i>
+          Cantidad a {{ data.tipo === 'compra' ? 'comprar' : 'vender' }}
+        </label>
+        <div class="input-group input-group-lg">
+          <button class="btn btn-outline-secondary" type="button" (click)="disminuirCantidad()" [disabled]="!puedeDisminuir()">
+            <i class="bi bi-dash"></i>
+          </button>
+          <input 
+            id="cantidad"
+            type="number" 
+            class="form-control text-center fw-bold" 
+            [class.is-invalid]="transaccionForm.get('cantidad')?.invalid && transaccionForm.get('cantidad')?.touched"
+            formControlName="cantidad" 
+            min="1" 
+            step="1"
+            [max]="data.tipo === 'venta' ? (data.cantidadDisponible || 0) : null"
+            placeholder="0">
+          <button class="btn btn-outline-secondary" type="button" (click)="aumentarCantidad()" [disabled]="!puedeAumentar()">
+            <i class="bi bi-plus"></i>
+          </button>
+        </div>
+        <div class="invalid-feedback" *ngIf="transaccionForm.get('cantidad')?.invalid && transaccionForm.get('cantidad')?.touched">
+          <div *ngIf="transaccionForm.get('cantidad')?.hasError('required')">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            La cantidad es obligatoria
+          </div>
+          <div *ngIf="transaccionForm.get('cantidad')?.hasError('min')">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            La cantidad debe ser mayor a 0
+          </div>
+          <div *ngIf="transaccionForm.get('cantidad')?.hasError('max')">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            No puedes vender más de {{ data.cantidadDisponible }} unidades
+          </div>
+          <div *ngIf="transaccionForm.get('cantidad')?.hasError('fondosInsuficientes')">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            No tienes suficiente balance para esta compra
+          </div>
         </div>
       </div>
 
-      <div class="resumen-transaccion" *ngIf="transaccionForm.get('cantidad')?.valid && transaccionForm.get('cantidad')?.value > 0">
-        <div class="alert alert-secondary">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Valor total:</span>
-            <strong>{{ formatearDinero(calcularValorTotal()) }}</strong>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mt-2" *ngIf="data.tipo === 'compra'">
-             <span>Balance restante:</span>
-             <strong>{{ formatearDinero(calcularBalanceRestante()) }}</strong>
-           </div>
-         </div>
-       </div>
-     </form>
-   </div>
+      <!-- Botones de cantidad rápida -->
+      <div class="quick-amounts mb-4" *ngIf="data.tipo === 'compra'">
+        <label class="form-label text-muted small">Compra rápida por valor:</label>
+        <div class="btn-group w-100" role="group">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="establecerPorValor(100)">100€</button>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="establecerPorValor(500)">500€</button>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="establecerPorValor(1000)">1000€</button>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="establecerPorValor(data.balanceUsuario)">Todo</button>
+        </div>
+      </div>
 
-   <div class="card-footer bg-light d-flex justify-content-end gap-2">
-     <button class="btn btn-secondary" (click)="dialogRef.close()">Cancelar</button>
-     <button 
-       class="btn btn-primary" 
-       [disabled]="!transaccionForm.valid"
-       (click)="confirmarTransaccion()">
-       {{ data.tipo === 'compra' ? 'Comprar' : 'Vender' }}
-     </button>
-   </div>
- </div>
+      <!-- Resumen de la transacción -->
+      <div class="transaction-summary" *ngIf="transaccionForm.get('cantidad')?.valid && getCantidadValida() > 0">
+        <div class="card bg-light">
+          <div class="card-body">
+            <h6 class="card-title">
+              <i class="bi bi-calculator me-2"></i>
+              Resumen de la transacción
+            </h6>
+            
+            <div class="row g-2 text-sm">
+              <div class="col-6">
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Cantidad:</span>
+                  <strong>{{ getCantidadValida() }} unidades</strong>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Precio unitario:</span>
+                  <strong>{{ formatearDinero(data.activo.precio) }}</strong>
+                </div>
+              </div>
+              <div class="col-12">
+                <hr class="my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-bold">Valor total:</span>
+                  <span class="fs-5 fw-bold" [ngClass]="{
+                    'text-success': data.tipo === 'venta',
+                    'text-primary': data.tipo === 'compra'
+                  }">
+                    {{ formatearDinero(calcularValorTotal()) }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="col-12" *ngIf="data.tipo === 'compra'">
+                <div class="d-flex justify-content-between">
+                  <span class="text-muted">Balance restante:</span>
+                  <strong [ngClass]="{
+                    'text-danger': calcularBalanceRestante() < 0,
+                    'text-success': calcularBalanceRestante() >= 0
+                  }">
+                    {{ formatearDinero(calcularBalanceRestante()) }}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Footer del modal -->
+  <div class="modal-footer bg-light">
+    <button type="button" class="btn btn-secondary" (click)="dialogRef.close()">
+      <i class="bi bi-x-circle me-1"></i>
+      Cancelar
+    </button>
+    <button 
+      type="button"
+      class="btn fw-bold" 
+      [ngClass]="{
+        'btn-success': data.tipo === 'compra',
+        'btn-danger': data.tipo === 'venta'
+      }"
+      [disabled]="!transaccionForm.valid || !puedeRealizarTransaccion()"
+      (click)="confirmarTransaccion()">
+      <i class="bi me-1" [ngClass]="{
+        'bi-cart-plus': data.tipo === 'compra',
+        'bi-cart-dash': data.tipo === 'venta'
+      }"></i>
+      {{ data.tipo === 'compra' ? 'Confirmar Compra' : 'Confirmar Venta' }}
+      <span *ngIf="getCantidadValida() > 0"> - {{ formatearDinero(calcularValorTotal()) }}</span>
+    </button>
+  </div>
+</div>

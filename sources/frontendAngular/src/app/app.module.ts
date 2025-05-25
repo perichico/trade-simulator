@@ -32,6 +32,7 @@ import { RegistroComponent } from './components/registro/registro.component';
 import { HistorialComponent } from './components/historial/historial.component';
 import { DetalleActivoComponent } from './components/detalle-activo/detalle-activo.component';
 import { DividendosComponent } from './components/dividendos/dividendos.component';
+import { TransaccionComponent } from './components/transaccion/transaccion.component';
 
 @NgModule({
   declarations: [
@@ -44,7 +45,8 @@ import { DividendosComponent } from './components/dividendos/dividendos.componen
     HistorialComponent,
     DetalleActivoComponent,
     DividendosComponent,
-    AlertasComponent
+    AlertasComponent,
+    TransaccionComponent
   ],
   imports: [
     BrowserModule,

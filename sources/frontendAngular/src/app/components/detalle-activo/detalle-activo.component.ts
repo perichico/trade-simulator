@@ -1,8 +1,13 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ActivoService } from '../../services/activo.service';
 import { HistorialPreciosService, HistorialPrecio } from '../../services/historial-precios.service';
+import { TransaccionService } from '../../services/transaccion.service';
+import { AuthService } from '../../services/auth.service';
+import { PortafolioService } from '../../services/portafolio.service';
 import { Activo } from '../../models/activo.model';
+import { Usuario } from '../../models/usuario.model';
+import { Portafolio } from '../../models/portafolio.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -20,14 +25,32 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   historialPrecios: HistorialPrecio[] = [];
   transacciones: any[] = [];
   periodoSeleccionado: number = 30; // Días por defecto
+  
+  // Nuevas propiedades para el usuario y portafolio
+  usuario: Usuario | null = null;
+  portafolioActual: Portafolio | null = null;
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private activoService: ActivoService,
-    private historialPreciosService: HistorialPreciosService
+    private historialPreciosService: HistorialPreciosService,
+    private transaccionService: TransaccionService,
+    private authService: AuthService,
+    private portafolioService: PortafolioService
   ) { }
 
   ngOnInit(): void {
+    // Obtener usuario actual
+    this.authService.usuario$.subscribe(usuario => {
+      this.usuario = usuario;
+    });
+
+    // Obtener portafolio actual
+    this.portafolioService.portafolioActual$.subscribe(portafolio => {
+      this.portafolioActual = portafolio;
+    });
+
     this.route.params.subscribe(params => {
       const id = +params['id'];
       this.cargarActivo(id);
@@ -47,11 +70,19 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   cargarHistorialPrecios(activoId: number): void {
-    this.historialPreciosService.obtenerHistorialPrecios(activoId, this.periodoSeleccionado)
+    // Calcular fecha de inicio basada en el período seleccionado
+    const fechaFin = new Date();
+    const fechaInicio = new Date();
+    fechaInicio.setDate(fechaInicio.getDate() - this.periodoSeleccionado);
+    
+    this.historialPreciosService.obtenerHistorialPrecios(activoId, fechaInicio, fechaFin)
       .subscribe({
         next: (historial) => {
           this.historialPrecios = historial;
           console.log('Historial de precios cargado:', historial.length, 'registros');
+          console.log('Período:', this.periodoSeleccionado, 'días');
+          console.log('Fecha inicio:', fechaInicio.toISOString());
+          console.log('Fecha fin:', fechaFin.toISOString());
           this.actualizarGrafico();
         },
         error: (error) => {
@@ -198,16 +229,85 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     return 'warn';
   }
 
+  // Reemplaza el método que muestra el pop-up con navegación
+  mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info' = 'success'): void {
+    // Usar alert por simplicidad hasta crear el componente de notificación
+    alert(mensaje);
+  }
+
   comprarActivo(): void {
-    console.log('Comprar activo:', this.activo);
+    if (!this.activo || !this.usuario) {
+      return;
+    }
+    
+    this.router.navigate(['/transaccion'], {
+      queryParams: {
+        activoId: this.activo.id,
+        tipo: 'compra'
+      }
+    });
   }
 
   venderActivo(): void {
-    console.log('Vender activo:', this.activo);
+    if (!this.activo || !this.usuario) {
+      return;
+    }
+    
+    this.router.navigate(['/transaccion'], {
+      queryParams: {
+        activoId: this.activo.id,
+        tipo: 'venta'
+      }
+    });
   }
 
   crearAlerta(): void {
-    console.log('Crear alerta para:', this.activo);
+    if (!this.activo || !this.usuario) {
+      return;
+    }
+    
+    // Navegar al componente de crear alerta
+    this.router.navigate(['/crear-alerta'], {
+      queryParams: {
+        activoId: this.activo.id,
+        simbolo: this.activo.simbolo,
+        precioActual: this.activo.ultimo_precio
+      }
+    });
+  }
+
+  // Método para realizar la transacción
+  private realizarTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number): void {
+    const portafolioId = this.portafolioActual?.id;
+    
+    this.transaccionService.crearTransaccion(activoId, tipo, cantidad, portafolioId)
+      .subscribe({
+        next: (respuesta) => {
+          this.mostrarNotificacion(`Transacción de ${tipo} realizada con éxito`, 'success');
+          
+          // Actualizar el balance del usuario y el portafolio
+          this.authService.verificarSesion();
+          
+          // Recargar información del portafolio actual
+          if (this.portafolioActual?.id) {
+            this.portafolioService.seleccionarPortafolio(this.portafolioActual.id).subscribe();
+          }
+        },
+        error: (error) => {
+          this.mostrarNotificacion(
+            `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`, 
+            'error'
+          );
+        }
+      });
+  }
+
+  // Método helper para obtener el activo en el portafolio actual
+  getActivoEnPortafolio() {
+    if (!this.portafolioActual?.activos || !this.activo) {
+      return null;
+    }
+    return this.portafolioActual.activos.find(a => a.activoId === this.activo!.id);
   }
 
   ngAfterViewInit(): void {

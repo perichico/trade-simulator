@@ -1,0 +1,26 @@
+<div class="notificacion-container">
+  <div class="notificacion-card"
+       [class.success]="tipo === 'success'"
+       [class.error]="tipo === 'error'"
+       [class.info]="tipo === 'info'">
+    <div class="icono-container">
+      <i [class]="getIcono()"></i>
+    </div>
+    
+    <div class="contenido">
+      <h1>{{ getTitulo() }}</h1>
+      <p>{{ mensaje }}</p>
+      
+      <div class="countdown">
+        <p>Redirigiendo en {{ tiempoRestante }} segundo{{ tiempoRestante !== 1 ? 's' : '' }}...</p>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.animation-duration]="'3s'"></div>
+        </div>
+      </div>
+      
+      <button mat-raised-button color="primary" (click)="regresar()" class="btn-regresar">
+        Regresar ahora
+      </button>
+    </div>
+  </div>
+</div>

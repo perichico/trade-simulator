@@ -15,19 +15,68 @@
       </div>
     </div>
     <div class="activo-acciones">
-      <button mat-raised-button color="primary" (click)="comprarActivo()" class="btn-accion">
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="comprarActivo()" 
+        class="btn-accion"
+        [disabled]="!usuario">
         <i class="bi bi-cart-plus me-2"></i>
         Comprar
       </button>
-      <button mat-raised-button color="warn" (click)="venderActivo()" class="btn-accion">
+      <button 
+        mat-raised-button 
+        color="warn" 
+        (click)="venderActivo()" 
+        class="btn-accion"
+        [disabled]="!usuario">
         <i class="bi bi-cart-dash me-2"></i>
         Vender
       </button>
-      <button mat-raised-button color="accent" (click)="crearAlerta()" class="btn-accion">
+      <button 
+        mat-raised-button 
+        color="accent" 
+        (click)="crearAlerta()" 
+        class="btn-accion"
+        [disabled]="!usuario">
         <i class="bi bi-bell me-2"></i>
         Alerta
       </button>
     </div>
+  </div>
+
+  <!-- Mostrar información del portafolio si el usuario está logueado -->
+  <div class="portafolio-info" *ngIf="usuario && portafolioActual">
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>Tu Posición</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+          <span class="label">Cantidad en portafolio:</span>
+          <span class="value">{{ activoPortafolio.cantidad }} unidades</span>
+        </div>
+        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+          <span class="label">Valor de la posición:</span>
+          <span class="value">{{ activoPortafolio.valorTotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+          <span class="label">Rendimiento:</span>
+          <span class="value" [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
+            {{ activoPortafolio.rendimiento | currency:'EUR':'symbol':'1.2-2' }} 
+            ({{ activoPortafolio.rendimientoPorcentaje | number:'1.2-2' }}%)
+          </span>
+        </div>
+        <div class="info-row" *ngIf="!getActivoEnPortafolio()">
+          <span class="label">Posición:</span>
+          <span class="value">No tienes este activo en tu portafolio</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Saldo disponible:</span>
+          <span class="value">{{ portafolioActual.saldo | currency:'EUR':'symbol':'1.2-2' }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <!-- Estadísticas principales -->

@@ -143,20 +143,44 @@
       </div>
     </mat-tab>
 
-    <mat-tab label="Gráfico" *ngIf="historialPrecios && historialPrecios.length > 0">
+    <mat-tab label="Gráfico">
       <div class="tab-content">
-      <mat-card class="chart-card">
-        <mat-card-header>
-        <mat-card-title>Historial de Precios</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-        <!-- Aquí iría el componente del gráfico -->
-        <div class="chart-placeholder">
-          <i class="bi bi-graph-up chart-icon"></i>
-          <p>Gráfico de precios próximamente</p>
-        </div>
-        </mat-card-content>
-      </mat-card>
+        <mat-card class="chart-card">
+          <mat-card-header>
+            <mat-card-title>Historial de Precios</mat-card-title>
+            <div class="chart-controls">
+              <button mat-button 
+                      [class.active]="periodoSeleccionado === 7"
+                      (click)="cambiarPeriodo(7)">
+                7D
+              </button>
+              <button mat-button 
+                      [class.active]="periodoSeleccionado === 30"
+                      (click)="cambiarPeriodo(30)">
+                30D
+              </button>
+              <button mat-button 
+                      [class.active]="periodoSeleccionado === 90"
+                      (click)="cambiarPeriodo(90)">
+                90D
+              </button>
+              <button mat-button 
+                      [class.active]="periodoSeleccionado === 365"
+                      (click)="cambiarPeriodo(365)">
+                1A
+              </button>
+            </div>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="chart-container" *ngIf="historialPrecios.length > 0">
+              <canvas #priceChart id="priceChart"></canvas>
+            </div>
+            <div class="chart-placeholder" *ngIf="historialPrecios.length === 0">
+              <i class="bi bi-graph-up chart-icon"></i>
+              <p>Cargando gráfico de precios...</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
     </mat-tab>
 

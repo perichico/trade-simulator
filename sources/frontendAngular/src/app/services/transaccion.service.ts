@@ -78,4 +78,25 @@ export class TransaccionService {
       return ((transaccion.precio - precioActual) / transaccion.precio) * 100;
     }
   }
+
+  obtenerTransaccionesPorActivo(activoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/transacciones/activo/${activoId}`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  // También agregar método para obtener todas las transacciones del usuario si no existe
+  obtenerTransaccionesUsuario(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/transacciones`, {
+      headers: this.getHeaders()
+    });
+  }
+
+  private getHeaders() {
+    const token = localStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  }
 }

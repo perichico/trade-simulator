@@ -1,7 +1,7 @@
 <div class="transaccion-container">
   <!-- Información del activo -->
   <div class="activo-info" *ngIf="activo">
-    <h2>{{activo?.nombre}} ({{activo?.simbolo}})</h2>
+    <h2>{{activo.nombre}} ({{activo.simbolo}})</h2>
     <div class="precio-actual">{{formatearPrecio(getPrecioActivo())}}</div>
   </div>
 

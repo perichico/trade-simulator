@@ -44,6 +44,10 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     // Obtener usuario actual
     this.authService.usuario$.subscribe(usuario => {
       this.usuario = usuario;
+      // Cargar transacciones cuando el usuario esté disponible
+      if (usuario && this.activo) {
+        this.cargarTransacciones(this.activo.id);
+      }
     });
 
     // Obtener portafolio actual
@@ -55,6 +59,10 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       const id = +params['id'];
       this.cargarActivo(id);
       this.cargarHistorialPrecios(id);
+      // Cargar transacciones si el usuario ya está disponible
+      if (this.usuario) {
+        this.cargarTransacciones(id);
+      }
     });
   }
 
@@ -62,6 +70,10 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     this.activoService.obtenerActivoPorId(id).subscribe({
       next: (activo) => {
         this.activo = activo;
+        // Cargar transacciones cuando el activo esté cargado
+        if (this.usuario) {
+          this.cargarTransacciones(id);
+        }
       },
       error: (error) => {
         console.error('Error al cargar el activo:', error);
@@ -89,6 +101,39 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
           console.error('Error al cargar historial de precios:', error);
         }
       });
+  }
+
+  cargarTransacciones(activoId: number): void {
+    if (!this.usuario) {
+      this.transacciones = [];
+      console.log('No hay usuario logueado, no se cargan transacciones');
+      return;
+    }
+
+    console.log('Cargando transacciones para activo:', activoId);
+    
+    // Intentar obtener transacciones específicas del activo
+    this.transaccionService.obtenerTransaccionesPorActivo(activoId).subscribe({
+      next: (transacciones) => {
+        this.transacciones = transacciones || [];
+        console.log('Transacciones cargadas para activo', activoId, ':', transacciones);
+      },
+      error: (error) => {
+        console.error('Error al cargar transacciones por activo:', error);
+        
+        // Si falla, intentar obtener todas las transacciones y filtrar
+        this.transaccionService.obtenerTransaccionesUsuario().subscribe({
+          next: (todasTransacciones) => {
+            this.transacciones = todasTransacciones.filter(t => t.activoId === activoId || t.activo_id === activoId) || [];
+            console.log('Transacciones filtradas para activo', activoId, ':', this.transacciones);
+          },
+          error: (error2) => {
+            console.error('Error al cargar todas las transacciones:', error2);
+            this.transacciones = [];
+          }
+        });
+      }
+    });
   }
 
   cambiarPeriodo(dias: number): void {
@@ -197,6 +242,13 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       console.log('Gráfico de precios creado correctamente');
     } catch (error) {
       console.error('Error al crear el gráfico de precios:', error);
+    }
+  }
+
+  cambiarPeriodoGrafico(nuevoPeriodo: number): void {
+    this.periodoSeleccionado = nuevoPeriodo;
+    if (this.activo) {
+      this.cargarHistorialPrecios(this.activo.id);
     }
   }
 

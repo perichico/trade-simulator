@@ -1,262 +1,308 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
 import { Alerta } from '../../models/alerta.model';
+import { Activo } from '../../models/activo.model';
 import { AlertaService } from '../../services/alerta.service';
 import { ActivoService } from '../../services/activo.service';
-import { Activo } from '../../models/activo.model';
-import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
-import { catchError, throwError } from 'rxjs';
-import { timeout } from 'rxjs/operators';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-alertas',
   templateUrl: './alertas.component.html',
   styleUrls: ['./alertas.component.scss']
 })
-export class AlertasComponent implements OnInit {
+export class AlertasComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
+  // Estados del componente
   alertas: Alerta[] = [];
   activos: Activo[] = [];
+  activosFiltrados: Activo[] = [];
+  cargandoAlertas = false;
+  cargandoActivos = false;
+  
+  // Formulario
   alertaForm: FormGroup;
-  displayedColumns: string[] = ['activo', 'precioObjetivo', 'cantidadVenta', 'estado', 'acciones'];
+  
+  // Filtros
+  filtroTexto = '';
+  filtroEstado = 'todas';
+  
+  // Pre-población desde query params
+  activoPreseleccionado: number | null = null;
+  precioActualPreseleccionado: number | null = null;
 
   constructor(
+    private fb: FormBuilder,
     private alertaService: AlertaService,
     private activoService: ActivoService,
-    private formBuilder: FormBuilder,
-    private snackBar: MatSnackBar,
-    private http: HttpClient
+    private authService: AuthService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
-    this.alertaForm = this.formBuilder.group({
+    this.alertaForm = this.fb.group({
       activoId: ['', Validators.required],
-      precioObjetivo: ['', [Validators.required, Validators.min(0)]],
-      cantidadVenta: ['', [Validators.min(1)]]
+      precioObjetivo: ['', [Validators.required, Validators.min(0.01)]],
+      cantidadVenta: ['', [Validators.min(1)]],
+      condicion: ['mayor', Validators.required]
     });
   }
 
   ngOnInit(): void {
-    this.cargarAlertas();
+    this.verificarAutenticacion();
+    this.procesarQueryParams();
     this.cargarActivos();
+    this.cargarAlertas();
+    this.suscribirCambiosFormulario();
   }
 
-  cargarAlertas(): void {
-    console.log('Iniciando carga de alertas...');
-    this.alertaService.obtenerAlertasUsuario().subscribe({
-      next: (alertas) => {
-        console.log('Alertas recibidas correctamente:', alertas);
-        this.alertas = alertas;
-      },
-      error: (error) => {
-        console.error('Error detallado al cargar alertas:', error);
-        let mensajeError = 'Error al cargar las alertas';
-        
-        if (error.error && error.error.message) {
-          mensajeError += `: ${error.error.message}`;
-        } else if (error.message) {
-          mensajeError += `: ${error.message}`;
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private verificarAutenticacion(): void {
+    this.authService.usuario$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(usuario => {
+        if (!usuario) {
+          this.router.navigate(['/login']);
         }
-        
-        this.mostrarError(mensajeError);
-        
-        // Intentar recuperarse del error cargando datos en caché o dummy
-        this.alertas = this.obtenerAlertasDeRespaldo();
-      },
-      complete: () => console.log('Carga de alertas completada')
-    });
+      });
   }
 
-  obtenerAlertasDeRespaldo(): Alerta[] {
-    // Intentar recuperar datos de localStorage si existen
-    const alertasCached = localStorage.getItem('alertas_cache');
-    if (alertasCached) {
-      try {
-        return JSON.parse(alertasCached);
-      } catch (e) {
-        console.warn('Error al recuperar alertas de caché:', e);
-      }
-    }
-    
-    // Si no hay caché, devolver un array vacío
-    return [];
+  private procesarQueryParams(): void {
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        if (params['activoId']) {
+          this.activoPreseleccionado = +params['activoId'];
+          this.alertaForm.patchValue({ activoId: this.activoPreseleccionado });
+        }
+        if (params['precioActual']) {
+          this.precioActualPreseleccionado = +params['precioActual'];
+          this.alertaForm.patchValue({ precioObjetivo: this.precioActualPreseleccionado });
+        }
+      });
   }
 
-  // Método para guardar caché de alertas (llamar después de operaciones exitosas)
-  guardarAlertasEnCache(alertas: Alerta[]): void {
-    try {
-      localStorage.setItem('alertas_cache', JSON.stringify(alertas));
-    } catch (e) {
-      console.warn('Error al guardar alertas en caché:', e);
-    }
+  private suscribirCambiosFormulario(): void {
+    this.alertaForm.get('activoId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(activoId => {
+        if (activoId && !this.precioActualPreseleccionado) {
+          const activo = this.activos.find(a => a.id === +activoId);
+          if (activo) {
+            this.alertaForm.patchValue({ 
+              precioObjetivo: activo.ultimo_precio 
+            });
+          }
+        }
+      });
   }
 
   cargarActivos(): void {
-    this.activoService.obtenerActivos().subscribe({
-      next: (activos) => this.activos = activos,
-      error: (error) => this.mostrarError('Error al cargar los activos')
-    });
+    this.cargandoActivos = true;
+    this.activoService.obtenerActivos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (activos) => {
+          this.activos = activos;
+          this.activosFiltrados = activos;
+          this.cargandoActivos = false;
+        },
+        error: (error) => {
+          console.error('Error al cargar activos:', error);
+          this.cargandoActivos = false;
+          this.mostrarNotificacion('Error al cargar los activos disponibles', 'error');
+        }
+      });
   }
 
-  debugValoresAlerta(): void {
-    console.log('Valores del formulario:', this.alertaForm.value);
-    console.log('Estado del formulario:', {
-      valid: this.alertaForm.valid,
-      touched: this.alertaForm.touched,
-      dirty: this.alertaForm.dirty,
-      errors: {
-        activoId: this.alertaForm.get('activoId')?.errors,
-        precioObjetivo: this.alertaForm.get('precioObjetivo')?.errors,
-        cantidadVenta: this.alertaForm.get('cantidadVenta')?.errors
-      }
+  cargarAlertas(): void {
+    this.cargandoAlertas = true;
+    this.alertaService.obtenerAlertasUsuario()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (alertas) => {
+          this.alertas = this.enriquecerAlertas(alertas);
+          this.cargandoAlertas = false;
+        },
+        error: (error) => {
+          console.error('Error al cargar alertas:', error);
+          this.cargandoAlertas = false;
+          this.mostrarNotificacion(error.message || 'Error al cargar las alertas', 'error');
+        }
+      });
+  }
+
+  private enriquecerAlertas(alertas: Alerta[]): Alerta[] {
+    return alertas.map(alerta => {
+      const activo = this.activos.find(a => a.id === alerta.activoId);
+      return {
+        ...alerta,
+        simboloActivo: activo?.simbolo || 'N/A',
+        nombreActivo: activo?.nombre || 'Activo desconocido',
+        precioActual: activo?.ultimo_precio || 0
+      };
     });
   }
 
   crearAlerta(): void {
-    this.debugValoresAlerta();
-    
     if (this.alertaForm.valid) {
+      const formData = this.alertaForm.value;
       const nuevaAlerta: Alerta = {
-        ...this.alertaForm.value,
-        usuarioId: 0, // Se asignará en el backend
+        usuarioId: 0, // Se asigna en el backend
+        activoId: +formData.activoId,
+        precioObjetivo: +formData.precioObjetivo,
+        cantidadVenta: formData.cantidadVenta ? +formData.cantidadVenta : undefined,
+        condicion: formData.condicion,
         activa: true
       };
 
-      console.log('Enviando alerta al servidor:', nuevaAlerta);
-
-      this.alertaService.crearAlerta(nuevaAlerta).subscribe({
-        next: (respuesta) => {
-          console.log('Respuesta exitosa del servidor:', respuesta);
-          this.cargarAlertas();
-          this.alertaForm.reset();
-          this.mostrarExito('Alerta creada con éxito');
-        },
-        error: (error) => {
-          console.error('Error detallado al crear la alerta:', error);
-          let mensajeError = 'Error al crear la alerta';
-          
-          if (error.error && error.error.message) {
-            mensajeError += `: ${error.error.message}`;
-          } else if (error.message) {
-            mensajeError += `: ${error.message}`;
+      this.alertaService.crearAlerta(nuevaAlerta)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.mostrarNotificacion('Alerta creada exitosamente', 'success');
+            this.resetearFormulario();
+            this.cargarAlertas();
+          },
+          error: (error) => {
+            this.mostrarNotificacion(error.message || 'Error al crear la alerta', 'error');
           }
-          
-          this.mostrarError(mensajeError);
-        }
-      });
+        });
     } else {
       this.alertaForm.markAllAsTouched();
-      this.mostrarError('Por favor, complete todos los campos correctamente');
+      this.mostrarNotificacion('Por favor, completa todos los campos requeridos', 'error');
     }
   }
 
-  toggleAlerta(alerta: Alerta): void {
-    const accion = alerta.activa ? 
-      this.alertaService.desactivarAlerta(alerta.id!) :
-      this.alertaService.activarAlerta(alerta.id!);
+  toggleEstadoAlerta(alerta: Alerta): void {
+    if (!alerta.id) return;
 
-    accion.subscribe({
-      next: () => {
-        this.cargarAlertas();
-        this.mostrarExito(`Alerta ${alerta.activa ? 'desactivada' : 'activada'} con éxito`);
-      },
-      error: (error) => this.mostrarError(`Error al ${alerta.activa ? 'desactivar' : 'activar'} la alerta`)
-    });
+    const accion = alerta.activa 
+      ? this.alertaService.desactivarAlerta(alerta.id)
+      : this.alertaService.activarAlerta(alerta.id);
+
+    accion.pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          const estado = alerta.activa ? 'desactivada' : 'activada';
+          this.mostrarNotificacion(`Alerta ${estado} correctamente`, 'success');
+          this.cargarAlertas();
+        },
+        error: (error) => {
+          this.mostrarNotificacion(error.message || 'Error al cambiar el estado de la alerta', 'error');
+        }
+      });
   }
 
-  eliminarAlerta(id: number): void {
-    if (confirm('¿Está seguro de que desea eliminar esta alerta?')) {
-      this.alertaService.eliminarAlerta(id).subscribe({
-        next: () => {
-          this.cargarAlertas();
-          this.mostrarExito('Alerta eliminada con éxito');
-        },
-        error: (error) => this.mostrarError('Error al eliminar la alerta')
+  eliminarAlerta(alerta: Alerta): void {
+    if (!alerta.id) return;
+
+    if (confirm(`¿Estás seguro de que quieres eliminar la alerta para ${alerta.simboloActivo}?`)) {
+      this.alertaService.eliminarAlerta(alerta.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.mostrarNotificacion('Alerta eliminada correctamente', 'success');
+            this.cargarAlertas();
+          },
+          error: (error) => {
+            this.mostrarNotificacion(error.message || 'Error al eliminar la alerta', 'error');
+          }
+        });
+    }
+  }
+
+  filtrarActivos(evento: Event): void {
+    const filtro = (evento.target as HTMLInputElement).value.toLowerCase();
+    this.activosFiltrados = this.activos.filter(activo =>
+      activo.nombre.toLowerCase().includes(filtro) ||
+      activo.simbolo.toLowerCase().includes(filtro)
+    );
+  }
+
+  aplicarFiltros(): Alerta[] {
+    let alertasFiltradas = [...this.alertas];
+
+    // Filtro por texto
+    if (this.filtroTexto) {
+      const texto = this.filtroTexto.toLowerCase();
+      alertasFiltradas = alertasFiltradas.filter(alerta =>
+        alerta.simboloActivo?.toLowerCase().includes(texto) ||
+        alerta.nombreActivo?.toLowerCase().includes(texto)
+      );
+    }
+
+    // Filtro por estado
+    if (this.filtroEstado !== 'todas') {
+      alertasFiltradas = alertasFiltradas.filter(alerta => {
+        switch (this.filtroEstado) {
+          case 'activas': return alerta.activa;
+          case 'inactivas': return !alerta.activa;
+          case 'alcanzadas': return this.esAlertaAlcanzada(alerta);
+          default: return true;
+        }
       });
     }
+
+    return alertasFiltradas;
   }
 
-  limpiarFormulario() {
+  esAlertaAlcanzada(alerta: Alerta): boolean {
+    if (!alerta.precioActual || !alerta.condicion) return false;
+    
+    return alerta.condicion === 'mayor' 
+      ? alerta.precioActual >= alerta.precioObjetivo
+      : alerta.precioActual <= alerta.precioObjetivo;
+  }
+
+  calcularProgreso(alerta: Alerta): number {
+    if (!alerta.precioActual) return 0;
+    
+    const progreso = (alerta.precioActual / alerta.precioObjetivo) * 100;
+    return Math.min(Math.max(progreso, 0), 100);
+  }
+
+  resetearFormulario(): void {
     this.alertaForm.reset();
+    this.alertaForm.patchValue({ condicion: 'mayor' });
+    this.activoPreseleccionado = null;
+    this.precioActualPreseleccionado = null;
   }
 
-  actualizarAlertas() {
-    // Recargar alertas desde el servidor
+  refrescarDatos(): void {
+    this.cargarActivos();
     this.cargarAlertas();
   }
 
-  aplicarFiltro(event: Event) {
-    const filterValue = (event.target as HTMLInputElement).value.toLowerCase();
-    // Implementar filtrado según tus necesidades
-  }
-
-  mostrarPrecioActual(): boolean {
-    return this.alertaForm.get('activoId')?.value !== null;
-  }
-
-  getPrecioActual(): number {
-    const activoId = this.alertaForm.get('activoId')?.value;
-    if (!activoId) return 0;
-    
-    const activo = this.activos.find(a => a.id === activoId);
-    return activo?.ultimo_precio || 0;
-  }
-
-  mostrarCantidadDisponible(): boolean {
-    return this.alertaForm.get('activoId')?.value !== null;
-  }
-
-  getCantidadDisponible(): number {
-    const activoId = this.alertaForm.get('activoId')?.value;
-    if (!activoId) return 0;
-    
-    // Obtener la cantidad disponible del activo seleccionado en el portafolio
-    // Implementar según tu lógica de negocio
-    return 100; // Valor de ejemplo
-  }
-
-  getPrecioActualDelActivo(activoId: number): number {
-    const activo = this.activos.find(a => a.id === activoId);
-    return activo?.ultimo_precio || 0;
-  }
-
-  getSimboloActivo(activoId: number): string {
-    const activo = this.activos.find(a => a.id === activoId);
-    return activo?.simbolo || '';
-  }
-
-  esPrecioFavorable(alerta: Alerta): boolean {
-    const precioActual = this.getPrecioActualDelActivo(alerta.activoId);
-    return precioActual >= alerta.precioObjetivo;
-  }
-
-  mostrarProgreso(alerta: Alerta): boolean {
-    return this.getPrecioActualDelActivo(alerta.activoId) > 0;
-  }
-
-  calcularPorcentajeProgreso(alerta: Alerta): number {
-    const precioActual = this.getPrecioActualDelActivo(alerta.activoId);
-    if (precioActual <= 0) return 0;
-    
-    const porcentaje = (precioActual / alerta.precioObjetivo) * 100;
-    return Math.min(Math.round(porcentaje), 100);
-  }
-
-  private mostrarError(mensaje: string): void {
-    this.snackBar.open(mensaje, 'Cerrar', {
-      duration: 3000,
-      panelClass: ['error-snackbar']
+  private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {
+    this.router.navigate(['/notificacion-temporal'], {
+      queryParams: {
+        mensaje: mensaje,
+        tipo: tipo,
+        retorno: '/alertas'
+      }
     });
   }
 
-  private mostrarExito(mensaje: string): void {
-    this.snackBar.open(mensaje, 'Cerrar', {
-      duration: 3000,
-      panelClass: ['success-snackbar']
-    });
+  // Getters para el template
+  get alertasFiltradas(): Alerta[] {
+    return this.aplicarFiltros();
   }
 
-  getNombreActivo(activoId: number): string {
-    const activo = this.activos.find(a => a.id === activoId);
-    return activo ? activo.nombre : '';
+  get activoSeleccionado(): Activo | null {
+    const activoId = this.alertaForm.get('activoId')?.value;
+    return activoId ? this.activos.find(a => a.id === +activoId) || null : null;
+  }
+
+  getAlertasActivasCount(): number {
+    return this.alertas.filter(alerta => alerta.activa).length;
   }
 }

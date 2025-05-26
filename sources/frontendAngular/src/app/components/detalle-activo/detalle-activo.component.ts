@@ -318,12 +318,12 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       return;
     }
     
-    // Navegar al componente de crear alerta
-    this.router.navigate(['/crear-alerta'], {
+    // Navegar al componente de alertas con parámetros
+    this.router.navigate(['/alertas'], {
       queryParams: {
         activoId: this.activo.id,
         simbolo: this.activo.simbolo,
-        precioActual: this.activo.ultimo_precio
+        precioActual: this.activo.ultimo_precio || this.activo.precio
       }
     });
   }

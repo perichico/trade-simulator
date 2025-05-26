@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
-import { catchError, retry, timeout, delay } from 'rxjs/operators';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { catchError, tap, retry, timeout } from 'rxjs/operators';
 import { Alerta } from '../models/alerta.model';
 import { environment } from '../../environments/environment';
 
@@ -9,103 +9,91 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class AlertaService {
-  // Verificar que la URL base sea correcta
   private apiUrl = `${environment.apiUrl}/api/alertas`;
+  private alertasSubject = new BehaviorSubject<Alerta[]>([]);
+  public alertas$ = this.alertasSubject.asObservable();
 
-  constructor(private http: HttpClient) {
-    console.log('URL base de la API:', environment.apiUrl);
-    console.log('URL completa para alertas:', this.apiUrl);
-  }
+  constructor(private http: HttpClient) {}
 
   private handleError(error: HttpErrorResponse) {
-    console.error('Error HTTP detallado:', error);
+    console.error('Error en AlertaService:', error);
+    
+    let errorMessage = 'Error desconocido';
     
     if (error.status === 0) {
-      // Error de conexión - Sin acceso al servidor
-      console.error('Error de conexión con el servidor:', error.error);
-    } else {
-      // Error devuelto por el backend
-      console.error(`Backend devolvió código ${error.status}, respuesta:`, error.error);
+      errorMessage = 'No se puede conectar con el servidor';
+    } else if (error.status === 401) {
+      errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
+    } else if (error.status === 403) {
+      errorMessage = 'No tienes permisos para realizar esta acción';
+    } else if (error.status === 404) {
+      errorMessage = 'Recurso no encontrado';
+    } else if (error.status >= 500) {
+      errorMessage = 'Error interno del servidor';
+    } else if (error.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error.error?.error) {
+      errorMessage = error.error.error;
     }
     
-    // Devolver un mensaje amigable
-    return throwError(() => error);
+    return throwError(() => new Error(errorMessage));
   }
 
   obtenerAlertasUsuario(): Observable<Alerta[]> {
-    console.log('Solicitando alertas al servidor:', this.apiUrl);
-    
     return this.http.get<Alerta[]>(this.apiUrl)
       .pipe(
         timeout(10000),
         retry(1),
+        tap(alertas => {
+          this.alertasSubject.next(alertas);
+        }),
         catchError(this.handleError)
       );
   }
 
   crearAlerta(alerta: Alerta): Observable<Alerta> {
-    console.log('Enviando nueva alerta al servidor:', alerta);
-    
     return this.http.post<Alerta>(this.apiUrl, alerta)
       .pipe(
+        tap(() => {
+          // Recargar la lista de alertas después de crear una nueva
+          this.obtenerAlertasUsuario().subscribe();
+        }),
         catchError(this.handleError)
       );
   }
 
-  activarAlerta(id: number): Observable<any> {
-    console.log(`Activando alerta ${id}`);
-    
-    return this.http.patch(`${this.apiUrl}/${id}/activar`, {})
+  activarAlerta(id: number): Observable<Alerta> {
+    return this.http.patch<Alerta>(`${this.apiUrl}/${id}/activar`, {})
       .pipe(
+        tap(() => {
+          this.obtenerAlertasUsuario().subscribe();
+        }),
         catchError(this.handleError)
       );
   }
 
-  desactivarAlerta(id: number): Observable<any> {
-    console.log(`Desactivando alerta ${id}`);
-    
-    return this.http.patch(`${this.apiUrl}/${id}/desactivar`, {})
+  desactivarAlerta(id: number): Observable<Alerta> {
+    return this.http.patch<Alerta>(`${this.apiUrl}/${id}/desactivar`, {})
       .pipe(
+        tap(() => {
+          this.obtenerAlertasUsuario().subscribe();
+        }),
         catchError(this.handleError)
       );
   }
 
   eliminarAlerta(id: number): Observable<any> {
-    console.log(`Eliminando alerta ${id}`);
-    
     return this.http.delete(`${this.apiUrl}/${id}`)
       .pipe(
+        tap(() => {
+          this.obtenerAlertasUsuario().subscribe();
+        }),
         catchError(this.handleError)
       );
   }
-  
-  // Datos de prueba para desarrollo
-  private getMockAlertas(): Alerta[] {
-    return [
-      {
-        id: 1,
-        usuarioId: 1,
-        activoId: 1, // Apple
-        precioObjetivo: 850,
-        cantidadVenta: 10,
-        activa: true
-      },
-      {
-        id: 2,
-        usuarioId: 1,
-        activoId: 2, // Microsoft
-        precioObjetivo: 300,
-        cantidadVenta: 5,
-        activa: false
-      },
-      {
-        id: 3,
-        usuarioId: 1,
-        activoId: 5, // Google
-        precioObjetivo: 250,
-        cantidadVenta: 3,
-        activa: true
-      }
-    ];
+
+  // Método para refrescar las alertas
+  refrescarAlertas(): void {
+    this.obtenerAlertasUsuario().subscribe();
   }
 }

@@ -9,4 +9,8 @@ export interface Alerta {
     activa: boolean;
     fechaCreacion?: Date;
     fechaDisparo?: Date;
+    // Propiedades adicionales para la UI
+    simboloActivo?: string;
+    nombreActivo?: string;
+    precioActual?: number;
 }

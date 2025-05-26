@@ -147,6 +147,16 @@ export class TransaccionComponent implements OnInit {
     }
   }
 
+  private navegarConNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {
+    this.router.navigate(['/notificacion-temporal'], {
+      queryParams: {
+        mensaje: mensaje,
+        tipo: tipo,
+        retorno: '/dashboard'
+      }
+    });
+  }
+
   confirmarTransaccion(): void {
     if (!this.puedeRealizarTransaccion() || !this.activo) {
       return;
@@ -158,24 +168,19 @@ export class TransaccionComponent implements OnInit {
     this.transaccionService.crearTransaccion(this.activo.id, this.tipo, this.cantidad, portafolioId)
       .subscribe({
         next: (respuesta) => {
-          // Mostrar mensaje de éxito y regresar
-          alert(`${this.tipo === 'compra' ? 'Compra' : 'Venta'} de ${this.cantidad} ${this.activo?.simbolo} realizada con éxito`);
-          this.router.navigate(['/dashboard']); // O la ruta principal que tengas
+          const accion = this.tipo === 'compra' ? 'Compra' : 'Venta';
+          const mensaje = `${accion} de ${this.cantidad} ${this.activo?.simbolo} realizada con éxito`;
+          this.navegarConNotificacion(mensaje, 'success');
         },
         error: (error) => {
           this.procesandoTransaccion = false;
-          alert(`Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`);
+          const mensaje = `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`;
+          this.navegarConNotificacion(mensaje, 'error');
         }
       });
   }
 
   cancelar(): void {
-    this.router.navigate(['/dashboard']); // O la ruta principal que tengas
-  }
-
-  private navegarConNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {
-    // Usar alert por simplicidad hasta crear el componente de notificación
-    alert(mensaje);
     this.router.navigate(['/dashboard']); // O la ruta principal que tengas
   }
 

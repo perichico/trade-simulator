@@ -55,8 +55,9 @@ export class AlertasComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.verificarAutenticacion();
     this.procesarQueryParams();
-    this.cargarActivos();
-    this.cargarAlertas();
+    this.cargarActivos().then(() => {
+      this.cargarAlertas();
+    });
     this.suscribirCambiosFormulario();
   }
 
@@ -105,22 +106,30 @@ export class AlertasComponent implements OnInit, OnDestroy {
       });
   }
 
-  cargarActivos(): void {
+  cargarActivos(): Promise<void> {
     this.cargandoActivos = true;
-    this.activoService.obtenerActivos()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (activos) => {
-          this.activos = activos;
-          this.activosFiltrados = activos;
-          this.cargandoActivos = false;
-        },
-        error: (error) => {
-          console.error('Error al cargar activos:', error);
-          this.cargandoActivos = false;
-          this.mostrarNotificacion('Error al cargar los activos disponibles', 'error');
-        }
-      });
+    return new Promise((resolve, reject) => {
+      this.activoService.obtenerActivos()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (activos) => {
+            this.activos = activos;
+            this.activosFiltrados = activos;
+            this.cargandoActivos = false;
+            // Re-enriquecer alertas si ya están cargadas
+            if (this.alertas.length > 0) {
+              this.alertas = this.enriquecerAlertas(this.alertas);
+            }
+            resolve();
+          },
+          error: (error) => {
+            console.error('Error al cargar activos:', error);
+            this.cargandoActivos = false;
+            this.mostrarNotificacion('Error al cargar los activos disponibles', 'error');
+            reject(error);
+          }
+        });
+    });
   }
 
   cargarAlertas(): void {
@@ -140,7 +149,7 @@ export class AlertasComponent implements OnInit, OnDestroy {
       });
   }
 
-  private enriquecerAlertas(alertas: Alerta[]): Alerta[] {
+  private enriquecerAlertas(alertas: any[]): Alerta[] {
     return alertas.map(alerta => {
       const activo = this.activos.find(a => a.id === alerta.activoId);
       return {
@@ -278,8 +287,9 @@ export class AlertasComponent implements OnInit, OnDestroy {
   }
 
   refrescarDatos(): void {
-    this.cargarActivos();
-    this.cargarAlertas();
+    this.cargarActivos().then(() => {
+      this.cargarAlertas();
+    });
   }
 
   private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {

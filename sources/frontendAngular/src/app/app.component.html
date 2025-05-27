@@ -34,6 +34,12 @@
             <i class="bi bi-bell me-2 fs-5"></i> Alertas
           </a>
         </li>
+        <!-- Enlace de administrador - solo visible para administradores -->
+        <li class="nav-item mx-1" *ngIf="esAdministrador$ | async">
+          <a class="nav-link px-3 py-2 rounded-3 d-flex align-items-center" routerLink="/administrador" routerLinkActive="active bg-primary-dark">
+            <i class="bi bi-gear me-2 fs-5"></i> Administrador
+          </a>
+        </li>
       </ul>
     </div>
     <button class="btn btn-outline-light ms-2" (click)="toggleDarkMode()">

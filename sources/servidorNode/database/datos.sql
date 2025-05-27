@@ -3,7 +3,8 @@ CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    contrasena VARCHAR(255) NOT NULL
+    contrasena VARCHAR(255) NOT NULL,
+    rol ENUM('usuario', 'admin') NOT NULL DEFAULT 'usuario'
 );
 
 -- Crear tabla de tipo_activo
@@ -206,10 +207,11 @@ INSERT INTO activos (nombre, simbolo, tipo_activo_id, porcentaje_dividendo, frec
 
 
 -- Insertar usuarios de prueba
-INSERT INTO usuarios (nombre, email, contrasena) VALUES
-('Juan Pérez', 'juan.perez@email.com', 'hash_contraseña_segura'),
-('María García', 'maria.garcia@email.com', 'hash_contraseña_segura'),
-('test', 'test@test.com', '$2b$10$bJ8KDFyIx8q99WrwBW23Zexwf0mc.BvF8VEYLGDY1pLpPXjb.yULO');
+INSERT INTO usuarios (nombre, email, contrasena, rol) VALUES
+('Juan Pérez', 'juan.perez@email.com', 'hash_contraseña_segura', 'usuario'),
+('María García', 'maria.garcia@email.com', 'hash_contraseña_segura', 'usuario'),
+('test', 'test@test.com', '$2b$10$bJ8KDFyIx8q99WrwBW23Zexwf0mc.BvF8VEYLGDY1pLpPXjb.yULO', 'usuario'),
+('admin', 'admin@admin.com', '$2b$10$Y2iHdCdAsRNc/bYVnsll..geCglB1AR9Tz8oEbjZWnjzdbJnu84oK', 'admin');
 
 -- Insertar portafolios de prueba
 INSERT INTO portafolio (nombre, usuario_id) VALUES

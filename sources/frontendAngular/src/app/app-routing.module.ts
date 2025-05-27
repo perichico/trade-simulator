@@ -10,6 +10,7 @@ import { HistorialComponent } from './components/historial/historial.component';
 import { DetalleActivoComponent } from './components/detalle-activo/detalle-activo.component';
 import { DividendosComponent } from './components/dividendos/dividendos.component';
 import { TransaccionComponent } from './components/transaccion/transaccion.component';
+import { AdministradorComponent } from './components/administrador/administrador.component';
 
 const routes: Routes = [
   { path: 'alertas', component: AlertasComponent, canActivate: [AuthGuard] },
@@ -24,6 +25,12 @@ const routes: Routes = [
     path: 'transaccion',
     component: TransaccionComponent,
     canActivate: [AuthGuard] // Si tienes un guard de autenticación
+  },
+  {
+    path: 'administrador',
+    component: AdministradorComponent,
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
   },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];

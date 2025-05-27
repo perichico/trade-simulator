@@ -1,13 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const { verificarAdmin } = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
 
-// Todas las rutas requieren ser administrador
+// Middleware de autenticación de administrador
+const verificarAdmin = (req, res, next) => {
+  console.log('=== VERIFICANDO ADMIN ===');
+  console.log('Headers recibidos:', req.headers);
+  console.log('Cookies recibidas:', req.headers.cookie);
+  console.log('Session completa:', req.session);
+  console.log('Usuario en sesión:', req.session?.usuario);
+  console.log('Session ID:', req.sessionID);
+  
+  if (!req.session || !req.session.usuario) {
+    console.log('❌ No hay sesión o usuario en la sesión');
+    return res.status(401).json({ error: 'Usuario no autenticado' });
+  }
+  
+  if (req.session.usuario.rol !== 'admin') {
+    console.log('❌ Usuario no es admin, rol:', req.session.usuario.rol);
+    return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+  }
+  
+  console.log('✅ Admin verificado correctamente:', req.session.usuario.nombre);
+  console.log('========================');
+  next();
+};
+
+// Aplicar middleware a todas las rutas
 router.use(verificarAdmin);
 
-router.get('/', adminController.panelAdmin);
-router.get('/usuarios', adminController.gestionarUsuarios);
-router.post('/usuarios/cambiar-rol', adminController.cambiarRolUsuario);
+// Rutas de gestión de usuarios
+router.get('/usuarios', adminController.obtenerUsuarios);
+router.put('/usuarios/:id/rol', adminController.cambiarRolUsuario);
+router.put('/usuarios/:id/estado', adminController.cambiarEstadoUsuario);
+router.delete('/usuarios/:id', adminController.eliminarUsuario);
+
+// Rutas de estadísticas
+router.get('/estadisticas', adminController.obtenerEstadisticas);
 
 module.exports = router;

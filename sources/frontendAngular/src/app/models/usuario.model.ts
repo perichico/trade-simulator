@@ -3,7 +3,6 @@ export interface Usuario {
   nombre: string;
   email: string;
   rol: 'usuario' | 'admin';
-  balance?: number;
-  fechaCreacion?: Date;
-  fechaActualizacion?: Date;
+  activo: boolean;
+  fechaRegistro: string | Date;
 }

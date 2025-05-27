@@ -10,6 +10,19 @@ const verificarAutenticacion = (req, res, next) => {
   next();
 };
 
+// Middleware de verificación de admin
+const verificarAdmin = (req, res, next) => {
+  if (!req.session || !req.session.usuario) {
+    return res.status(401).json({ error: 'Usuario no autenticado' });
+  }
+  
+  if (req.session.usuario.rol !== 'admin') {
+    return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+  }
+  
+  next();
+};
+
 // Rutas públicas
 router.get("/", usuarioController.mostrarLogin);
 router.post("/login", usuarioController.procesarLogin);
@@ -21,4 +34,11 @@ router.post("/registro", usuarioController.registrarUsuario);
 // Rutas protegidas que requieren autenticación
 router.get("/dashboard", verificarAutenticacion, usuarioController.mostrarDashboard);
 router.get("/historial-patrimonio/:usuarioId", verificarAutenticacion, usuarioController.obtenerHistorialPatrimonio);
+
+// Rutas de administración
+router.get("/admin/usuarios", verificarAdmin, (req, res) => {
+  // Redirigir a la ruta del API de admin
+  res.redirect('/api/admin/usuarios');
+});
+
 module.exports = router;

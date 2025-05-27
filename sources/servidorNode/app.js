@@ -17,13 +17,16 @@ const historialPreciosRoutes = require("./routes/historialPreciosRoutes");
 const portafolioRoutes = require("./routes/portafolioRoutes");
 const dividendoRoutes = require('./routes/dividendoRoutes');
 const alertasRoutes = require('./routes/alertas.routes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
 // Configuración de CORS para Angular
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 console.log(`CORS configurado para: ${process.env.CORS_ORIGIN || 'http://localhost:4200'}`);
@@ -39,9 +42,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Cambiar a true solo en producción con HTTPS
         httpOnly: true,
-        sameSite: 'lax'
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
 }));
 
@@ -58,6 +62,15 @@ app.use("/historial-precios", historialPreciosRoutes);
 app.use("/portafolio", portafolioRoutes);
 app.use('/api/dividendos', dividendoRoutes);
 app.use('/api/alertas', alertasRoutes);
+app.use('/api/admin', adminRoutes); // Asegurar que esta línea esté presente
+
+// Middleware para logging de todas las rutas
+app.use('*', (req, res, next) => {
+  console.log(`🌐 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
+  console.log('📝 Session ID:', req.sessionID);
+  console.log('👤 Usuario:', req.session?.usuario?.nombre || 'No autenticado');
+  next();
+});
 
 // Inicializar servicios después de que la aplicación esté lista
 app.on('ready', async () => {

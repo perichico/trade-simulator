@@ -11,6 +11,7 @@ import { DetalleActivoComponent } from './components/detalle-activo/detalle-acti
 import { DividendosComponent } from './components/dividendos/dividendos.component';
 import { TransaccionComponent } from './components/transaccion/transaccion.component';
 import { AdministradorComponent } from './components/administrador/administrador.component';
+import { AdminUsuariosComponent } from './components/admin-usuarios/admin-usuarios.component';
 
 const routes: Routes = [
   { path: 'alertas', component: AlertasComponent, canActivate: [AuthGuard] },
@@ -24,11 +25,23 @@ const routes: Routes = [
   {
     path: 'transaccion',
     component: TransaccionComponent,
-    canActivate: [AuthGuard] // Si tienes un guard de autenticación
+    canActivate: [AuthGuard]
   },
   {
     path: 'administrador',
     component: AdministradorComponent,
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
+  {
+    path: 'admin/usuarios',
+    loadComponent: () => import('./components/admin-usuarios/admin-usuarios.component').then(m => m.AdminUsuariosComponent),
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
+  { 
+    path: 'admin-usuarios', 
+    component: AdminUsuariosComponent,
     canActivate: [AuthGuard],
     data: { requiereAdmin: true }
   },

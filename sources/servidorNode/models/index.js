@@ -25,45 +25,18 @@ const OrdenModel = Orden(sequelize);
 const AlertaModel = Alerta(sequelize);
 const TransaccionModel = Transaccion(sequelize);
 
-// Definir el orden de inicialización de modelos para evitar errores de clave foránea
-// Primero modelos base, luego modelos que dependen de ellos
-const modelDefinitions = [
-  'TipoActivo', 
-  'Usuario',
-  'Activo', 
-  'Portafolio', 
-  'HistorialPrecios',
-  'PortafolioActivo', 
-  'Dividendo', 
-  'Orden', 
-  'Alerta',
-  'Transaccion'
-];
-
-// Inicializar modelos en orden específico
-for (const modelName of modelDefinitions) {
-  const modelPath = `./${modelName.toLowerCase()}Model`;
-  try {
-    const modelFunction = require(modelPath);
-    models[modelName] = modelFunction(sequelize);
-  } catch (error) {
-    console.error(`Error al cargar modelo ${modelName}:`, error);
-  }
-}
-
 // Definir relaciones
-// Relaciones principales con índices optimizados
 TipoActivoModel.hasMany(ActivoModel, { foreignKey: 'tipo_activo_id', onDelete: 'RESTRICT', constraints: false });
 ActivoModel.belongsTo(TipoActivoModel, { foreignKey: 'tipo_activo_id', targetKey: 'id', constraints: false });
 
 UsuarioModel.hasMany(PortafolioModel, { foreignKey: 'usuario_id', constraints: false });
 PortafolioModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints: false });
 
-// Relaciones many-to-many con índices optimizados
+// Relaciones many-to-many
 PortafolioModel.belongsToMany(ActivoModel, { through: PortafolioActivoModel, foreignKey: 'portafolio_id', constraints: false });
 ActivoModel.belongsToMany(PortafolioModel, { through: PortafolioActivoModel, foreignKey: 'activo_id', constraints: false });
 
-// Relaciones con Activo optimizadas
+// Relaciones con Activo
 ActivoModel.hasMany(HistorialPreciosModel, { foreignKey: 'activo_id', constraints: false });
 HistorialPreciosModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
@@ -87,8 +60,10 @@ TransaccionModel.belongsTo(UsuarioModel, { foreignKey: 'usuario_id', constraints
 ActivoModel.hasMany(TransaccionModel, { foreignKey: 'activo_id', constraints: false });
 TransaccionModel.belongsTo(ActivoModel, { foreignKey: 'activo_id', constraints: false });
 
+// Exportar modelos y sequelize
 module.exports = {
     sequelize,
+    Op,
     Usuario: UsuarioModel,
     TipoActivo: TipoActivoModel,
     Activo: ActivoModel,
@@ -98,6 +73,5 @@ module.exports = {
     Dividendo: DividendoModel,
     Orden: OrdenModel,
     Alerta: AlertaModel,
-    Transaccion: TransaccionModel,
-    Op
+    Transaccion: TransaccionModel
 };

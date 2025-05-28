@@ -36,6 +36,13 @@ router.put('/usuarios/:id/estado', adminController.cambiarEstadoUsuario);
 router.delete('/usuarios/:id', adminController.eliminarUsuario);
 
 // Rutas de estadísticas
-router.get('/estadisticas', adminController.obtenerEstadisticas);
+router.get('/estadisticas', (req, res, next) => {
+  console.log('🔗 Ruta /estadisticas accedida');
+  console.log('🔗 URL completa:', req.originalUrl);
+  console.log('🔗 Método:', req.method);
+  next();
+}, adminController.obtenerEstadisticas);
+
+console.log('✅ Rutas de admin configuradas correctamente');
 
 module.exports = router;

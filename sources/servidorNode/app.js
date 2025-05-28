@@ -62,14 +62,25 @@ app.use("/historial-precios", historialPreciosRoutes);
 app.use("/portafolio", portafolioRoutes);
 app.use('/api/dividendos', dividendoRoutes);
 app.use('/api/alertas', alertasRoutes);
-app.use('/api/admin', adminRoutes); // Asegurar que esta línea esté presente
+app.use('/api/admin', (req, res, next) => {
+  console.log('🔗 Acceso a ruta /api/admin:', req.method, req.url);
+  console.log('🔗 URL original:', req.originalUrl);
+  console.log('🔗 Headers:', req.headers);
+  next();
+}, adminRoutes);
 
 // Middleware para logging de todas las rutas
 app.use('*', (req, res, next) => {
   console.log(`🌐 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
   console.log('📝 Session ID:', req.sessionID);
   console.log('👤 Usuario:', req.session?.usuario?.nombre || 'No autenticado');
-  next();
+  
+  // Log para rutas no encontradas
+  if (res.headersSent) return next();
+  
+  // Si llegamos aquí, la ruta no fue encontrada
+  console.log(`❌ Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: 'Recurso no encontrado', ruta: req.originalUrl });
 });
 
 // Inicializar servicios después de que la aplicación esté lista

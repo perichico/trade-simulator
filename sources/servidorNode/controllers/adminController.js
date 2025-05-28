@@ -188,7 +188,34 @@ const eliminarUsuario = async (req, res) => {
 // Obtener estadísticas del sistema
 const obtenerEstadisticas = async (req, res) => {
     try {
-        console.log('Obteniendo estadísticas del sistema');
+        console.log('=== INICIANDO OBTENER ESTADÍSTICAS ===');
+        
+        // Validar sesión del usuario
+        if (!req.session || !req.session.usuario) {
+            console.error('❌ No hay sesión activa');
+            return res.status(401).json({ error: 'No hay sesión activa' });
+        }
+        
+        if (req.session.usuario.rol !== 'admin') {
+            console.error('❌ Usuario no es administrador');
+            return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+        }
+        
+        console.log('Usuario admin autenticado:', req.session.usuario.nombre);
+        
+        // Verificar conexión a la base de datos
+        try {
+            await sequelize.authenticate();
+            console.log('✅ Conexión a la base de datos verificada');
+        } catch (dbError) {
+            console.error('❌ Error de conexión a la base de datos:', dbError);
+            return res.status(500).json({ 
+                error: 'Error de conexión a la base de datos',
+                details: dbError.message 
+            });
+        }
+        
+        console.log('📊 Consultando estadísticas...');
         
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
@@ -237,13 +264,23 @@ const obtenerEstadisticas = async (req, res) => {
             mensaje: totalUsuarios === 0 ? 'Sistema sin usuarios registrados' : 'Sistema activo'
         };
         
-        console.log('Estadísticas calculadas:', estadisticas);
-        res.json(estadisticas);
+        console.log('✅ Estadísticas calculadas:', estadisticas);
+        console.log('📤 Enviando respuesta...');
+        
+        res.status(200).json(estadisticas);
+        
+        console.log('✅ RESPUESTA ENVIADA EXITOSAMENTE');
+        
     } catch (error) {
-        console.error('Error al obtener estadísticas:', error);
+        console.log('=== ERROR EN OBTENER ESTADÍSTICAS ===');
+        console.error('❌ Error completo:', error);
+        console.error('❌ Mensaje:', error.message);
+        console.error('❌ Stack:', error.stack);
+        
+        // Respuesta de error simplificada
         res.status(500).json({ 
-            error: 'Error al obtener estadísticas',
-            details: error.message 
+            error: 'Error al obtener estadísticas', 
+            details: error.message
         });
     }
 };

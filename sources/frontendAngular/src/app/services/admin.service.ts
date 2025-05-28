@@ -37,9 +37,23 @@ export class AdminService {
   // Obtener estadísticas del sistema
   obtenerEstadisticas(): Observable<any> {
     console.log('AdminService: Solicitando estadísticas a:', `${this.apiUrl}/estadisticas`);
+    console.log('AdminService: URL base configurada:', this.apiUrl);
+    console.log('AdminService: URL completa:', `${this.apiUrl}/estadisticas`);
+    
     return this.http.get<any>(`${this.apiUrl}/estadisticas`, { 
       withCredentials: true 
-    });
+    }).pipe(
+      map(response => {
+        console.log('AdminService: Estadísticas recibidas:', response);
+        return response;
+      }),
+      catchError(error => {
+        console.error('AdminService: Error al obtener estadísticas:', error);
+        console.error('AdminService: URL que falló:', error.url);
+        console.error('AdminService: Status:', error.status);
+        throw error;
+      })
+    );
   }
 
   // Cambiar rol de usuario

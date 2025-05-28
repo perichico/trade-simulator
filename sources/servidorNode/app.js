@@ -98,14 +98,17 @@ setTimeout(() => {
 const generadorDividendos = new GeneradorDividendosService();
 generadorDividendos.iniciarServicio();
 
-// Manejo de errores globales
+// Middleware de manejo de errores
 app.use((err, req, res, next) => {
-    console.error("Error:", err.message);
-    res.status(500).send("Error interno del servidor");
+  console.error('Error interno del servidor:', err);
+  res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-// Iniciar servidor
+// Configuración del puerto y inicio del servidor
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
+module.exports = app;

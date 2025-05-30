@@ -2,48 +2,69 @@
 
 ## Problema
 
-Se ha detectado un error al cargar la biblioteca compartida de bcrypt en el contenedor Docker:
+Se detectaron dos problemas relacionados con bcrypt:
 
+1. Error al cargar la biblioteca compartida de bcrypt:
 ```
 Error: Error loading shared library /app/node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node: Exec format error
 ```
 
-Este error ocurre debido a una incompatibilidad de arquitectura entre la biblioteca compilada de bcrypt y la arquitectura del contenedor Docker.
+2. Error de módulo no encontrado para bcryptjs:
+```
+Error: Cannot find module 'bcryptjs'
+```
 
 ## Solución Implementada
 
-Se ha modificado el Dockerfile del servidor Node.js para utilizar una imagen base más compatible y mejorar el proceso de compilación de bcrypt:
+### 1. Compatibilidad de Arquitectura
+- Se cambió la imagen base de `node:18-alpine` a `node:18` (basada en Debian)
+- Se agregaron herramientas de construcción necesarias (python3, make, g++)
+- Se implementó recompilación de bcrypt para la arquitectura del contenedor
 
-1. Se cambió la imagen base de `node:18-alpine` a `node:18` (basada en Debian)
-2. Se optimizó el proceso de instalación de dependencias
+### 2. Dependencias Consistentes
+- Se añadió `bcryptjs` como dependencia alternativa
+- Se mantuvo `bcrypt` como dependencia principal
+- Se corrigieron las importaciones en el código
 
 ## Pasos para Aplicar la Solución
 
-1. Asegúrese de que Docker esté en ejecución
-2. Detenga los contenedores actuales:
-   ```
+1. Detener contenedores actuales:
+   ```bash
    docker-compose down
    ```
-3. Reconstruya la imagen del servidor Node.js:
+
+2. Limpiar imágenes y volúmenes:
+   ```bash
+   docker system prune -f
+   docker volume prune -f
    ```
-   docker-compose build --no-cache node
+
+3. Reconstruir sin caché:
+   ```bash
+   docker-compose build --no-cache
    ```
-4. Inicie los contenedores nuevamente:
-   ```
+
+4. Iniciar contenedores:
+   ```bash
    docker-compose up -d
    ```
 
 ## Verificación
 
-Para verificar que el problema se ha resuelto, puede revisar los logs del contenedor Node.js:
-
-```
+Revisar logs para confirmar que no hay errores:
+```bash
 docker logs trade-simulator-node
 ```
 
-Ya no debería aparecer el error relacionado con bcrypt.
+## Alternativas
 
-## Notas Adicionales
+Si persisten problemas, el código puede usar bcryptjs como alternativa:
+```javascript
+const bcrypt = require("bcryptjs");
+```
 
-- La nueva imagen base es más grande que la versión Alpine, pero ofrece mejor compatibilidad con módulos nativos como bcrypt
-- Si experimenta problemas adicionales, considere utilizar una versión específica de bcrypt compatible con su entorno
+## Notas Técnicas
+
+- La imagen Debian es más pesada pero más compatible con módulos nativos
+- La recompilación asegura compatibilidad con la arquitectura del contenedor
+- Se mantienen ambas librerías para máxima compatibilidad

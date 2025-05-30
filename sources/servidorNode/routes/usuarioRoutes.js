@@ -23,6 +23,14 @@ const verificarAdmin = (req, res, next) => {
   next();
 };
 
+// Middleware para verificar sesión
+const verificarSesion = (req, res, next) => {
+    if (!req.session || !req.session.usuario) {
+        return res.status(401).json({ error: "No autorizado" });
+    }
+    next();
+};
+
 // Rutas públicas
 router.get("/", usuarioController.mostrarLogin);
 router.post("/login", usuarioController.procesarLogin);
@@ -34,6 +42,7 @@ router.post("/registro", usuarioController.registrarUsuario);
 // Rutas protegidas que requieren autenticación
 router.get("/dashboard", verificarAutenticacion, usuarioController.mostrarDashboard);
 router.get("/historial-patrimonio/:usuarioId", verificarAutenticacion, usuarioController.obtenerHistorialPatrimonio);
+router.get("/perfil", verificarSesion, usuarioController.obtenerPerfil);
 
 // Rutas de administración
 router.get("/admin/usuarios", verificarAdmin, (req, res) => {

@@ -131,32 +131,70 @@ const cambiarEstadoUsuario = async (req, res) => {
 
 // Eliminar usuario
 const eliminarUsuario = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
         const { id } = req.params;
         
-        const usuario = await Usuario.findByPk(id);
+        console.log(`Intentando eliminar usuario ID: ${id}`);
+        
+        const usuario = await Usuario.findByPk(id, { transaction });
         if (!usuario) {
+            await transaction.rollback();
             return res.status(404).json({ error: 'Usuario no encontrado' });
         }
         
         // Evitar que el administrador se elimine a sí mismo
         if (usuario.id === req.session.usuario.id) {
+            await transaction.rollback();
             return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta' });
         }
         
-        // Eliminar datos relacionados (portafolios, transacciones, etc.)
-        await Transaccion.destroy({ where: { usuario_id: id } });
-        await Portafolio.destroy({ where: { usuario_id: id } });
+        console.log(`Eliminando datos relacionados del usuario ${usuario.nombre}...`);
         
-        // Eliminar usuario
-        await usuario.destroy();
+        // Eliminar datos relacionados en orden correcto
+        // 1. Eliminar PortafolioActivo (activos en portafolios)
+        const { PortafolioActivo } = require('../models/index');
+        const portafolios = await Portafolio.findAll({ 
+            where: { usuario_id: id },
+            transaction 
+        });
+        
+        for (const portafolio of portafolios) {
+            await PortafolioActivo.destroy({ 
+                where: { portafolio_id: portafolio.id },
+                transaction 
+            });
+        }
+        
+        // 2. Eliminar transacciones
+        await Transaccion.destroy({ 
+            where: { usuario_id: id },
+            transaction 
+        });
+        
+        // 3. Eliminar portafolios
+        await Portafolio.destroy({ 
+            where: { usuario_id: id },
+            transaction 
+        });
+        
+        // 4. Eliminar usuario
+        await usuario.destroy({ transaction });
+        
+        await transaction.commit();
+        
+        console.log(`Usuario ${usuario.nombre} eliminado correctamente`);
         
         res.json({ 
             message: `Usuario ${usuario.nombre} eliminado correctamente` 
         });
     } catch (error) {
+        await transaction.rollback();
         console.error('Error al eliminar usuario:', error);
-        res.status(500).json({ error: 'Error al eliminar usuario' });
+        res.status(500).json({ 
+            error: 'Error al eliminar usuario',
+            details: error.message 
+        });
     }
 };
 

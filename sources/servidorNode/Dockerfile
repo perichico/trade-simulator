@@ -5,10 +5,16 @@ WORKDIR /app
 # Copiar archivos de configuración de dependencias
 COPY package*.json ./
 
-# Instalar dependencias y solucionar el problema de bcrypt
+# Instalar dependencias del sistema necesarias para bcrypt
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependencias y recompilar bcrypt para la arquitectura del contenedor
 RUN npm install && \
-    npm uninstall bcrypt && \
-    npm install bcrypt
+    npm rebuild bcrypt --build-from-source
 
 # Copiar el código fuente
 COPY . .

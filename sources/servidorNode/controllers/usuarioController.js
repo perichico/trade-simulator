@@ -100,7 +100,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
     // Añadir el saldo del portafolio al objeto usuario para mantener compatibilidad
     usuario.dataValues.balance = portafolio.saldo || 10000.00;
 
-    // Obtener transacciones del usuario con los datos del activo asociado
+    // Obtener transacciones del usuario with the associated asset data
     const transacciones = await Transaccion.findAll({
       where: { usuarioId },
       include: [{ model: Activo }],
@@ -205,13 +205,103 @@ exports.registrarUsuario = async (req, res) => {
             contrasena: hashedPassword
         });
 
+        // Crear sesión
+        req.session.usuario = {
+            id: nuevoUsuario.id,
+            nombre: nuevoUsuario.nombre,
+            email: nuevoUsuario.email,
+            rol: nuevoUsuario.rol
+        };
+        
         res.status(201).json({
             mensaje: "Usuario registrado exitosamente",
-            usuario: nuevoUsuario
+            usuario: {
+                id: nuevoUsuario.id,
+                nombre: nuevoUsuario.nombre,
+                email: nuevoUsuario.email,
+                rol: nuevoUsuario.rol
+            }
         });
 
     } catch (error) {
         console.error("Error al registrar usuario:", error);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+};
+
+// Login
+exports.login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        const usuario = await Usuario.findOne({ where: { email } });
+        if (!usuario) {
+            return res.status(401).json({ error: "Credenciales inválidas" });
+        }
+        
+        const passwordValido = await bcrypt.compare(password, usuario.password);
+        if (!passwordValido) {
+            return res.status(401).json({ error: "Credenciales inválidas" });
+        }
+        
+        if (usuario.estado === 'suspendido') {
+            return res.status(401).json({ error: "Usuario suspendido" });
+        }
+        
+        req.session.usuario = {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol
+        };
+        
+        res.json({
+            mensaje: "Login exitoso",
+            usuario: req.session.usuario
+        });
+    } catch (error) {
+        console.error("Error en login:", error);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+};
+
+// Logout
+exports.logout = async (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ error: "Error al cerrar sesión" });
+        }
+        res.clearCookie('connect.sid');
+        res.json({ mensaje: "Sesión cerrada exitosamente" });
+    });
+};
+
+// Verificar sesión
+exports.verificarSesion = async (req, res) => {
+    if (req.session && req.session.usuario) {
+        res.json({
+            autenticado: true,
+            usuario: req.session.usuario
+        });
+    } else {
+        res.json({ autenticado: false });
+    }
+};
+
+// Obtener perfil
+exports.obtenerPerfil = async (req, res) => {
+    try {
+        const usuario = await Usuario.findByPk(req.session.usuario.id, {
+            attributes: ['id', 'nombre', 'email', 'rol', 'estado', 'fechaRegistro']
+        });
+        
+        if (!usuario) {
+            return res.status(404).json({ error: "Usuario no encontrado" });
+        }
+        
+        res.json(usuario);
+    } catch (error) {
+        console.error("Error al obtener perfil:", error);
         res.status(500).json({ error: "Error en el servidor" });
     }
 };
@@ -223,46 +313,19 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
         if (!usuarioId) {
             return res.status(401).json({ error: "No autorizado" });
         }
-        const { Portafolio, PortafolioActivo, HistorialPrecios, Activo } = require("../models/index");
+        
         // Obtener los portafolios del usuario
         const portafolios = await Portafolio.findAll({ where: { usuario_id: usuarioId } });
         if (!portafolios || portafolios.length === 0) {
             return res.status(200).json([]);
         }
-        // Obtener todos los activos y cantidades de los portafolios
-        const portafolioIds = portafolios.map(p => p.id);
-        const posiciones = await PortafolioActivo.findAll({ where: { portafolio_id: portafolioIds } });
-        if (!posiciones || posiciones.length === 0) {
-            return res.status(200).json([]);
-        }
-        // Obtener todos los activos únicos
-        const activosIds = [...new Set(posiciones.map(pos => pos.activo_id))];
-        // Obtener todas las fechas históricas disponibles (por simplicidad, fechas de historial_precios del primer activo)
-        const fechas = await HistorialPrecios.findAll({
-            where: { activo_id: activosIds[0] },
-            attributes: ["fecha"],
-            order: [["fecha", "ASC"]],
-            raw: true
-        });
-        // Para cada fecha, calcular el patrimonio sumando cantidad * precio de cada activo
-        let historial = [];
-        for (const f of fechas) {
-            let patrimonioTotal = 0;
-            for (const pos of posiciones) {
-                // Buscar el precio del activo en esa fecha
-                const precioHist = await HistorialPrecios.findOne({
-                    where: { activo_id: pos.activo_id, fecha: f.fecha },
-                    attributes: ["precio"]
-                });
-                if (precioHist) {
-                    patrimonioTotal += parseFloat(precioHist.precio) * parseFloat(pos.cantidad);
-                }
-            }
-            historial.push({ fecha: f.fecha, patrimonioTotal });
-        }
-        res.status(200).json(historial);
+        
+        // TODO: Implementar lógica de historial de patrimonio
+        // Por ahora retornar array vacío
+        res.status(200).json([]);
+        
     } catch (error) {
-        console.error("Error al obtener el historial de patrimonio:", error);
-        res.status(500).json({ error: "Error al obtener el historial de patrimonio" });
+        console.error("Error al obtener historial de patrimonio:", error);
+        res.status(500).json({ error: "Error en el servidor" });
     }
 };

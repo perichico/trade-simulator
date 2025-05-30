@@ -45,6 +45,10 @@ const routes: Routes = [
     canActivate: [AuthGuard],
     data: { requiereAdmin: true }
   },
+  {
+    path: 'usuario-suspendido',
+    loadComponent: () => import('./components/usuario-suspendido/usuario-suspendido.component').then(m => m.UsuarioSuspendidoComponent)
+  },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
 

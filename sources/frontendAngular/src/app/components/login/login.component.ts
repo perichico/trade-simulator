@@ -13,6 +13,7 @@ export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   cargando = false;
   ocultarPassword = true;
+  mensajeError = '';
 
   constructor(
     private fb: FormBuilder,
@@ -44,16 +45,36 @@ export class LoginComponent implements OnInit {
       this.authService.login(email, password).subscribe({
         next: (respuesta) => {
           this.cargando = false;
-          this.snackBar.open('Inicio de sesión exitoso', 'Cerrar', { duration: 3000 });
+          console.log('Login exitoso:', respuesta);
+          
+          // Verificar si el usuario está suspendido
+          if (respuesta.usuario && respuesta.usuario.estado === 'suspendido') {
+            this.router.navigate(['/usuario-suspendido']);
+            return;
+          }
+          
           this.router.navigate(['/dashboard']);
         },
         error: (error) => {
           this.cargando = false;
-          this.snackBar.open(
-            `Error al iniciar sesión: ${error.error?.error || 'Credenciales incorrectas'}`,
-            'Cerrar',
-            { duration: 5000 }
-          );
+          console.error('Error en login:', error);
+          
+          // Manejar específicamente usuarios suspendidos
+          if (error.esSuspendido || (error.error && error.error.tipo === 'USUARIO_SUSPENDIDO')) {
+            this.router.navigate(['/usuario-suspendido']);
+            return;
+          }
+          
+          // Otros errores de login
+          if (error.status === 404) {
+            this.mensajeError = 'Usuario no encontrado';
+          } else if (error.status === 401) {
+            this.mensajeError = 'Contraseña incorrecta';
+          } else if (error.status === 403) {
+            this.mensajeError = error.error?.mensaje || 'Acceso denegado';
+          } else {
+            this.mensajeError = 'Error en el servidor. Intenta nuevamente.';
+          }
         }
       });
     }

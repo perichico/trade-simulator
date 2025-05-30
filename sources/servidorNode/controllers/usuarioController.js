@@ -38,11 +38,27 @@ exports.procesarLogin = async (req, res) => {
             return res.status(401).json({ error: "Contraseña incorrecta" });
         }
 
+        // Verificar si el usuario está suspendido
+        if (usuario.estado === 'suspendido') {
+            return res.status(403).json({ 
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
+        }
+
         // Iniciar sesión
-        req.session.usuario = usuario; // Guardar usuario en la sesión
+        req.session.usuario = {
+            id: usuario.id,
+            nombre: usuario.nombre,
+            email: usuario.email,
+            rol: usuario.rol,
+            estado: usuario.estado
+        };
+        
         res.status(200).json({ 
             mensaje: "Login exitoso",
-            usuario: usuario
+            usuario: req.session.usuario
         });
         
     } catch (error) {
@@ -239,20 +255,26 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: "Credenciales inválidas" });
         }
         
-        const passwordValido = await bcrypt.compare(password, usuario.password);
+        const passwordValido = await bcrypt.compare(password, usuario.contrasena || usuario.password);
         if (!passwordValido) {
             return res.status(401).json({ error: "Credenciales inválidas" });
         }
         
+        // Verificar si el usuario está suspendido
         if (usuario.estado === 'suspendido') {
-            return res.status(401).json({ error: "Usuario suspendido" });
+            return res.status(403).json({ 
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
         }
         
         req.session.usuario = {
             id: usuario.id,
             nombre: usuario.nombre,
             email: usuario.email,
-            rol: usuario.rol
+            rol: usuario.rol,
+            estado: usuario.estado
         };
         
         res.json({

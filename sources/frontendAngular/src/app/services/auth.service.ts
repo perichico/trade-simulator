@@ -56,6 +56,13 @@ export class AuthService {
             this.usuarioSubject.next(response.usuario);
             this.esAdministradorSubject.next(response.usuario.rol === 'admin');
           }
+        }),
+        catchError(error => {
+          // Manejar específicamente usuarios suspendidos
+          if (error.status === 403 && error.error?.tipo === 'USUARIO_SUSPENDIDO') {
+            throw { ...error, esSuspendido: true };
+          }
+          throw error;
         })
       );
   }
@@ -93,6 +100,12 @@ export class AuthService {
   esAdministrador(): boolean {
     const usuario = this.usuarioSubject.value;
     return usuario?.rol === 'admin';
+  }
+
+  // Verificar si el usuario está suspendido
+  usuarioSuspendido(): boolean {
+    const usuario = this.usuarioSubject.value;
+    return usuario?.estado === 'suspendido';
   }
 
   // Obtener información del usuario

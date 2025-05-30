@@ -18,6 +18,7 @@ const portafolioRoutes = require("./routes/portafolioRoutes");
 const dividendoRoutes = require('./routes/dividendoRoutes');
 const alertasRoutes = require('./routes/alertas.routes');
 const adminRoutes = require('./routes/adminRoutes');
+const patrimonioRoutes = require('./routes/patrimonioRoutes');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use("/historial-precios", historialPreciosRoutes);
 app.use("/portafolio", portafolioRoutes);
 app.use('/api/dividendos', dividendoRoutes);
 app.use('/api/alertas', alertasRoutes);
+app.use('/api/patrimonio', patrimonioRoutes);
 app.use('/api/admin', (req, res, next) => {
   console.log('🔗 Acceso a ruta /api/admin:', req.method, req.url);
   console.log('🔗 URL original:', req.originalUrl);

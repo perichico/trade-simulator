@@ -4,7 +4,10 @@ CREATE TABLE usuarios (
     nombre VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     contrasena VARCHAR(255) NOT NULL,
-    rol ENUM('usuario', 'admin') NOT NULL DEFAULT 'usuario'
+    rol ENUM('usuario', 'admin') NOT NULL DEFAULT 'usuario',
+    estado ENUM('activo', 'suspendido') NOT NULL DEFAULT 'activo',
+    fechaRegistro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fechaActualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Crear tabla de tipo_activo
@@ -207,11 +210,11 @@ INSERT INTO activos (nombre, simbolo, tipo_activo_id, porcentaje_dividendo, frec
 
 
 -- Insertar usuarios de prueba
-INSERT INTO usuarios (nombre, email, contrasena, rol) VALUES
-('Juan Pérez', 'juan.perez@email.com', 'hash_contraseña_segura', 'usuario'),
-('María García', 'maria.garcia@email.com', 'hash_contraseña_segura', 'usuario'),
-('test', 'test@test.com', '$2b$10$bJ8KDFyIx8q99WrwBW23Zexwf0mc.BvF8VEYLGDY1pLpPXjb.yULO', 'usuario'),
-('admin', 'admin@admin.com', '$2b$10$Y2iHdCdAsRNc/bYVnsll..geCglB1AR9Tz8oEbjZWnjzdbJnu84oK', 'admin');
+INSERT INTO usuarios (nombre, email, contrasena, rol, estado, fechaRegistro) VALUES
+('Juan Pérez', 'juan.perez@email.com', 'hash_contraseña_segura', 'usuario', 'activo', '2024-01-15 10:30:00'),
+('María García', 'maria.garcia@email.com', 'hash_contraseña_segura', 'usuario', 'activo', '2024-02-20 14:15:00'),
+('test', 'test@test.com', '$2b$10$bJ8KDFyIx8q99WrwBW23Zexwf0mc.BvF8VEYLGDY1pLpPXjb.yULO', 'usuario', 'activo', '2024-03-10 09:45:00'),
+('admin', 'admin@admin.com', '$2b$10$Y2iHdCdAsRNc/bYVnsll..geCglB1AR9Tz8oEbjZWnjzdbJnu84oK', 'admin', 'activo', '2024-01-01 08:00:00');
 
 -- Insertar portafolios de prueba
 INSERT INTO portafolio (nombre, usuario_id) VALUES

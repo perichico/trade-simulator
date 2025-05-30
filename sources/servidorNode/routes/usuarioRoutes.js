@@ -41,4 +41,9 @@ router.get("/admin/usuarios", verificarAdmin, (req, res) => {
   res.redirect('/api/admin/usuarios');
 });
 
+router.get("/admin/estadisticas", verificarAdmin, (req, res) => {
+  // Redirigir a la ruta del API de admin
+  res.redirect('/api/admin/estadisticas');
+});
+
 module.exports = router;

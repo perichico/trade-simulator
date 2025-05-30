@@ -80,38 +80,52 @@ export class AdminUsuariosComponent implements OnInit {
   cargarUsuarios(): void {
     this.cargando = true;
     console.log('Iniciando carga de usuarios...');
-    console.log('AdminService disponible:', !!this.adminService);
-    console.log('Método obtenerUsuarios disponible:', typeof this.adminService.obtenerUsuarios);
     
     this.adminService.obtenerUsuarios().subscribe({
-      next: (usuarios) => {
+      next: (respuesta: any) => {
         console.log('=== RESPUESTA DEL SERVIDOR ===');
-        console.log('Usuarios recibidos del servidor:', usuarios);
-        console.log('Tipo de datos recibidos:', typeof usuarios);
-        console.log('Es un array?', Array.isArray(usuarios));
-        console.log('Cantidad de usuarios:', usuarios?.length || 0);
-        console.log('Primer usuario (si existe):', usuarios?.[0]);
-        console.log('================================');
+        console.log('Respuesta completa:', respuesta);
         
-        this.usuarios = Array.isArray(usuarios) ? usuarios : [];
-        console.log('Usuarios asignados al componente:', this.usuarios);
+        // Manejar tanto array directo como objeto con propiedad usuarios
+        let usuarios: Usuario[];
+        if (Array.isArray(respuesta)) {
+          usuarios = respuesta;
+        } else if (respuesta && respuesta.usuarios && Array.isArray(respuesta.usuarios)) {
+          usuarios = respuesta.usuarios;
+        } else {
+          console.error('Formato de respuesta inesperado:', respuesta);
+          usuarios = [];
+        }
+        
+        console.log('Usuarios extraídos:', usuarios);
+        console.log('Cantidad de usuarios:', usuarios.length);
+        
+        this.usuarios = usuarios;
         this.aplicarFiltros();
         this.cargando = false;
+        
+        // Mostrar mensaje si no hay usuarios
+        if (usuarios.length === 0) {
+          this.snackBar.open('No hay usuarios registrados en el sistema', 'Cerrar', { duration: 5000 });
+        }
       },
       error: (error) => {
         console.log('=== ERROR EN CARGA DE USUARIOS ===');
         console.error('Error completo:', error);
-        console.error('Status del error:', error.status);
-        console.error('Message del error:', error.message);
-        console.error('Error.error:', error.error);
-        console.error('Headers:', error.headers);
-        console.error('URL:', error.url);
-        console.log('===================================');
         
-        this.usuarios = []; // Asegurar que sea un array vacío
+        this.usuarios = [];
         this.usuariosFiltrados = [];
-        this.snackBar.open(`Error al cargar usuarios: ${error.error?.error || error.message}`, 'Cerrar', { duration: 5000 });
         this.cargando = false;
+        
+        if (error.status === 401) {
+          this.snackBar.open('Sesión expirada. Redirigiendo al login...', 'Cerrar', { duration: 3000 });
+          this.router.navigate(['/login']);
+        } else if (error.status === 403) {
+          this.snackBar.open('No tienes permisos de administrador', 'Cerrar', { duration: 3000 });
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.snackBar.open(`Error al cargar usuarios: ${error.error?.error || error.message}`, 'Cerrar', { duration: 5000 });
+        }
       }
     });
   }
@@ -164,10 +178,11 @@ export class AdminUsuariosComponent implements OnInit {
     if (this.filtroEstado !== 'todos') {
       filtrados = filtrados.filter(usuario => {
         if (this.filtroEstado === 'activos') {
-          return usuario.activo !== false;
-        } else {
-          return usuario.activo === false;
+          return usuario.estado === 'activo';
+        } else if (this.filtroEstado === 'suspendidos') {
+          return usuario.estado === 'suspendido';
         }
+        return true;
       });
     }
 
@@ -188,10 +203,10 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   toggleEstadoUsuario(usuario: Usuario): void {
-    const nuevoEstado = !usuario.activo;
-    this.adminService.toggleEstadoUsuario(usuario.id, nuevoEstado).subscribe({
+    const nuevoEstado = usuario.estado === 'activo' ? 'suspendido' : 'activo';
+    this.adminService.cambiarEstadoUsuario(usuario.id, nuevoEstado).subscribe({
       next: (response) => {
-        usuario.activo = nuevoEstado;
+        usuario.estado = nuevoEstado;
         console.log('Estado cambiado:', response);
       },
       error: (error) => {
@@ -200,8 +215,27 @@ export class AdminUsuariosComponent implements OnInit {
     });
   }
 
+  suspenderUsuario(usuario: Usuario): void {
+    const nuevoEstado = usuario.estado === 'activo' ? 'suspendido' : 'activo';
+    const accion = nuevoEstado === 'suspendido' ? 'suspender' : 'activar';
+    
+    if (confirm(`¿Estás seguro de que quieres ${accion} al usuario ${usuario.nombre}?`)) {
+      this.adminService.cambiarEstadoUsuario(usuario.id, nuevoEstado).subscribe({
+        next: (response) => {
+          usuario.estado = nuevoEstado;
+          this.snackBar.open(`Usuario ${accion}do correctamente`, 'Cerrar', { duration: 3000 });
+          console.log('Estado cambiado:', response);
+        },
+        error: (error) => {
+          console.error('Error al cambiar estado:', error);
+          this.snackBar.open(`Error al ${accion} usuario`, 'Cerrar', { duration: 3000 });
+        }
+      });
+    }
+  }
+
   confirmarEliminarUsuario(usuario: Usuario): void {
-    if (confirm(`¿Estás seguro de que quieres eliminar al usuario ${usuario.nombre}?`)) {
+    if (confirm(`¿Estás seguro de que quieres ELIMINAR PERMANENTEMENTE al usuario ${usuario.nombre}? Esta acción no se puede deshacer.`)) {
       this.eliminarUsuario(usuario);
     }
   }
@@ -211,41 +245,68 @@ export class AdminUsuariosComponent implements OnInit {
       next: (response) => {
         this.usuarios = this.usuarios.filter(u => u.id !== usuario.id);
         this.aplicarFiltros();
+        this.snackBar.open('Usuario eliminado correctamente', 'Cerrar', { duration: 3000 });
         console.log('Usuario eliminado:', response);
       },
       error: (error) => {
         console.error('Error al eliminar usuario:', error);
+        this.snackBar.open('Error al eliminar usuario', 'Cerrar', { duration: 3000 });
       }
     });
   }
 
-  // Métodos para las estadísticas
+  // Métodos de estadísticas
   obtenerTotalUsuarios(): number {
-    return this.estadisticas?.totalUsuarios || this.usuarios.length;
+    return this.usuarios.length;
   }
 
   obtenerUsuariosActivos(): number {
-    return this.estadisticas?.usuariosActivos || this.usuarios.filter(u => u.activo !== false).length;
+    return this.usuarios.filter(u => u.estado === 'activo').length;
   }
 
-  obtenerAdministradores(): number {
-    return this.estadisticas?.administradores || this.usuarios.filter(u => u.rol === 'admin').length;
+  obtenerUsuariosSuspendidos(): number {
+    return this.usuarios.filter(u => u.estado === 'suspendido').length;
   }
 
   obtenerUsuariosHoy(): number {
-    return this.estadisticas?.usuariosHoy || 0;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return this.usuarios.filter(u => {
+      const fechaRegistro = new Date(u.fechaRegistro);
+      fechaRegistro.setHours(0, 0, 0, 0);
+      return fechaRegistro.getTime() === hoy.getTime();
+    }).length;
   }
 
-  // Métodos de utilidad
-  obtenerClaseEstado(activo: boolean): string {
-    return activo !== false ? 'badge bg-success' : 'badge bg-danger';
+  // Métodos auxiliares
+  obtenerClaseEstado(estado: string): string {
+    switch (estado) {
+      case 'activo':
+        return 'badge bg-success';
+      case 'suspendido':
+        return 'badge bg-warning';
+      default:
+        return 'badge bg-secondary';
+    }
   }
 
-  obtenerTextoEstado(activo: boolean): string {
-    return activo !== false ? 'Activo' : 'Inactivo';
+  obtenerTextoEstado(estado: string): string {
+    switch (estado) {
+      case 'activo':
+        return 'Activo';
+      case 'suspendido':
+        return 'Suspendido';
+      default:
+        return 'Desconocido';
+    }
   }
 
   formatearFecha(fecha: string | Date): string {
-    return new Date(fecha).toLocaleDateString('es-ES');
+    const fechaObj = new Date(fecha);
+    return fechaObj.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   }
 }

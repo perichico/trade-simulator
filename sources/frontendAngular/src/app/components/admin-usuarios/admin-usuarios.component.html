@@ -41,9 +41,9 @@
     <div class="col-12 col-md-3">
       <div class="card bg-warning text-white">
         <div class="card-body text-center">
-          <i class="bi bi-shield-check display-4 mb-2"></i>
-          <h3>{{ obtenerAdministradores() }}</h3>
-          <p class="mb-0">Administradores</p>
+          <i class="bi bi-person-x display-4 mb-2"></i>
+          <h3>{{ obtenerUsuariosSuspendidos() }}</h3>
+          <p class="mb-0">Suspendidos</p>
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@
               <select class="form-select" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
                 <option value="todos">Todos los estados</option>
                 <option value="activos">Activos</option>
-                <option value="inactivos">Inactivos</option>
+                <option value="suspendidos">Suspendidos</option>
               </select>
             </div>
           </div>
@@ -134,8 +134,8 @@
                     </select>
                   </td>
                   <td>
-                    <span [class]="obtenerClaseEstado(usuario.activo!)">
-                      {{ obtenerTextoEstado(usuario.activo!) }}
+                    <span [class]="obtenerClaseEstado(usuario.estado)">
+                      {{ obtenerTextoEstado(usuario.estado) }}
                     </span>
                   </td>
                   <td>{{ formatearFecha(usuario.fechaRegistro) }}</td>
@@ -143,14 +143,14 @@
                     <div class="btn-group btn-group-sm">
                       <button 
                         class="btn btn-outline-warning" 
-                        (click)="toggleEstadoUsuario(usuario)"
-                        [title]="usuario.activo !== false ? 'Desactivar usuario' : 'Activar usuario'">
-                        <i class="bi" [class.bi-pause-circle]="usuario.activo !== false" [class.bi-play-circle]="usuario.activo === false"></i>
+                        (click)="suspenderUsuario(usuario)"
+                        [title]="usuario.estado === 'activo' ? 'Suspender usuario' : 'Activar usuario'">
+                        <i class="bi" [class.bi-pause-circle]="usuario.estado === 'activo'" [class.bi-play-circle]="usuario.estado === 'suspendido'"></i>
                       </button>
                       <button 
                         class="btn btn-outline-danger" 
                         (click)="confirmarEliminarUsuario(usuario)"
-                        title="Eliminar usuario">
+                        title="Eliminar usuario permanentemente">
                         <i class="bi bi-trash"></i>
                       </button>
                     </div>
@@ -179,7 +179,7 @@
           <div class="text-center py-5" *ngIf="!cargando && usuarios.length === 0">
             <i class="bi bi-people display-1 text-muted mb-3"></i>
             <h5 class="text-muted">No hay usuarios registrados</h5>
-            <p class="text-muted">Aún no hay usuarios en el sistema</p>
+            <p class="text-muted">Aún no hay usuarios en el sistema. Los usuarios pueden registrarse desde la página de registro.</p>
           </div>
         </div>
       </div>

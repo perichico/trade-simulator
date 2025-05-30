@@ -64,10 +64,10 @@ export class AdminService {
     );
   }
 
-  // Cambiar estado de usuario (activo/inactivo)
-  toggleEstadoUsuario(usuarioId: number, activo: boolean): Observable<any> {
+  // Cambiar estado de usuario (activo/suspendido)
+  cambiarEstadoUsuario(usuarioId: number, nuevoEstado: 'activo' | 'suspendido'): Observable<any> {
     return this.http.put(`${this.apiUrl}/usuarios/${usuarioId}/estado`, 
-      { activo }, 
+      { estado: nuevoEstado }, 
       { withCredentials: true }
     );
   }

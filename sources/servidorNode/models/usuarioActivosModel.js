@@ -1,37 +1,36 @@
-const sequelize = require('../database/db');
 const { DataTypes } = require('sequelize');
-const { Usuario } = require('./usuarioModel');
-const { Activo } = require('./activoModel');
 
-const UsuarioActivos = sequelize.define('UsuarioActivos', {
-    UsuarioID: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Usuario,
-            key: 'ID'
+module.exports = (sequelize) => {
+    // Obtener los modelos ya definidos
+    const Usuario = sequelize.models.usuario;
+    const Activo = sequelize.models.activo;
+
+    const UsuarioActivos = sequelize.define('UsuarioActivos', {
+        UsuarioID: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'usuarios',
+                key: 'id'
+            },
+            onDelete: 'CASCADE'
         },
-        onDelete: 'CASCADE'
-    },
-    ActivoID: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Activo,
-            key: 'ID'
+        ActivoID: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'activos',
+                key: 'id'
+            },
+            onDelete: 'CASCADE'
         },
-        onDelete: 'CASCADE'
-    },
-    Cantidad: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    }
-}, {
-    tableName: 'usuario_activos',
-    timestamps: false
-});
+        Cantidad: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        }
+    }, {
+        tableName: 'usuario_activos',
+        timestamps: false
+    });
 
-// Definir relaciones
-Usuario.belongsToMany(Activo, { through: UsuarioActivos, foreignKey: 'UsuarioID' });
-Activo.belongsToMany(Usuario, { through: UsuarioActivos, foreignKey: 'ActivoID' });
-
-module.exports = { UsuarioActivos };
+    return UsuarioActivos;
+};

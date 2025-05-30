@@ -3,6 +3,7 @@ export interface Usuario {
   nombre: string;
   email: string;
   rol: 'usuario' | 'admin';
-  activo: boolean;
+  estado: 'activo' | 'suspendido';
   fechaRegistro: string | Date;
+  activo?: boolean; // Campo opcional para compatibilidad
 }

@@ -1,35 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const usuarioController = require("../controllers/usuarioController");
-
-// Middleware de autenticación
-const verificarAutenticacion = (req, res, next) => {
-  if (!req.session || !req.session.usuario) {
-    return res.status(401).json({ error: 'Usuario no autenticado' });
-  }
-  next();
-};
-
-// Middleware de verificación de admin
-const verificarAdmin = (req, res, next) => {
-  if (!req.session || !req.session.usuario) {
-    return res.status(401).json({ error: 'Usuario no autenticado' });
-  }
-  
-  if (req.session.usuario.rol !== 'admin') {
-    return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
-  }
-  
-  next();
-};
-
-// Middleware para verificar sesión
-const verificarSesion = (req, res, next) => {
-    if (!req.session || !req.session.usuario) {
-        return res.status(401).json({ error: "No autorizado" });
-    }
-    next();
-};
+const { verificarAutenticacion, verificarAdmin } = require("../middleware/authMiddleware");
 
 // Rutas públicas
 router.get("/", usuarioController.mostrarLogin);
@@ -42,7 +14,7 @@ router.post("/registro", usuarioController.registrarUsuario);
 // Rutas protegidas que requieren autenticación
 router.get("/dashboard", verificarAutenticacion, usuarioController.mostrarDashboard);
 router.get("/historial-patrimonio/:usuarioId", verificarAutenticacion, usuarioController.obtenerHistorialPatrimonio);
-router.get("/perfil", verificarSesion, usuarioController.obtenerPerfil);
+router.get("/perfil", verificarAutenticacion, usuarioController.obtenerPerfil);
 
 // Rutas de administración
 router.get("/admin/usuarios", verificarAdmin, (req, res) => {

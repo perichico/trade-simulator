@@ -26,6 +26,15 @@ exports.obtenerDividendosPorUsuario = async (req, res) => {
       return res.status(401).json({ error: "Usuario no autenticado" });
     }
 
+    // Verificar si el usuario está suspendido
+    if (req.session.usuario.estado === 'suspendido') {
+      return res.status(403).json({ 
+        error: "Usuario suspendido",
+        tipo: "USUARIO_SUSPENDIDO",
+        mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+      });
+    }
+
     const usuarioId = req.session.usuario.id;
     
     const dividendos = await dividendoService.obtenerDividendosPorUsuario(usuarioId);

@@ -26,6 +26,20 @@ exports.obtenerTransacciones = async (req, res) => {
 exports.crearTransaccion = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
+      // Verificar si el usuario está autenticado
+      if (!req.session || !req.session.usuario) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+
+      // Verificar si el usuario está suspendido
+      if (req.session.usuario.estado === 'suspendido') {
+        return res.status(403).json({ 
+          error: "Usuario suspendido",
+          tipo: "USUARIO_SUSPENDIDO",
+          mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+        });
+      }
+
       // Obtener los datos del formulario
       const { activoId, tipo, cantidad, portafolioSeleccionado } = req.body;
 
@@ -44,11 +58,6 @@ exports.crearTransaccion = async (req, res) => {
 
       // Obtener el usuarioId desde la sesión
       const usuarioId = req.session.usuario.id;
-  
-      // Verificar si el usuario está autenticado
-      if (!usuarioId) {
-        return res.status(401).json({ error: "Usuario no autenticado" });
-      }
   
       // Verificar si el usuario y el activo existen
       let usuario, activo;

@@ -1,5 +1,6 @@
 const { sequelize, Usuario, Transaccion, Portafolio } = require('../models/index');
 const { Op } = require('sequelize');
+const adminActivosController = require('./adminActivosController');
 
 // Obtener todos los usuarios
 const obtenerUsuarios = async (req, res) => {
@@ -288,5 +289,11 @@ module.exports = {
     cambiarRolUsuario,
     cambiarEstadoUsuario,
     eliminarUsuario,
-    obtenerEstadisticas
+    obtenerEstadisticas,
+    // Exportar funciones de gestión de activos
+    obtenerActivos: adminActivosController.obtenerActivos,
+    crearActivo: adminActivosController.crearActivo,
+    actualizarActivo: adminActivosController.actualizarActivo,
+    eliminarActivo: adminActivosController.eliminarActivo,
+    obtenerEstadisticasActivos: adminActivosController.obtenerEstadisticasActivos
 };

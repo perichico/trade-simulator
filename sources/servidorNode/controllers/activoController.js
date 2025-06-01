@@ -95,37 +95,43 @@ exports.crearActivo = async (req, res) => {
 // Obtener un activo por ID
 exports.obtenerActivoPorId = async (req, res) => {
   try {
-    const activo = await Activo.findByPk(req.params.id, {
+    const { id } = req.params;
+    console.log('Buscando activo con ID:', id);
+    
+    const activo = await Activo.findByPk(id, {
       include: [{
         model: TipoActivo,
-        attributes: ['nombre']
+        as: 'tipoActivo',
+        required: false // Hacer la relación opcional
       }]
     });
-    if (!activo) return res.status(404).json({ error: "Activo no encontrado" });
     
-    // Obtener precio en tiempo real
-    const { precio: precio_actual } = await preciosService.obtenerPrecioActual(activo.simbolo, activo.id);
-    if (precio_actual) {
-      // Registrar el precio en el historial
-      await preciosService.historialService.registrarPrecio(activo.id, precio_actual);
-      
-      // Calcular la variación usando el historial de precios
-      const variacion = await preciosService.historialService.calcularVariacionPorcentual(activo.id, precio_actual);
-      
-      // Solo actualizamos la fecha de actualización, no el precio
-      await activo.update({
-        ultima_actualizacion: new Date()
+    if (!activo) {
+      console.log('Activo no encontrado con ID:', id);
+      return res.status(404).json({ 
+        error: true,
+        mensaje: 'Activo no encontrado' 
       });
-      
-      // Asignamos el precio y variación para la respuesta, pero no lo guardamos en la tabla activos
-      activo.dataValues.ultimo_precio = precio_actual;
-      activo.dataValues.variacion = variacion;
     }
     
-    res.json(activo);
+    // Asegurar que tipoActivo tenga un valor por defecto si es null
+    const activoConTipo = {
+      ...activo.toJSON(),
+      tipoActivo: activo.tipoActivo || { id: 1, nombre: 'Acción' }
+    };
+    
+    console.log('Activo encontrado:', activoConTipo.nombre);
+    res.status(200).json({
+      error: false,
+      activo: activoConTipo
+    });
+    
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al obtener el activo" });
+    console.error('Error al obtener activo por ID:', error);
+    res.status(500).json({ 
+      error: true,
+      mensaje: 'Error interno del servidor' 
+    });
   }
 };
 

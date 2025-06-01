@@ -1,9 +1,19 @@
 const bcrypt = require("bcrypt");
-const { sequelize, Usuario, Activo, Transaccion } = require("../models/index");
+const { sequelize, Usuario, Activo, Transaccion, Portafolio } = require("../models/index");
 
 // Verificar estado de autenticación
 exports.verificarAutenticacion = (req, res) => {
     if (req.session && req.session.usuario) {
+        // Verificar si el usuario está suspendido
+        if (req.session.usuario.estado === 'suspendido') {
+            return res.status(403).json({
+                autenticado: false,
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
+        }
+        
         // Aseguramos que la respuesta siempre tenga el mismo formato
         res.status(200).json({
             autenticado: true,
@@ -82,43 +92,53 @@ exports.obtenerDatosDashboard = async (req, res) => {
       return res.status(401).json({ error: "Usuario no autenticado" });
     }
     
+    // Verificar si el usuario está suspendido
+    if (req.session.usuario.estado === 'suspendido') {
+      return res.status(403).json({ 
+        error: "Usuario suspendido",
+        tipo: "USUARIO_SUSPENDIDO",
+        mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+      });
+    }
+    
     const usuarioId = req.session.usuario.id;
 
     // Obtener usuario
     const usuario = await Usuario.findByPk(usuarioId);
     
+    // Obtener TODOS los portafolios del usuario
+    const portafolios = await Portafolio.findAll({
+      where: { usuario_id: usuarioId },
+      order: [['id', 'ASC']]
+    });
+    
+    if (!portafolios || portafolios.length === 0) {
+      return res.status(404).json({ error: "No se encontraron portafolios" });
+    }
+    
     // Obtener el portafolio seleccionado del usuario desde la sesión (si existe)
     const portafolioSeleccionado = req.session.portafolioSeleccionado || null;
     
-    // Obtener el portafolio del usuario
-    const { Portafolio } = require("../models/index");
+    // Determinar qué portafolio usar
     let portafolio;
-    
     if (portafolioSeleccionado) {
-      portafolio = await Portafolio.findOne({
-        where: { 
-          id: portafolioSeleccionado,
-          usuario_id: usuarioId 
-        }
-      });
-    } else {
-      // Si no hay portafolio seleccionado, usar el portafolio principal
-      portafolio = await Portafolio.findOne({
-        where: { usuario_id: usuarioId },
-        order: [['id', 'ASC']]
-      });
+      portafolio = portafolios.find(p => p.id === portafolioSeleccionado);
     }
     
+    // Si no se encuentra el seleccionado o no hay selección, usar el primero
     if (!portafolio) {
-      return res.status(404).json({ error: "Portafolio no encontrado" });
+      portafolio = portafolios[0];
     }
     
     // Añadir el saldo del portafolio al objeto usuario para mantener compatibilidad
     usuario.dataValues.balance = portafolio.saldo || 10000.00;
 
-    // Obtener transacciones del usuario with the associated asset data
+    // Obtener transacciones del portafolio específico (no solo del usuario)
     const transacciones = await Transaccion.findAll({
-      where: { usuarioId },
+      where: { 
+        usuarioId,
+        portafolio_id: portafolio.id  // Filtrar por portafolio específico
+      },
       include: [{ model: Activo }],
       order: [["fecha", "DESC"]],
     });
@@ -129,56 +149,84 @@ exports.obtenerDatosDashboard = async (req, res) => {
 
     // Agrupar activos sumando la cantidad total por activo
     const activosAgrupados = {};
-    transacciones.forEach((transaccion) => {
-      const { activoId, cantidad, activo } = transaccion;
+
+    // Procesar transacciones para agrupar activos
+    transacciones.forEach(transaccion => {
+      const activoId = transaccion.activo_id;
+      const cantidad = transaccion.tipo_transaccion === 'compra' 
+        ? transaccion.cantidad 
+        : -transaccion.cantidad;
 
       if (!activosAgrupados[activoId]) {
         activosAgrupados[activoId] = {
-          id: activoId,
-          nombre: activo.nombre,
-          simbolo: activo.simbolo,
-          precio: activo.ultimo_precio,
+          activo: transaccion.Activo,
           cantidadTotal: 0,
-          valorTotal: 0
+          valorInvertido: 0
         };
       }
-      
+
       activosAgrupados[activoId].cantidadTotal += cantidad;
+      activosAgrupados[activoId].valorInvertido += transaccion.precio_unitario * cantidad;
     });
 
-    // Actualizar precios y calcular valores totales
-    for (const activoId in activosAgrupados) {
-      const activo = activosAgrupados[activoId];
-      if (activo.cantidadTotal > 0) {
-        try {
-          const precioActual = await preciosService.obtenerPrecioActual(activo.simbolo);
-          if (precioActual) {
-            activo.precio = precioActual;
-            activo.valorTotal = precioActual * activo.cantidadTotal;
-          }
-        } catch (error) {
-          console.error(`Error al obtener precio para ${activo.simbolo}:`, error);
-        }
+    // Filtrar activos con cantidad > 0 y obtener precios actuales
+    const activosEnPortafolio = [];
+    for (const [activoId, datosActivo] of Object.entries(activosAgrupados)) {
+      if (datosActivo.cantidadTotal > 0) {
+        const precioActual = await preciosService.obtenerPrecioActual(datosActivo.activo.simbolo);
+        const valorActual = datosActivo.cantidadTotal * (precioActual || datosActivo.activo.ultimo_precio);
+        
+        activosEnPortafolio.push({
+          id: datosActivo.activo.id,
+          nombre: datosActivo.activo.nombre,
+          simbolo: datosActivo.activo.simbolo,
+          cantidad: datosActivo.cantidadTotal,
+          precio: precioActual || datosActivo.activo.ultimo_precio,
+          valorActual: valorActual,
+          porcentajeDividendo: datosActivo.activo.porcentaje_dividendo || 0,
+          ultima_actualizacion: new Date(),
+          tipo: datosActivo.activo.TipoActivo?.nombre || 'Acción'
+        });
       }
     }
 
-    // Convertir objeto en array y filtrar activos con cantidad > 0
-    const activos = Object.values(activosAgrupados)
-      .filter(a => a.cantidadTotal > 0)
-      .map(a => ({
-        ...a,
-        valorTotal: a.valorTotal || a.precio * a.cantidadTotal
-      }));
+    // Calcular valor total del portafolio
+    const valorTotalActivos = activosEnPortafolio.reduce((total, activo) => 
+      total + activo.valorActual, 0
+    );
+
+    const valorTotalPortafolio = portafolio.saldo + valorTotalActivos;
 
     res.status(200).json({
-      usuario,
-      transacciones,
-      activos
+      usuario: {
+        ...usuario.dataValues,
+        balance: portafolio.saldo
+      },
+      portafolio: {
+        id: portafolio.id,
+        nombre: portafolio.nombre,
+        saldo: portafolio.saldo,
+        valorTotalActivos: valorTotalActivos,
+        valorTotal: valorTotalPortafolio,
+        activos: activosEnPortafolio
+      },
+      portafolios: portafolios.map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        saldo: p.saldo
+      })),
+      transacciones: transacciones.slice(0, 10),
+      estadisticas: {
+        totalActivos: activosEnPortafolio.length,
+        conDividendos: activosEnPortafolio.filter(a => a.porcentajeDividendo > 0).length,
+        transacciones: transacciones.length,
+        tiposActivos: [...new Set(activosEnPortafolio.map(a => a.tipo))].length
+      }
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al cargar los datos del dashboard" });
+    console.error('Error al obtener datos del dashboard:', error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -313,6 +361,15 @@ exports.verificarSesion = async (req, res) => {
 // Obtener perfil
 exports.obtenerPerfil = async (req, res) => {
     try {
+        // Verificar si el usuario está suspendido
+        if (req.session.usuario.estado === 'suspendido') {
+            return res.status(403).json({ 
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
+        }
+        
         const usuario = await Usuario.findByPk(req.session.usuario.id, {
             attributes: ['id', 'nombre', 'email', 'rol', 'estado', 'fechaRegistro']
         });
@@ -350,4 +407,40 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
         console.error("Error al obtener historial de patrimonio:", error);
         res.status(500).json({ error: "Error en el servidor" });
     }
+};
+
+// Agregar método para seleccionar portafolio
+exports.seleccionarPortafolio = async (req, res) => {
+  try {
+    const { portafolioId } = req.body;
+    const usuarioId = req.session.usuario.id;
+    
+    // Verificar que el portafolio pertenece al usuario
+    const portafolio = await Portafolio.findOne({
+      where: { 
+        id: portafolioId,
+        usuario_id: usuarioId 
+      }
+    });
+    
+    if (!portafolio) {
+      return res.status(404).json({ error: "Portafolio no encontrado" });
+    }
+    
+    // Guardar la selección en la sesión
+    req.session.portafolioSeleccionado = portafolioId;
+    
+    res.status(200).json({ 
+      mensaje: "Portafolio seleccionado exitosamente",
+      portafolio: {
+        id: portafolio.id,
+        nombre: portafolio.nombre,
+        saldo: portafolio.saldo
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error al seleccionar portafolio:", error);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
 };

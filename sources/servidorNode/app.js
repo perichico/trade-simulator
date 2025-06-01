@@ -18,6 +18,7 @@ const portafolioRoutes = require("./routes/portafolioRoutes");
 const dividendoRoutes = require('./routes/dividendoRoutes');
 const alertasRoutes = require('./routes/alertas.routes');
 const adminRoutes = require('./routes/adminRoutes');
+const adminActivosRoutes = require('./routes/adminActivosRoutes');
 const patrimonioRoutes = require('./routes/patrimonioRoutes');
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/admin', (req, res, next) => {
   console.log('🔗 Headers:', req.headers);
   next();
 }, adminRoutes);
+app.use('/api/admin', adminActivosRoutes);
 
 // Middleware para logging de todas las rutas
 app.use('*', (req, res, next) => {

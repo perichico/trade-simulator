@@ -49,6 +49,18 @@ const routes: Routes = [
     path: 'usuario-suspendido',
     loadComponent: () => import('./components/usuario-suspendido/usuario-suspendido.component').then(m => m.UsuarioSuspendidoComponent)
   },
+  {
+    path: 'admin/activos',
+    loadComponent: () => import('./components/admin-activos/admin-activos.component').then(m => m.AdminActivosComponent),
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
+  { 
+    path: 'admin-activos', 
+    loadComponent: () => import('./components/admin-activos/admin-activos.component').then(m => m.AdminActivosComponent),
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
 

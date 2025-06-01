@@ -5,6 +5,15 @@ const HistorialPreciosService = require('../services/historialPreciosService');
 // Obtener todas las alertas de un usuario
 exports.obtenerAlertas = async (req, res) => {
     try {
+        // Verificar si el usuario está suspendido
+        if (req.session.usuario.estado === 'suspendido') {
+            return res.status(403).json({ 
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
+        }
+
         const usuarioId = req.session.usuario.id;
         const alertas = await Alerta.findAll({
             where: { usuario_id: usuarioId },
@@ -21,6 +30,15 @@ exports.obtenerAlertas = async (req, res) => {
 // Crear una nueva alerta
 exports.crearAlerta = async (req, res) => {
     try {
+        // Verificar si el usuario está suspendido
+        if (req.session.usuario.estado === 'suspendido') {
+            return res.status(403).json({ 
+                error: "Usuario suspendido",
+                tipo: "USUARIO_SUSPENDIDO",
+                mensaje: "Tu cuenta ha sido suspendida. Contacta al administrador para más información."
+            });
+        }
+
         const { activo_id, precio_objetivo, condicion, cantidad_venta } = req.body;
         const usuario_id = req.session.usuario.id;
 

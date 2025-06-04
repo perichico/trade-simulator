@@ -79,6 +79,27 @@ export class MercadoComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Método para trackear activos en ngFor para mejor rendimiento
+  trackByActivoId(index: number, activo: Activo): number {
+    return activo.id;
+  }
+
+  // Método para navegar al detalle del activo
+  navegarADetalle(activoId: number): void {
+    console.log('Navegando a detalle del activo ID:', activoId);
+    
+    // Validar que el ID sea válido antes de navegar
+    if (!activoId || isNaN(activoId) || activoId <= 0) {
+      console.error('ID de activo inválido para navegación:', activoId);
+      this.snackBar.open('Error: ID de activo inválido', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
+    
+    this.router.navigate(['/detalle-activo', activoId]);
+  }
+
   // Método para abrir el diálogo de transacción
   abrirDialogoTransaccion(activo: Activo, tipo: 'compra' | 'venta'): void {
     if (!this.usuario) {
@@ -89,7 +110,8 @@ export class MercadoComponent implements OnInit, OnDestroy {
     }
 
     if (tipo === 'compra') {
-      this.router.navigate(['/detalle-activo', activo.id]);
+      // Usar el método de navegación validado
+      this.navegarADetalle(activo.id);
       return;
     }
 

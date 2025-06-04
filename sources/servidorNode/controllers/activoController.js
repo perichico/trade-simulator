@@ -98,39 +98,41 @@ exports.obtenerActivoPorId = async (req, res) => {
     const { id } = req.params;
     console.log('Buscando activo con ID:', id);
     
-    const activo = await Activo.findByPk(id, {
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(parseInt(id)) || parseInt(id) <= 0) {
+      console.log('ID de activo inválido:', id);
+      return res.status(400).json({ error: 'ID de activo inválido' });
+    }
+    
+    const activoId = parseInt(id);
+    
+    const activo = await Activo.findByPk(activoId, {
       include: [{
         model: TipoActivo,
-        as: 'tipoActivo',
-        required: false // Hacer la relación opcional
+        attributes: ['id', 'nombre']
       }]
     });
     
     if (!activo) {
-      console.log('Activo no encontrado con ID:', id);
-      return res.status(404).json({ 
-        error: true,
-        mensaje: 'Activo no encontrado' 
-      });
+      console.log('Activo no encontrado con ID:', activoId);
+      return res.status(404).json({ error: 'Activo no encontrado' });
     }
     
-    // Asegurar que tipoActivo tenga un valor por defecto si es null
-    const activoConTipo = {
-      ...activo.toJSON(),
-      tipoActivo: activo.tipoActivo || { id: 1, nombre: 'Acción' }
-    };
+    // Verificar que el ID del activo encontrado coincida con el solicitado
+    if (activo.id !== activoId) {
+      console.error(`Inconsistencia de ID: solicitado ${activoId}, encontrado ${activo.id}`);
+      return res.status(500).json({ error: 'Error interno del servidor' });
+    }
     
-    console.log('Activo encontrado:', activoConTipo.nombre);
-    res.status(200).json({
-      error: false,
-      activo: activoConTipo
-    });
+    console.log('Activo encontrado:', activo.toJSON());
+    res.status(200).json(activo);
     
   } catch (error) {
-    console.error('Error al obtener activo por ID:', error);
+    console.error('Error detallado al obtener el activo:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({ 
-      error: true,
-      mensaje: 'Error interno del servidor' 
+      error: "Error al obtener el activo",
+      details: error.message 
     });
   }
 };

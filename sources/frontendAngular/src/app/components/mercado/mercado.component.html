@@ -42,8 +42,8 @@
   </div>
 
   <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" *ngIf="activosFiltrados$ | async as activos">
-    <div class="col" *ngFor="let activo of activos">
-      <div class="card h-100 shadow-sm" style="cursor: pointer;" [routerLink]="['/detalle-activo', activo.id]">
+    <div class="col" *ngFor="let activo of activos; trackBy: trackByActivoId">
+      <div class="card h-100 shadow-sm" style="cursor: pointer;" (click)="navegarADetalle(activo.id)">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>

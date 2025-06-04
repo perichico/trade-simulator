@@ -67,9 +67,25 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   cargarActivo(id: number): void {
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(id) || id <= 0) {
+      console.error('ID de activo inválido:', id);
+      this.router.navigate(['/mercado']);
+      return;
+    }
+    
     this.activoService.obtenerActivoPorId(id).subscribe({
       next: (activo) => {
+        // Verificar que el activo recibido tenga el ID correcto
+        if (activo.id !== id) {
+          console.error(`Error: ID solicitado (${id}) no coincide con ID recibido (${activo.id})`);
+          this.router.navigate(['/mercado']);
+          return;
+        }
+        
         this.activo = activo;
+        console.log('Activo cargado correctamente:', activo);
+        
         // Cargar transacciones cuando el activo esté cargado
         if (this.usuario) {
           this.cargarTransacciones(id);
@@ -77,6 +93,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       },
       error: (error) => {
         console.error('Error al cargar el activo:', error);
+        // En lugar de mostrar un activo genérico, navegar de vuelta al mercado
+        this.mostrarNotificacion('No se pudo cargar la información del activo', 'error');
+        this.router.navigate(['/mercado']);
       }
     });
   }

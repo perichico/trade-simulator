@@ -20,11 +20,12 @@ export class ActivoService {
       .pipe(
         map(activos => {
           return activos.map(activo => {
+            const variacion = this.procesarVariacion(activo.variacion);
             return {
               ...activo,
               precio: activo.ultimo_precio,
-              variacion: activo.variacion ?? 0,
-              tendencia: this.determinarTendencia(activo.variacion ?? 0),
+              variacion: variacion,
+              tendencia: this.determinarTendencia(variacion),
               tipo: (activo.tipoActivo?.nombre.toLowerCase() as 'accion' | 'criptomoneda' | 'materia_prima' | 'divisa') || 'accion'
             };
           });
@@ -43,7 +44,9 @@ export class ActivoService {
     return this.http.get<Activo>(`${this.apiUrl}/activos/${id}`)
       .pipe(
         map(activo => {
-          console.log('Activo recibido del servidor:', activo);
+          console.log('=== ACTIVO COMPLETO DEL SERVIDOR ===');
+          console.log(JSON.stringify(activo, null, 2));
+          console.log('=====================================');
           
           // Verificar que el ID del activo recibido coincida con el solicitado
           if (activo.id !== id) {
@@ -51,13 +54,17 @@ export class ActivoService {
             throw new Error(`El activo recibido no corresponde al ID solicitado`);
           }
           
+          const variacion = this.procesarVariacion(activo.variacion);
+          console.log('Variación final procesada:', variacion);
+          
           return {
             ...activo,
             precio: activo.ultimo_precio,
-            variacion: activo.variacion ?? 0,
-            tendencia: this.determinarTendencia(activo.variacion ?? 0),
+            variacion: variacion,
+            tendencia: this.determinarTendencia(variacion),
             ultima_actualizacion: activo.ultima_actualizacion ? new Date(activo.ultima_actualizacion) : new Date(),
-            tipoActivo: activo.tipoActivo || { id: 1, nombre: 'Acción' }
+            tipoActivo: activo.tipoActivo || { id: 1, nombre: 'Acción' },
+            tipo: this.mapearTipoActivo(activo.tipoActivo?.nombre)
           };
         }),
         catchError((error) => {
@@ -67,11 +74,49 @@ export class ActivoService {
       );
   }
 
+  // Método auxiliar para procesar la variación del backend
+  private procesarVariacion(variacion: any): number {
+    console.log('=== DEBUG VARIACIÓN ===');
+    console.log('Variación original del backend:', variacion);
+    console.log('Tipo de variación:', typeof variacion);
+    console.log('Es null?:', variacion === null);
+    console.log('Es undefined?:', variacion === undefined);
+    console.log('========================');
+    
+    // Si ya es un número válido, devolverlo
+    if (typeof variacion === 'number' && !isNaN(variacion)) {
+      console.log('Variación es número válido:', variacion);
+      return variacion;
+    }
+    
+    // Si es string, intentar convertir
+    if (typeof variacion === 'string') {
+      const parsed = parseFloat(variacion);
+      console.log('Variación convertida de string:', parsed);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    
+    // Si es null, undefined o cualquier otro tipo, devolver 0
+    console.log('Variación no válida, devolviendo 0');
+    return 0;
+  }
+
   // Método auxiliar para determinar la tendencia basada en la variación
   private determinarTendencia(variacion: number): 'alza' | 'baja' | 'estable' {
     if (variacion > 0.5) return 'alza';
     if (variacion < -0.5) return 'baja';
     return 'estable';
+  }
+
+  // Método auxiliar para mapear el tipo de activo
+  private mapearTipoActivo(nombreTipo?: string): 'accion' | 'criptomoneda' | 'materia_prima' | 'divisa' {
+    if (!nombreTipo) return 'accion';
+    
+    const tipoLower = nombreTipo.toLowerCase();
+    if (tipoLower.includes('criptomoneda') || tipoLower.includes('crypto')) return 'criptomoneda';
+    if (tipoLower.includes('materia') || tipoLower.includes('commodity')) return 'materia_prima';
+    if (tipoLower.includes('divisa') || tipoLower.includes('forex')) return 'divisa';
+    return 'accion';
   }
 
   // Método para manejar errores

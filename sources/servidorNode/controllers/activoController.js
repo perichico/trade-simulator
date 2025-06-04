@@ -124,8 +124,49 @@ exports.obtenerActivoPorId = async (req, res) => {
       return res.status(500).json({ error: 'Error interno del servidor' });
     }
     
-    console.log('Activo encontrado:', activo.toJSON());
-    res.status(200).json(activo);
+    try {
+      // Actualizar precio y obtener variación para este activo específico
+      const actualizacion = await preciosService.actualizarPreciosActivos([activo]);
+      
+      if (actualizacion && actualizacion.length > 0 && actualizacion[0]) {
+        const datosActualizados = actualizacion[0];
+        
+        // Actualizar en la base de datos
+        await Activo.update({
+          ultima_actualizacion: datosActualizados.ultima_actualizacion,
+          ultimo_precio: datosActualizados.ultimo_precio
+        }, {
+          where: { id: activoId }
+        });
+        
+        // Devolver el activo con la variación calculada
+        const activoConVariacion = {
+          ...activo.toJSON(),
+          variacion: datosActualizados.variacion || 0,
+          ultimo_precio: datosActualizados.ultimo_precio || activo.ultimo_precio,
+          ultima_actualizacion: datosActualizados.ultima_actualizacion || activo.ultima_actualizacion
+        };
+        
+        console.log('Activo con variación:', activoConVariacion);
+        res.status(200).json(activoConVariacion);
+      } else {
+        // Si no se puede actualizar el precio, devolver el activo con variación 0
+        const activoSinVariacion = {
+          ...activo.toJSON(),
+          variacion: 0
+        };
+        console.log('Activo sin variación (error en actualización):', activoSinVariacion);
+        res.status(200).json(activoSinVariacion);
+      }
+    } catch (precioError) {
+      console.error('Error al actualizar precio del activo:', precioError);
+      // En caso de error, devolver el activo sin variación
+      const activoSinVariacion = {
+        ...activo.toJSON(),
+        variacion: 0
+      };
+      res.status(200).json(activoSinVariacion);
+    }
     
   } catch (error) {
     console.error('Error detallado al obtener el activo:', error);

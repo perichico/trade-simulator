@@ -13,6 +13,7 @@ const verificarAutenticacion = (req, res, next) => {
 // Rutas de Transaccion
 router.get('/', verificarAutenticacion, transaccionController.obtenerTransacciones);
 router.post('/creartransaccion', verificarAutenticacion, transaccionController.crearTransaccion);
-router.get('/:usuario', verificarAutenticacion, transaccionController.obtenerTransaccionesPorUsuario);
+router.get('/usuario', verificarAutenticacion, transaccionController.obtenerTransaccionesPorUsuario);
+router.get('/activo/:activoId', verificarAutenticacion, transaccionController.obtenerTransaccionesPorActivo);
 
 module.exports = router;

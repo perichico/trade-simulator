@@ -81,15 +81,25 @@ export class TransaccionService {
 
   obtenerTransaccionesPorActivo(activoId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/transacciones/activo/${activoId}`, {
-      headers: this.getHeaders()
-    });
+      withCredentials: true
+    }).pipe(
+      catchError(error => {
+        console.error('Error al obtener transacciones por activo', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   // También agregar método para obtener todas las transacciones del usuario si no existe
   obtenerTransaccionesUsuario(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/transacciones`, {
-      headers: this.getHeaders()
-    });
+    return this.http.get<any[]>(`${this.apiUrl}/transacciones/usuario`, {
+      withCredentials: true
+    }).pipe(
+      catchError(error => {
+        console.error('Error al obtener transacciones del usuario', error);
+        return throwError(() => error);
+      })
+    );
   }
 
   private getHeaders() {

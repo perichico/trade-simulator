@@ -292,41 +292,69 @@ exports.obtenerTransaccionesPorUsuario = async (req, res) => {
     const transaccionesActualizadas = await Promise.all(transacciones.map(async (transaccion) => {
       const transaccionJSON = transaccion.toJSON();
       const valorTotal = transaccion.precio * Math.abs(transaccion.cantidad);
-
-      try {
-        // Obtener precio actual del activo
-        const precioActual = await preciosService.obtenerPrecioActual(transaccion.activo.simbolo);
-        const precioFinal = precioActual || transaccion.activo.ultimo_precio;
-
-        // Calcular rendimiento
-        const rendimiento = (precioFinal - transaccion.precio) * Math.abs(transaccion.cantidad);
-        const rendimientoPorcentual = ((precioFinal - transaccion.precio) / transaccion.precio) * 100;
-
-        return {
-          ...transaccionJSON,
-          valorTotal,
-          precioActual: precioFinal,
-          rendimiento,
-          rendimientoPorcentual
-        };
-      } catch (error) {
-        console.error(`Error al obtener precio actual para ${transaccion.activo.simbolo}:`, error);
-        return {
-          ...transaccionJSON,
-          valorTotal,
-          precioActual: transaccion.activo.ultimo_precio,
-          rendimiento: 0,
-          rendimientoPorcentual: 0
-        };
-      }
+      
+      return {
+        ...transaccionJSON,
+        valorTotal: valorTotal
+      };
     }));
 
     res.status(200).json(transaccionesActualizadas);
   } catch (error) {
-    console.error('Error al obtener las transacciones del usuario:', error);
-    res.status(500).json({ 
-      error: "Error al obtener las transacciones del usuario",
-      detalles: error.message
+    console.error('Error al obtener transacciones del usuario:', error);
+    res.status(500).json({ error: "Error al obtener las transacciones del usuario" });
+  }
+};
+
+// Obtener transacciones de un activo específico para el usuario actual
+exports.obtenerTransaccionesPorActivo = async (req, res) => {
+  try {
+    // Verificar si el usuario está autenticado
+    if (!req.session.usuario) {
+      return res.status(401).json({ error: "Usuario no autenticado" });
+    }
+
+    const usuarioId = req.session.usuario.id;
+    const { activoId } = req.params;
+
+    // Validar que activoId sea un número válido
+    if (!activoId || isNaN(parseInt(activoId))) {
+      return res.status(400).json({ error: "ID de activo inválido" });
+    }
+
+    // Verificar si el usuario existe
+    const usuario = await Usuario.findByPk(usuarioId);
+    if (!usuario) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    // Verificar si el activo existe
+    const activo = await Activo.findByPk(activoId);
+    if (!activo) {
+      return res.status(404).json({ error: "Activo no encontrado" });
+    }
+
+    const transacciones = await Transaccion.findAll({
+      where: { 
+        usuario_id: usuarioId,
+        activo_id: activoId 
+      },
+      include: [{
+        model: Activo,
+        attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+      }],
+      order: [["fecha", "DESC"]]
     });
+
+    // Transformar los datos para incluir el valorTotal
+    const transaccionesFormateadas = transacciones.map(transaccion => ({
+      ...transaccion.toJSON(),
+      valorTotal: transaccion.precio * Math.abs(transaccion.cantidad)
+    }));
+
+    res.status(200).json(transaccionesFormateadas);
+  } catch (error) {
+    console.error('Error al obtener transacciones por activo:', error);
+    res.status(500).json({ error: "Error al obtener las transacciones del activo" });
   }
 };

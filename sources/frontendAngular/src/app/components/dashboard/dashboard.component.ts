@@ -378,7 +378,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     console.log(`Cargando historial de patrimonio para usuario ${usuarioId}, portafolio actual: ${portafolioId}`);
     
-    this.patrimonioService.obtenerHistorialPatrimonio(usuarioId)
+    // Pasar el portafolioId al servicio si está disponible
+    this.patrimonioService.obtenerHistorialPatrimonio(usuarioId, portafolioId)
       .subscribe({
         next: (historial) => {
           this.historialPatrimonio = historial;

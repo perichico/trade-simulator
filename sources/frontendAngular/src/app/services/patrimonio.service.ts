@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
 export interface PatrimonioHistorico {
   id?: number;
   usuarioId: number;
-  portafolioId?: number;  // Añadimos el ID del portafolio
+  portafolioId?: number;
   fecha: Date | string;
   balance: number;
   valorPortafolio: number;
@@ -34,7 +34,16 @@ export class PatrimonioService {
     
     return this.http.get<PatrimonioHistorico[]>(url).pipe(
       tap(data => console.log('Historial recibido:', data)),
-      catchError(this.handleError)
+      catchError(this.handleError.bind(this))
+    );
+  }
+
+  obtenerPatrimonioActual(usuarioId: number): Observable<PatrimonioHistorico> {
+    const url = `${this.apiUrl}/api/patrimonio/actual/${usuarioId}`;
+    
+    return this.http.get<PatrimonioHistorico>(url).pipe(
+      tap(data => console.log('Patrimonio actual recibido:', data)),
+      catchError(this.handleErrorSingle.bind(this))
     );
   }
   
@@ -76,15 +85,58 @@ export class PatrimonioService {
     return datosMuestra;
   }
   
-  private handleError(error: HttpErrorResponse) {
+  private handleError(error: HttpErrorResponse): Observable<PatrimonioHistorico[]> {
     console.error('Error en la petición HTTP:', error);
     
     if (error.status === 404) {
       console.warn('Endpoint no encontrado, devolviendo array vacío');
-      // Devolver un array vacío para evitar errores en el componente
       return of([]);
     }
     
-    return throwError(() => new Error('Ha ocurrido un error al obtener los datos. Por favor, inténtalo de nuevo.'));
+    if (error.status === 401) {
+      console.warn('Usuario no autenticado');
+      return of([]);
+    }
+    
+    if (error.status === 403) {
+      console.warn('No autorizado para acceder a estos datos');
+      return of([]);
+    }
+    
+    // Para cualquier otro error, devolver array vacío para evitar romper la aplicación
+    console.warn('Error del servidor, devolviendo array vacío');
+    return of([]);
+  }
+
+  private handleErrorSingle(error: HttpErrorResponse): Observable<PatrimonioHistorico> {
+    console.error('Error en la petición HTTP:', error);
+    
+    // Crear un objeto PatrimonioHistorico vacío como fallback
+    const emptyPatrimonio: PatrimonioHistorico = {
+      usuarioId: 0,
+      fecha: new Date(),
+      balance: 0,
+      valorPortafolio: 0,
+      patrimonioTotal: 0
+    };
+    
+    if (error.status === 404) {
+      console.warn('Endpoint no encontrado, devolviendo patrimonio vacío');
+      return of(emptyPatrimonio);
+    }
+    
+    if (error.status === 401) {
+      console.warn('Usuario no autenticado');
+      return of(emptyPatrimonio);
+    }
+    
+    if (error.status === 403) {
+      console.warn('No autorizado para acceder a estos datos');
+      return of(emptyPatrimonio);
+    }
+    
+    // Para cualquier otro error, devolver patrimonio vacío para evitar romper la aplicación
+    console.warn('Error del servidor, devolviendo patrimonio vacío');
+    return of(emptyPatrimonio);
   }
 }

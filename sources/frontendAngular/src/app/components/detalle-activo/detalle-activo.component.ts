@@ -199,6 +199,11 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     const ultimoPrecio = precios[precios.length - 1];
     const tendenciaPositiva = ultimoPrecio > primerPrecio;
 
+    // Asegurarse de que los colores del gráfico se adapten al modo oscuro
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const textColor = isDarkMode ? '#e0e0e0' : '#333';
+    const gridColor = isDarkMode ? '#555' : '#e0e0e0';
+
     try {
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -235,7 +240,8 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
               font: {
                 size: 16,
                 weight: 'bold'
-              }
+              },
+              color: textColor
             },
             tooltip: {
               callbacks: {
@@ -253,12 +259,19 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
             y: {
               beginAtZero: false,
               ticks: {
-                callback: (value) => `$${(value as number).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`
+                callback: (value) => `$${(value as number).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`,
+                color: textColor
+              },
+              grid: {
+                color: gridColor
               }
             },
             x: {
               grid: {
                 display: false
+              },
+              ticks: {
+                color: textColor
               }
             }
           }

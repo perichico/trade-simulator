@@ -42,7 +42,7 @@
         </li>
       </ul>
     </div>
-    <button class="btn btn-outline-light ms-2" (click)="toggleDarkMode()">
+    <button class="btn btn-outline-light ms-2" (click)="toggleDarkMode()" [title]="darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
       <i class="bi" [ngClass]="darkMode ? 'bi-moon-fill' : 'bi-brightness-high-fill'"></i>
     </button>
   </div>

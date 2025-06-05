@@ -147,6 +147,57 @@
   margin-top: 20px;
 }
 
+/* Dark mode styles */
+body.dark-mode .dashboard-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .content-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .dashboard-header h1 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .last-update {
+  color: #888;
+}
+
+body.dark-mode .empty-portfolio {
+  color: #e0e0e0;
+}
+
+body.dark-mode .empty-portfolio p {
+  color: #c0c0c0;
+}
+
+body.dark-mode .portfolio-table-card {
+  background-color: #2d2d2d;
+  border-color: #404040;
+}
+
+body.dark-mode .portfolio-table {
+  color: #e0e0e0;
+}
+
+body.dark-mode .balance-card,
+body.dark-mode .portfolio-card,
+body.dark-mode .performance-card {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .balance-amount,
+body.dark-mode .portfolio-amount,
+body.dark-mode .performance-amount {
+  color: #e0e0e0;
+}
+
+body.dark-mode .user-info {
+  color: #c0c0c0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .dashboard-summary {

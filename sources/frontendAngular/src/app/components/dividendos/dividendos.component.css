@@ -143,3 +143,43 @@ table th, table td {
   border: none;
   border-radius: 10px;
 }
+
+/* Dark mode styles */
+body.dark-mode .dividendos-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .card {
+  background-color: #2d2d2d;
+  border-color: #404040;
+}
+
+body.dark-mode .card-header {
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .card-header h3 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .card-body {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode table th {
+  background-color: #404040;
+  color: #e0e0e0;
+}
+
+body.dark-mode table th, 
+body.dark-mode table td {
+  border-bottom-color: #555;
+  color: #e0e0e0;
+}
+
+body.dark-mode .login-required .card {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}

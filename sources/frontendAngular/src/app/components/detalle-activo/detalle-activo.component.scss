@@ -581,6 +581,154 @@
   }
 }
 
+// Dark mode styles
+:host-context(body.dark-mode) {
+  .detalle-activo-container {
+    background-color: #1a1a1a;
+  }
+
+  .activo-header {
+    background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
+    color: #e0e0e0;
+  }
+
+  .estadisticas-grid .stat-card {
+    background-color: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+
+    &:hover {
+      background-color: #3a3a3a;
+    }
+
+    .stat-info h3 {
+      color: #c0c0c0;
+    }
+
+    .stat-info p {
+      color: #e0e0e0;
+
+      &.text-muted {
+        color: #888 !important;
+      }
+    }
+  }
+
+  .detalle-tabs {
+    .resumen-grid .info-card {
+      background-color: #2d2d2d;
+      border-color: #404040;
+
+      .info-row {
+        border-bottom-color: #555;
+
+        .label {
+          color: #c0c0c0;
+        }
+
+        .value {
+          color: #e0e0e0;
+        }
+      }
+
+      .custom-progress-bar {
+        background-color: #555;
+      }
+
+      .progress-label {
+        color: #c0c0c0;
+      }
+
+      .progress-value {
+        color: #c0c0c0;
+      }
+    }
+
+    .chart-card {
+      background-color: #2d2d2d;
+      border-color: #404040;
+
+      mat-card-header {
+        color: #e0e0e0;
+
+        .chart-controls button {
+          background-color: #3a3a3a;
+          border-color: #555;
+          color: #e0e0e0;
+
+          &:hover {
+            background-color: #404040;
+            border-color: #2196f3;
+          }
+
+          &.active {
+            background-color: #2196f3;
+            color: white;
+          }
+        }
+      }
+
+      .chart-placeholder {
+        color: #c0c0c0;
+
+        .chart-icon {
+          color: #555;
+        }
+      }
+    }
+
+    .transacciones-card {
+      background-color: #2d2d2d;
+      border-color: #404040;
+
+      .empty-state {
+        color: #c0c0c0;
+
+        .empty-icon {
+          color: #555;
+        }
+      }
+
+      .transacciones-list .transaccion-item {
+        border-bottom-color: #555;
+
+        .transaccion-cantidad {
+          color: #c0c0c0;
+        }
+
+        .transaccion-precio {
+          color: #e0e0e0;
+        }
+
+        .transaccion-fecha {
+          color: #c0c0c0;
+        }
+      }
+    }
+
+    .portafolio-info .info-card {
+      background-color: #2d2d2d;
+      border-color: #404040;
+
+      .info-row {
+        border-bottom-color: #555;
+
+        .label {
+          color: #c0c0c0;
+        }
+
+        .value {
+          color: #e0e0e0;
+        }
+      }
+    }
+  }
+
+  .loading-container {
+    color: #c0c0c0;
+  }
+}
+
 ::ng-deep .custom-snackbar {
   .mat-mdc-snack-bar-container {
     position: fixed !important;

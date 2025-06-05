@@ -132,6 +132,48 @@
   margin-top: 24px;
 }
 
+/* Dark mode styles */
+body.dark-mode .historial-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .content-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .historial-header h1 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .subtitle {
+  color: #888;
+}
+
+body.dark-mode .historial-card {
+  background-color: #2d2d2d;
+  border-color: #404040;
+}
+
+body.dark-mode .loading-container {
+  color: #e0e0e0;
+}
+
+body.dark-mode .loading-container p {
+  color: #888;
+}
+
+body.dark-mode .empty-state {
+  color: #e0e0e0;
+}
+
+body.dark-mode .empty-state p {
+  color: #888;
+}
+
+body.dark-mode .empty-icon {
+  color: #555;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .content-container {

@@ -134,6 +134,50 @@
   }
 }
 
+// Dark mode styles
+:host-context(body.dark-mode) {
+  .notificacion-container {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  }
+
+  .notificacion-card {
+    background: #2d2d2d;
+    color: #e0e0e0;
+
+    &.success {
+      border-top-color: #4caf50;
+    }
+
+    &.error {
+      border-top-color: #f44336;
+    }
+
+    &.info {
+      border-top-color: #2196f3;
+    }
+  }
+
+  .contenido {
+    h1 {
+      color: #e0e0e0;
+    }
+
+    p {
+      color: #c0c0c0;
+    }
+  }
+
+  .countdown {
+    p {
+      color: #888;
+    }
+
+    .progress-bar {
+      background-color: #404040;
+    }
+  }
+}
+
 @media (max-width: 600px) {
   .notificacion-card {
     padding: 30px 20px;

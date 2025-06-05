@@ -55,3 +55,25 @@ mat-card-title {
   font-size: 24px;
   color: #333;
 }
+
+/* Dark mode styles */
+body.dark-mode .registro-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .registro-card {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode mat-card-title {
+  color: #e0e0e0;
+}
+
+body.dark-mode .login-link a {
+  color: #4fc3f7;
+}
+
+body.dark-mode .login-link a:hover {
+  color: #29b6f6;
+}

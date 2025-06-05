@@ -116,6 +116,53 @@
   background-color: rgba(239, 68, 68, 0.1);
 }
 
+/* Dark mode styles */
+body.dark-mode .alertas-container {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .form-card {
+  background: #2d2d2d;
+  border-color: #404040;
+}
+
+body.dark-mode .form-card mat-card-title {
+  color: #e0e0e0;
+}
+
+body.dark-mode .alerta-card {
+  background: #2d2d2d;
+  border-color: #404040;
+}
+
+body.dark-mode .alerta-card:hover {
+  background: #3a3a3a;
+}
+
+body.dark-mode .alerta-header {
+  background: #3a3a3a;
+  border-bottom-color: #555;
+  color: #e0e0e0;
+}
+
+body.dark-mode .alerta-content {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .alerta-footer {
+  background: #3a3a3a;
+  border-top-color: #555;
+}
+
+body.dark-mode .precio-objetivo {
+  color: #e0e0e0;
+}
+
+body.dark-mode .cantidad-venta {
+  color: #c0c0c0;
+}
+
 @media (max-width: 768px) {
   .alertas-container {
     padding: 16px;

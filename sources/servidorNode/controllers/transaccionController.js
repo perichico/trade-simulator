@@ -358,3 +358,54 @@ exports.obtenerTransaccionesPorActivo = async (req, res) => {
     res.status(500).json({ error: "Error al obtener las transacciones del activo" });
   }
 };
+
+// Obtener una transacción específica por ID
+exports.obtenerTransaccionPorId = async (req, res) => {
+    try {
+        console.log('=== INICIANDO OBTENER TRANSACCIÓN POR ID ===');
+        const { id } = req.params;
+        const usuarioId = req.session.usuario.id;
+        
+        console.log('ID de transacción solicitada:', id);
+        console.log('Usuario solicitante:', req.session.usuario.nombre);
+        
+        // Validar que el ID sea un número válido
+        if (!id || isNaN(id)) {
+            console.log('❌ ID de transacción inválido:', id);
+            return res.status(400).json({ error: 'ID de transacción inválido' });
+        }
+        
+        // Buscar la transacción
+        const transaccion = await Transaccion.findOne({
+            where: { 
+                id: parseInt(id),
+                usuario_id: usuarioId // Asegurar que solo pueda ver sus propias transacciones
+            },
+            include: [
+                {
+                    model: Activo,
+                    attributes: ['id', 'nombre', 'simbolo']
+                }
+            ]
+        });
+        
+        if (!transaccion) {
+            console.log('❌ Transacción no encontrada o no pertenece al usuario');
+            return res.status(404).json({ error: 'Transacción no encontrada' });
+        }
+        
+        console.log('✅ Transacción encontrada:', transaccion.id);
+        
+        res.status(200).json({
+            transaccion,
+            mensaje: 'Transacción obtenida exitosamente'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error al obtener transacción por ID:', error);
+        res.status(500).json({ 
+            error: 'Error al obtener la transacción',
+            details: error.message 
+        });
+    }
+};

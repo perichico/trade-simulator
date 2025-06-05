@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Transaccion } from '../models/transaccion.model';
 import { environment } from '../../environments/environment';
@@ -15,18 +15,22 @@ export class TransaccionService {
 
   // Obtener todas las transacciones del usuario actual
   obtenerTransaccionesPorUsuario(usuarioId: number): Observable<Transaccion[]> {
-    return this.http.get<Transaccion[]>(`${this.apiUrl}/transacciones/${usuarioId}`, { withCredentials: true })
+    return this.http.get<Transaccion[]>(`${this.apiUrl}/transacciones/usuario`, { withCredentials: true })
       .pipe(
         map(transacciones => {
           // Añadir propiedades calculadas
           return transacciones.map(transaccion => ({
             ...transaccion,
-            valorTotal: transaccion.precio * transaccion.cantidad,
+            valorTotal: transaccion.precio * Math.abs(transaccion.cantidad),
             fecha: new Date(transaccion.fecha) // Asegurar que la fecha es un objeto Date
           }));
         }),
         catchError(error => {
           console.error('Error al obtener transacciones', error);
+          if (error.status === 404) {
+            // Si no se encuentran transacciones, devolver array vacío en lugar de error
+            return of([]);
+          }
           return throwError(() => error);
         })
       );
@@ -85,6 +89,10 @@ export class TransaccionService {
     }).pipe(
       catchError(error => {
         console.error('Error al obtener transacciones por activo', error);
+        if (error.status === 404) {
+          // Si no se encuentran transacciones para este activo, devolver array vacío
+          return of([]);
+        }
         return throwError(() => error);
       })
     );
@@ -97,6 +105,10 @@ export class TransaccionService {
     }).pipe(
       catchError(error => {
         console.error('Error al obtener transacciones del usuario', error);
+        if (error.status === 404) {
+          // Si no se encuentran transacciones, devolver array vacío
+          return of([]);
+        }
         return throwError(() => error);
       })
     );

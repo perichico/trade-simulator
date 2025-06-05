@@ -49,18 +49,32 @@ export class HistorialComponent implements OnInit {
   cargarTransacciones(): void {
     this.cargando = true;
     if (this.usuario) {
-      this.transaccionService.obtenerTransaccionesPorUsuario(this.usuario.id).subscribe({
+      // Usar el método correcto que no requiere usuarioId como parámetro
+      this.transaccionService.obtenerTransaccionesUsuario().subscribe({
         next: (transacciones) => {
           this.transaccionesSubject.next(transacciones);
           this.cargando = false;
+          
+          if (transacciones.length === 0) {
+            console.log('No se encontraron transacciones para el usuario');
+          }
         },
         error: (error) => {
           this.cargando = false;
-          this.snackBar.open(
-            `Error al cargar transacciones: ${error.error?.error || 'Error desconocido'}`,
-            'Cerrar',
-            { duration: 5000 }
-          );
+          console.error('Error al cargar transacciones:', error);
+          
+          // Mostrar mensaje más amigable para el usuario
+          if (error.status === 404) {
+            // No mostrar error para 404, solo log
+            console.log('No hay transacciones disponibles');
+            this.transaccionesSubject.next([]);
+          } else {
+            this.snackBar.open(
+              `Error al cargar transacciones: ${error.error?.error || 'Error de conexión'}`,
+              'Cerrar',
+              { duration: 5000 }
+            );
+          }
         }
       });
     }

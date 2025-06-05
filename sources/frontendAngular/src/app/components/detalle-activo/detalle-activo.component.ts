@@ -136,6 +136,10 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       next: (transacciones) => {
         this.transacciones = transacciones || [];
         console.log('Transacciones cargadas para activo', activoId, ':', transacciones);
+        
+        if (this.transacciones.length === 0) {
+          console.log('No hay transacciones para este activo');
+        }
       },
       error: (error) => {
         console.error('Error al cargar transacciones por activo:', error);
@@ -143,7 +147,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
         // Si falla, intentar obtener todas las transacciones y filtrar
         this.transaccionService.obtenerTransaccionesUsuario().subscribe({
           next: (todasTransacciones) => {
-            this.transacciones = todasTransacciones.filter(t => t.activoId === activoId || t.activo_id === activoId) || [];
+            this.transacciones = todasTransacciones.filter(t => 
+              (t.activoId === activoId || t.activo_id === activoId)
+            ) || [];
             console.log('Transacciones filtradas para activo', activoId, ':', this.transacciones);
           },
           error: (error2) => {

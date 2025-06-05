@@ -156,6 +156,44 @@
           background: linear-gradient(135deg, #ff9800, #f57c00);
           color: white;
         }
+
+        // Nuevos iconos para la información del portafolio
+        &.cantidad-icon {
+          background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+          color: white;
+        }
+
+        &.valor-icon {
+          background: linear-gradient(135deg, #607d8b, #455a64);
+          color: white;
+        }
+
+        &.rendimiento-icon {
+          &.positivo {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+          }
+
+          &.negativo {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+          }
+
+          &.neutro {
+            background: linear-gradient(135deg, #9e9e9e, #757575);
+            color: white;
+          }
+        }
+
+        &.saldo-icon {
+          background: linear-gradient(135deg, #00bcd4, #0097a7);
+          color: white;
+        }
+
+        &.sin-posicion-icon {
+          background: linear-gradient(135deg, #ffc107, #ffb300);
+          color: white;
+        }
       }
 
       .stat-info {
@@ -185,6 +223,12 @@
 
           &.neutro {
             color: #9e9e9e;
+          }
+
+          &.text-muted {
+            color: #666 !important;
+            font-size: 1.2rem;
+            font-weight: 500;
           }
         }
       }
@@ -433,6 +477,10 @@
 
   .portafolio-info {
     margin-bottom: 30px;
+
+    .estadisticas-grid {
+      margin-bottom: 0;
+    }
 
     .info-card {
       border-radius: 12px;

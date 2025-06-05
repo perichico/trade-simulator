@@ -47,36 +47,70 @@
 
   <!-- Mostrar información del portafolio si el usuario está logueado -->
   <div class="portafolio-info" *ngIf="usuario && portafolioActual">
-    <mat-card class="info-card">
-      <mat-card-header>
-        <mat-card-title>Tu Posición</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-          <span class="label">Cantidad en portafolio:</span>
-          <span class="value">{{ activoPortafolio.cantidad }} unidades</span>
+    <div class="estadisticas-grid">
+      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+        <div class="stat-content">
+          <div class="stat-icon cantidad-icon">
+            <i class="bi bi-collection"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Cantidad en Portafolio</h3>
+            <p>{{ activoPortafolio.cantidad }} unidades</p>
+          </div>
         </div>
-        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-          <span class="label">Valor de la posición:</span>
-          <span class="value">{{ activoPortafolio.valorTotal | currency:'EUR':'symbol':'1.2-2' }}</span>
+      </mat-card>
+
+      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+        <div class="stat-content">
+          <div class="stat-icon valor-icon">
+            <i class="bi bi-cash-stack"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Valor de la Posición</h3>
+            <p>{{ activoPortafolio.valorTotal | currency:'EUR':'symbol':'1.2-2' }}</p>
+          </div>
         </div>
-        <div class="info-row" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-          <span class="label">Rendimiento:</span>
-          <span class="value" [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
-            {{ activoPortafolio.rendimiento | currency:'EUR':'symbol':'1.2-2' }} 
-            ({{ activoPortafolio.rendimientoPorcentaje | number:'1.2-2' }}%)
-          </span>
+      </mat-card>
+
+      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+        <div class="stat-content">
+          <div class="stat-icon rendimiento-icon" [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
+            <i class="bi" [ngClass]="getIconoTendencia(activoPortafolio.rendimientoPorcentaje)"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Rendimiento</h3>
+            <p [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
+              {{ activoPortafolio.rendimiento | currency:'EUR':'symbol':'1.2-2' }} 
+              ({{ activoPortafolio.rendimientoPorcentaje | number:'1.2-2' }}%)
+            </p>
+          </div>
         </div>
-        <div class="info-row" *ngIf="!getActivoEnPortafolio()">
-          <span class="label">Posición:</span>
-          <span class="value">No tienes este activo en tu portafolio</span>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-content">
+          <div class="stat-icon saldo-icon">
+            <i class="bi bi-wallet2"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Saldo Disponible</h3>
+            <p>{{ portafolioActual.saldo | currency:'EUR':'symbol':'1.2-2' }}</p>
+          </div>
         </div>
-        <div class="info-row">
-          <span class="label">Saldo disponible:</span>
-          <span class="value">{{ portafolioActual.saldo | currency:'EUR':'symbol':'1.2-2' }}</span>
+      </mat-card>
+
+      <mat-card class="stat-card" *ngIf="!getActivoEnPortafolio()">
+        <div class="stat-content">
+          <div class="stat-icon sin-posicion-icon">
+            <i class="bi bi-exclamation-circle"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Posición</h3>
+            <p class="text-muted">No tienes este activo en tu portafolio</p>
+          </div>
         </div>
-      </mat-card-content>
-    </mat-card>
+      </mat-card>
+    </div>
   </div>
 
   <!-- Estadísticas principales -->

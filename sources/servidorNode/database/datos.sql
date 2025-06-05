@@ -282,7 +282,7 @@ INSERT INTO dividendos (activo_id, fecha, monto_por_accion, estado) VALUES
 (31, '2023-09-15', 1.510000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
 (31, '2023-12-15', 1.550000, 'pagado'), -- Dividendo histórico pagado de SPY ETF
 (31, '2024-03-20', 1.570000, 'pendiente'), -- Dividendo trimestral de SPY ETF
-(31, '2024-06-20', 1.600000, 'pendiente')  -- Próximo dividendo trimestral de SPY ETF con ligero aumento
+(31, '2024-06-20', 1.600000, 'pendiente');  -- Próximo dividendo trimestral de SPY ETF con ligero aumento
 
 -- Drop all tables in the correct order (due to foreign key constraints)
 -- DROP TABLE IF EXISTS transacciones;

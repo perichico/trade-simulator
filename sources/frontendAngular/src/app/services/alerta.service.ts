@@ -22,6 +22,8 @@ export class AlertaService {
     
     if (error.status === 0) {
       errorMessage = 'No se puede conectar con el servidor';
+    } else if (error.status === 400) {
+      errorMessage = error.error?.error || 'Datos inválidos. Todos los campos son obligatorios';
     } else if (error.status === 401) {
       errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente';
     } else if (error.status === 403) {
@@ -52,7 +54,12 @@ export class AlertaService {
   }
 
   crearAlerta(alerta: Alerta): Observable<Alerta> {
-    return this.http.post<Alerta>(this.apiUrl, alerta)
+    // Validar que cantidadVenta esté presente
+    if (!alerta.cantidadVenta || alerta.cantidadVenta <= 0) {
+      return throwError(() => new Error('La cantidad a vender es obligatoria y debe ser mayor a 0'));
+    }
+
+    return this.http.post<Alerta>(this.apiUrl, alerta, { withCredentials: true })
       .pipe(
         tap(() => {
           // Recargar la lista de alertas después de crear una nueva

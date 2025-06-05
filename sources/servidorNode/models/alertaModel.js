@@ -30,8 +30,11 @@ module.exports = (sequelize) => {
         },
         cantidadVenta: {
             type: DataTypes.INTEGER,
-            allowNull: true,
-            field: 'cantidad_venta'
+            allowNull: false, // Ahora es obligatorio
+            field: 'cantidad_venta',
+            validate: {
+                min: 1 // Debe ser al menos 1
+            }
         },
         condicion: {
             type: DataTypes.ENUM('mayor', 'menor'),

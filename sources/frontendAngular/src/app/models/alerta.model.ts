@@ -3,7 +3,7 @@ export interface Alerta {
     usuarioId: number;
     activoId: number;
     precioObjetivo: number;
-    cantidadVenta?: number;
+    cantidadVenta: number; // Ahora es obligatorio (sin ?)
     condicion?: 'mayor' | 'menor';
     estado?: 'activa' | 'disparada' | 'cancelada';
     activa: boolean;

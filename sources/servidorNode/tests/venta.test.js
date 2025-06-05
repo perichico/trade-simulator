@@ -5,18 +5,16 @@ jest.mock("../models/index");  // Esto simula el comportamiento de los modelos d
 
 describe("Pruebas de venta de activos", () => {
   test("Debe evitar ventas si el usuario no tiene suficientes activos", async () => {
-    const req = {
-      session: { usuario: { id: 1 } }, // Usuario con ID 1
-      body: { activoId: 1, tipo: "venta", cantidad: 100 }, // Intento de vender 100 activos
+    // Configurar el mock del request
+    req.body = {
+      activoId: 1,
+      tipo: 'venta',
+      cantidad: 100 // Intentando vender más de lo que tiene
+    };
+    req.session = {
+      usuario: { id: 1 }
     };
 
-    const res = {
-      status: jest.fn().mockReturnThis(), 
-      json: jest.fn(),
-    };
-
-    // Mock de la base de datos
-    Activo.findByPk.mockResolvedValue({ id: 1, nombre: "Activo A", precio: 10 });
     Transaccion.findAll.mockResolvedValue([   // Simulamos que el usuario tiene 50 activos
       { tipo: "compra", cantidad: 50 },
     ]);

@@ -83,11 +83,11 @@
             </div>
           </div>
 
-          <!-- Cantidad a vender (opcional) -->
+          <!-- Cantidad a vender (ahora obligatorio) -->
           <div class="form-group">
             <label class="form-label">
               <i class="bi bi-box-seam"></i>
-              Cantidad a Vender (Opcional)
+              Cantidad a Vender *
             </label>
             <input 
               type="number" 
@@ -96,9 +96,14 @@
               [class.is-invalid]="alertaForm.get('cantidadVenta')?.touched && alertaForm.get('cantidadVenta')?.errors"
               step="1"
               min="1"
-              placeholder="Dejar vacío si no planeas vender">
+              placeholder="Ingresa la cantidad a vender">
             <div class="invalid-feedback" *ngIf="alertaForm.get('cantidadVenta')?.touched && alertaForm.get('cantidadVenta')?.errors">
-              La cantidad debe ser mayor a 0
+              <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('required')">
+                La cantidad a vender es obligatoria
+              </div>
+              <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('min')">
+                La cantidad debe ser mayor a 0
+              </div>
             </div>
           </div>
         </div>
@@ -213,9 +218,9 @@
             </div>
           </div>
 
-          <div class="cantidad-section" *ngIf="alerta.cantidadVenta">
+          <div class="cantidad-section">
             <i class="bi bi-box-seam"></i>
-            <span>Vender {{ alerta.cantidadVenta }} unidades</span>
+            <span>Vender {{ alerta.cantidadVenta }} unidades automáticamente</span>
           </div>
 
           <!-- Barra de progreso -->

@@ -91,12 +91,12 @@ CREATE TABLE alertas (
     usuario_id INT NOT NULL,
     activo_id INT NOT NULL,
     precio_objetivo DECIMAL(10, 2) NOT NULL,
-    cantidad_venta INT,
+    cantidad_venta INT NOT NULL, -- Ahora es obligatorio (sin DEFAULT NULL)
     condicion ENUM('mayor', 'menor') NOT NULL DEFAULT 'mayor',
     estado ENUM('activa', 'disparada', 'cancelada') NOT NULL DEFAULT 'activa',
     activa BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_disparo DATETIME,
+    fecha_disparo DATETIME NULL,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
 );

@@ -42,8 +42,23 @@ exports.crearAlerta = async (req, res) => {
         const { activo_id, precio_objetivo, condicion, cantidad_venta } = req.body;
         const usuario_id = req.session.usuario.id;
 
+        // Validación más estricta de datos requeridos
         if (!activo_id || !precio_objetivo || !condicion || !cantidad_venta) {
-            return res.status(400).json({ error: 'Faltan datos requeridos' });
+            return res.status(400).json({ 
+                error: 'Todos los campos son requeridos: activo, precio objetivo, condición y cantidad a vender' 
+            });
+        }
+
+        if (cantidad_venta <= 0) {
+            return res.status(400).json({ 
+                error: 'La cantidad a vender debe ser mayor a 0' 
+            });
+        }
+
+        if (precio_objetivo <= 0) {
+            return res.status(400).json({ 
+                error: 'El precio objetivo debe ser mayor a 0' 
+            });
         }
 
         const alerta = await Alerta.create({
@@ -83,17 +98,19 @@ exports.verificarAlertas = async () => {
                 precioActual <= alerta.precio_objetivo;
 
             if (condicionCumplida) {
-                // Ejecutar venta automática
+                // Ejecutar venta automática con la cantidad especificada en la alerta
                 const ventaAutomatica = {
-                    activoId: alerta.activo_id,
-                    tipo: 'venta',
-                    cantidad: alerta.cantidad_venta,
+                    body: {
+                        activoId: alerta.activo_id,
+                        tipo: 'venta',
+                        cantidad: alerta.cantidad_venta // Usar la cantidad específica de la alerta
+                    },
                     session: { usuario: { id: alerta.usuario_id } }
                 };
 
                 try {
                     await transaccionController.crearTransaccion(ventaAutomatica, {
-                        status: () => {},
+                        status: () => ({ json: () => {} }),
                         json: () => {}
                     });
 
@@ -103,9 +120,17 @@ exports.verificarAlertas = async () => {
                         fecha_disparo: new Date()
                     });
 
-                    console.log(`Alerta ejecutada: Venta automática de ${alerta.cantidad_venta} unidades del activo ${alerta.activo_id}`);
+                    console.log(`Alerta ejecutada: Venta automática de ${alerta.cantidad_venta} unidades del activo ${alerta.activo_id} para usuario ${alerta.usuario_id}`);
                 } catch (error) {
                     console.error('Error al ejecutar venta automática:', error);
+                    // Podríamos desactivar la alerta si hay errores recurrentes
+                    if (error.message && error.message.includes('suficientes activos')) {
+                        await alerta.update({
+                            estado: 'cancelada',
+                            activa: false
+                        });
+                        console.log(`Alerta cancelada automáticamente: Usuario no tiene suficientes activos para vender`);
+                    }
                 }
             }
         }

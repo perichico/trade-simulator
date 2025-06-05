@@ -27,18 +27,27 @@ router.get('/', async (req, res) => {
 // Crear una nueva alerta
 router.post('/', async (req, res) => {
   try {
-    const userId = req.usuario.id; // Obtenido del middleware de autenticación
-    const { activoId, precioObjetivo, cantidadVenta } = req.body;
+    const userId = req.session?.usuario?.id || req.usuario?.id; // Manejar ambos casos
+    const { activoId, precioObjetivo, cantidadVenta, condicion } = req.body;
     
     console.log('Datos recibidos para crear alerta:', {
       usuarioId: userId,
       activoId,
       precioObjetivo,
-      cantidadVenta
+      cantidadVenta,
+      condicion
     });
     
-    if (!activoId || !precioObjetivo) {
-      return res.status(400).json({ message: 'Activo y precio objetivo son obligatorios' });
+    if (!activoId || !precioObjetivo || !cantidadVenta) {
+      return res.status(400).json({ 
+        error: 'Activo, precio objetivo y cantidad a vender son obligatorios' 
+      });
+    }
+    
+    if (cantidadVenta <= 0) {
+      return res.status(400).json({ 
+        error: 'La cantidad a vender debe ser mayor a 0' 
+      });
     }
     
     const alerta = await Alerta.create({
@@ -46,6 +55,7 @@ router.post('/', async (req, res) => {
       activoId,
       precioObjetivo,
       cantidadVenta,
+      condicion: condicion || 'mayor',
       activa: true
     });
     

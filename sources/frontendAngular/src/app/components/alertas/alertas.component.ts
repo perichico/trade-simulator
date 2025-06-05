@@ -47,7 +47,7 @@ export class AlertasComponent implements OnInit, OnDestroy {
     this.alertaForm = this.fb.group({
       activoId: ['', Validators.required],
       precioObjetivo: ['', [Validators.required, Validators.min(0.01)]],
-      cantidadVenta: ['', [Validators.min(1)]],
+      cantidadVenta: ['', [Validators.required, Validators.min(1)]], // Ahora es obligatorio
       condicion: ['mayor', Validators.required]
     });
   }
@@ -168,7 +168,7 @@ export class AlertasComponent implements OnInit, OnDestroy {
         usuarioId: 0, // Se asigna en el backend
         activoId: +formData.activoId,
         precioObjetivo: +formData.precioObjetivo,
-        cantidadVenta: formData.cantidadVenta ? +formData.cantidadVenta : undefined,
+        cantidadVenta: +formData.cantidadVenta, // Ahora siempre presente
         condicion: formData.condicion,
         activa: true
       };
@@ -177,7 +177,7 @@ export class AlertasComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            this.mostrarNotificacion('Alerta creada exitosamente', 'success');
+            this.mostrarNotificacion('Alerta creada exitosamente. Se venderán ' + nuevaAlerta.cantidadVenta + ' unidades cuando se alcance el precio objetivo.', 'success');
             this.resetearFormulario();
             this.cargarAlertas();
           },

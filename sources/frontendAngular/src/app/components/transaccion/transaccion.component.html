@@ -12,29 +12,50 @@
       <div 
         class="tipo-option compra"
         [class.active]="tipo === 'compra'"
-        (click)="tipo = 'compra'; calcularCantidadDisponible(); calcularCostoTotal()">
+        [class.disabled]="procesandoTransaccion"
+        (click)="cambiarTipoTransaccion('compra')">
         Comprar
       </div>
       <div 
         class="tipo-option venta"
         [class.active]="tipo === 'venta'"
-        (click)="tipo = 'venta'; calcularCantidadDisponible(); calcularCostoTotal()">
+        [class.disabled]="procesandoTransaccion"
+        (click)="cambiarTipoTransaccion('venta')">
         Vender
       </div>
     </div>
 
     <!-- Información disponible para ventas -->
     <div class="info-disponible" *ngIf="tipo === 'venta'">
-      Cantidad disponible: {{cantidadDisponible}} unidades
+      <div *ngIf="cantidadDisponible > 0; else noDisponible">
+        <strong>Cantidad disponible: {{cantidadDisponible}} unidades</strong>
+        <small class="text-muted d-block">Puedes vender hasta {{cantidadDisponible}} {{cantidadDisponible === 1 ? 'unidad' : 'unidades'}} de {{activo?.simbolo}}</small>
+      </div>
+      <ng-template #noDisponible>
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          No tienes unidades de {{activo?.simbolo}} en tu portafolio para vender.
+        </div>
+      </ng-template>
     </div>
 
-    <!-- Campo de cantidad -->
-    <div class="form-group">
+    <!-- Información para compras cuando ya tienes el activo -->
+    <div class="info-disponible" *ngIf="tipo === 'compra' && cantidadDisponible > 0">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Ya tienes {{cantidadDisponible}} {{cantidadDisponible === 1 ? 'unidad' : 'unidades'}} de {{activo?.simbolo}} en tu portafolio.
+        <br><small>Al comprar más, se calculará el precio promedio de compra.</small>
+      </div>
+    </div>
+
+    <!-- Entrada de cantidad -->
+    <div class="cantidad-input">
       <label for="cantidad">Cantidad:</label>
       <input 
         type="number" 
         id="cantidad"
         [value]="cantidad"
+        [disabled]="procesandoTransaccion"
         (input)="onCantidadInput($event)"
         (change)="onCantidadChange()"
         min="1"
@@ -42,75 +63,47 @@
     </div>
 
     <!-- Resumen de la transacción -->
-    <div class="resumen">
-      <div class="resumen-row">
+    <div class="resumen-transaccion" *ngIf="activo">
+      <div class="resumen-linea">
         <span>Precio por unidad:</span>
         <span>{{formatearPrecio(getPrecioActivo())}}</span>
       </div>
-      <div class="resumen-row">
+      <div class="resumen-linea">
         <span>Cantidad:</span>
         <span>{{cantidad}}</span>
       </div>
-      <div class="resumen-row">
-        <span>Costo total:</span>
-        <span class="costo-total">{{formatearPrecio(costoTotal)}}</span>
+      <div class="resumen-linea total">
+        <span>Total:</span>
+        <span>{{formatearPrecio(costoTotal)}}</span>
       </div>
-      <div class="resumen-row">
-        <span>Saldo actual:</span>
-        <span>{{formatearPrecio(saldoActual)}}</span>
-      </div>
-      <div class="resumen-row">
-        <span>Saldo restante:</span>
-        <span class="saldo-restante" [class.positivo]="saldoRestante >= 0" [class.negativo]="saldoRestante < 0">
-          {{formatearPrecio(saldoRestante)}}
-        </span>
+      <div class="resumen-linea">
+        <span>Saldo {{tipo === 'compra' ? 'restante' : 'resultante'}}:</span>
+        <span [class.saldo-negativo]="saldoRestante < 0">{{formatearPrecio(saldoRestante)}}</span>
       </div>
     </div>
 
-    <!-- Mensaje de error si no se puede realizar la transacción -->
-    <div class="error-message" *ngIf="!puedeRealizarTransaccion() && !procesandoTransaccion">
-      <span *ngIf="tipo === 'compra' && saldoActual < costoTotal">
-        Saldo insuficiente para realizar esta compra
-      </span>
-      <span *ngIf="tipo === 'venta' && cantidadDisponible < cantidad">
-        No tienes suficientes unidades para realizar esta venta
-      </span>
-      <span *ngIf="!activo || getPrecioActivo() <= 0">
-        No se puede procesar la transacción. Precio del activo no disponible.
-      </span>
+    <!-- Botones de acción -->
+    <div class="botones-accion">
+      <button 
+        type="button" 
+        class="btn btn-secondary"
+        [disabled]="procesandoTransaccion"
+        (click)="cancelar()">
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary"
+        [disabled]="!puedeIniciarTransaccion()"
+        (click)="confirmarTransaccion()">
+        <span *ngIf="procesandoTransaccion" class="spinner-border spinner-border-sm me-2"></span>
+        {{procesandoTransaccion ? 'Procesando...' : (tipo === 'compra' ? 'Confirmar Compra' : 'Confirmar Venta')}}
+      </button>
     </div>
 
     <!-- Mensaje de confirmación -->
-    <div class="confirmacion" *ngIf="puedeRealizarTransaccion()">
-      <p>{{getMensajeConfirmacion()}}</p>
+    <div class="mensaje-confirmacion" *ngIf="activo && puedeRealizarTransaccion()">
+      {{getMensajeConfirmacion()}}
     </div>
-  </div>
-
-  <!-- Botones de acción -->
-  <div class="acciones">
-    <button 
-      type="button" 
-      class="btn btn-secondary" 
-      (click)="cancelar()"
-      [disabled]="procesandoTransaccion">
-      Cancelar
-    </button>
-    
-    <button 
-      type="button" 
-      class="btn btn-primary"
-      [class.compra]="tipo === 'compra'"
-      [class.venta]="tipo === 'venta'"
-      [disabled]="!puedeRealizarTransaccion()"
-      (click)="confirmarTransaccion()">
-      
-      <span *ngIf="procesandoTransaccion" class="loading">
-        <div class="spinner"></div>
-        Procesando...
-      </span>
-      <span *ngIf="!procesandoTransaccion">
-        {{tipo === 'compra' ? 'Confirmar Compra' : 'Confirmar Venta'}}
-      </span>
-    </button>
   </div>
 </div>

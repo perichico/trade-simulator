@@ -61,6 +61,26 @@ async function migrarTransaccionesAPortafolio() {
             // Actualizar o crear registros en portafolio_activo
             for (const [activoId, cantidad] of Object.entries(activosPorId)) {
                 if (cantidad > 0) {
+                    // Calcular precio promedio de compra basado en transacciones
+                    const transaccionesCompra = transacciones.filter(t => 
+                        t.activo_id == activoId && t.tipo === 'compra'
+                    );
+                    
+                    let precioPromedio = 0;
+                    let fechaUltimaCompra = new Date();
+                    
+                    if (transaccionesCompra.length > 0) {
+                        const totalInvertido = transaccionesCompra.reduce((total, t) => 
+                            total + (t.cantidad * t.precio), 0
+                        );
+                        const totalCantidad = transaccionesCompra.reduce((total, t) => 
+                            total + t.cantidad, 0
+                        );
+                        
+                        precioPromedio = totalCantidad > 0 ? totalInvertido / totalCantidad : 0;
+                        fechaUltimaCompra = new Date(Math.max(...transaccionesCompra.map(t => new Date(t.fecha))));
+                    }
+                    
                     // Verificar si ya existe el registro
                     const existente = await PortafolioActivo.findOne({
                         where: {
@@ -71,17 +91,23 @@ async function migrarTransaccionesAPortafolio() {
                     });
                     
                     if (existente) {
-                        // Actualizar cantidad
-                        await existente.update({ cantidad }, { transaction });
-                        console.log(`Actualizado activo ID: ${activoId} con cantidad: ${cantidad}`);
+                        // Actualizar con precio y fecha calculados
+                        await existente.update({ 
+                            cantidad,
+                            precio_compra: precioPromedio,
+                            fecha_compra: fechaUltimaCompra
+                        }, { transaction });
+                        console.log(`Actualizado activo ID: ${activoId} - Cantidad: ${cantidad} - Precio promedio: ${precioPromedio}`);
                     } else {
-                        // Crear nuevo registro
+                        // Crear nuevo registro con precio y fecha
                         await PortafolioActivo.create({
                             portafolio_id: portafolio.id,
                             activo_id: activoId,
-                            cantidad
+                            cantidad,
+                            precio_compra: precioPromedio,
+                            fecha_compra: fechaUltimaCompra
                         }, { transaction });
-                        console.log(`Creado activo ID: ${activoId} con cantidad: ${cantidad}`);
+                        console.log(`Creado activo ID: ${activoId} - Cantidad: ${cantidad} - Precio promedio: ${precioPromedio}`);
                     }
                 }
             }

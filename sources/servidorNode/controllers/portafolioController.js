@@ -93,33 +93,34 @@ exports.obtenerPortafolio = async (req, res) => {
         
         console.log(`Portafolio encontrado: ${portafolio.nombre}`);
 
-        // Obtener los activos del portafolio con sus cantidades
-        const activosEnPortafolio = await PortafolioActivo.findAll({
-            where: { portafolio_id: portafolio.id }
-        });
-        
-        // Obtener los detalles de los activos por separado
-        const activosConDetalles = [];
-        for (const item of activosEnPortafolio) {
-            const activo = await Activo.findByPk(item.activo_id, {
-                attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+        // Obtener los activos del portafolio con manejo de errores mejorado
+        let activosEnPortafolio = [];
+        try {
+            activosEnPortafolio = await PortafolioActivo.findAll({
+                where: { portafolio_id: portafolioId },
+                attributes: {
+                    include: [
+                        [sequelize.literal('COALESCE(precio_compra, 0)'), 'precio_compra_safe'],
+                        [sequelize.literal('COALESCE(fecha_compra, NOW())'), 'fecha_compra_safe']
+                    ]
+                }
             });
-            if (activo) {
-                activosConDetalles.push({
-                    ...item.toJSON(),
-                    activo
-                });
-            }
+        } catch (queryError) {
+            console.warn('Error al obtener activos con columnas adicionales, usando query básico:', queryError.message);
+            // Fallback: obtener sin las columnas adicionales
+            activosEnPortafolio = await PortafolioActivo.findAll({
+                where: { portafolio_id: portafolioId }
+            });
         }
         
         console.log(`Activos encontrados en portafolio: ${activosEnPortafolio.length}`);
         
-        // Si no hay activos, verificar si hay transacciones para este usuario
+        // Si no hay activos, verificar si hay transacciones para migrar
         if (activosEnPortafolio.length === 0) {
             const { Transaccion } = require("../models/index");
             const transaccionesUsuario = await Transaccion.findAll({
                 where: { usuario_id: usuarioId },
-                attributes: ['id', 'activo_id', 'tipo', 'cantidad']
+                attributes: ['id', 'activo_id', 'tipo', 'cantidad', 'precio']
             });
             
             console.log(`Transacciones del usuario: ${transaccionesUsuario.length}`);
@@ -127,147 +128,163 @@ exports.obtenerPortafolio = async (req, res) => {
             if (transaccionesUsuario.length > 0 && portafolio.nombre === 'Portafolio Principal') {
                 console.log('Ejecutando migración manual de transacciones a portafolio principal...');
                 
-                // Agrupar transacciones por activo
+                // Agrupar transacciones por activo y calcular precio promedio
                 const activosPorId = {};
                 
                 for (const transaccion of transaccionesUsuario) {
-                    const { activo_id, cantidad, tipo } = transaccion;
+                    const { activo_id, cantidad, tipo, precio } = transaccion;
                     
                     if (!activosPorId[activo_id]) {
-                        activosPorId[activo_id] = 0;
+                        activosPorId[activo_id] = {
+                            cantidadTotal: 0,
+                            costoTotal: 0,
+                            precioPromedio: 0
+                        };
                     }
                     
-                    // Sumar o restar según el tipo de transacción
                     if (tipo === 'compra') {
-                        activosPorId[activo_id] += cantidad;
+                        activosPorId[activo_id].cantidadTotal += cantidad;
+                        activosPorId[activo_id].costoTotal += (cantidad * precio);
                     } else if (tipo === 'venta') {
-                        activosPorId[activo_id] -= cantidad;
+                        activosPorId[activo_id].cantidadTotal -= cantidad;
                     }
                 }
                 
-                // Actualizar o crear registros en portafolio_activo
-                for (const [activoId, cantidad] of Object.entries(activosPorId)) {
-                    if (cantidad > 0) {
-                        // Verificar si ya existe el registro
-                        const existente = await PortafolioActivo.findOne({
-                            where: {
-                                portafolio_id: portafolio.id,
-                                activo_id: activoId
-                            }
-                        });
+                // Calcular precio promedio y crear/actualizar registros
+                for (const [activoId, datos] of Object.entries(activosPorId)) {
+                    if (datos.cantidadTotal > 0) {
+                        const precioPromedio = datos.costoTotal / datos.cantidadTotal;
                         
-                        if (existente) {
-                            // Actualizar cantidad
-                            await existente.update({ cantidad });
-                            console.log(`Actualizado activo ID: ${activoId} con cantidad: ${cantidad}`);
-                        } else {
-                            // Crear nuevo registro
-                            await PortafolioActivo.create({
+                        try {
+                            await PortafolioActivo.upsert({
                                 portafolio_id: portafolio.id,
                                 activo_id: activoId,
-                                cantidad
+                                cantidad: datos.cantidadTotal,
+                                precio_compra: precioPromedio,
+                                fecha_compra: new Date()
                             });
-                            console.log(`Creado activo ID: ${activoId} con cantidad: ${cantidad}`);
+                            console.log(`Migrado activo ID: ${activoId} con cantidad: ${datos.cantidadTotal} y precio: ${precioPromedio}`);
+                        } catch (upsertError) {
+                            console.warn(`Error al migrar activo ${activoId}, usando INSERT básico:`, upsertError.message);
+                            // Fallback: crear sin campos adicionales
+                            await PortafolioActivo.findOrCreate({
+                                where: {
+                                    portafolio_id: portafolio.id,
+                                    activo_id: activoId
+                                },
+                                defaults: {
+                                    cantidad: datos.cantidadTotal
+                                }
+                            });
                         }
                     }
                 }
                 
-                // Volver a obtener los activos
-                const activosActualizados = await PortafolioActivo.findAll({
+                // Volver a obtener los activos después de la migración
+                activosEnPortafolio = await PortafolioActivo.findAll({
                     where: { portafolio_id: portafolio.id }
                 });
-                
-                // Obtener los detalles de los activos por separado
-                const activosConDetallesActualizados = [];
-                for (const item of activosActualizados) {
-                    const activo = await Activo.findByPk(item.activo_id, {
-                        attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
-                    });
-                    if (activo) {
-                        activosConDetallesActualizados.push({
-                            ...item.toJSON(),
-                            activo
-                        });
-                    }
-                }
-                
-                console.log(`Activos después de migración: ${activosActualizados.length}`);
-                
-                // Usar los activos actualizados
-                if (activosConDetallesActualizados.length > 0) {
-                    activosEnPortafolio = activosConDetallesActualizados;
-                }
             }
         }
 
-        // Importar el servicio de transacciones para calcular el precio promedio de compra
-        const { Transaccion } = require("../models/index");
+        // Obtener detalles de los activos y calcular rendimientos
+        const activos = [];
         
-        // Transformar los datos para el frontend
-        const activos = await Promise.all(activosConDetalles.map(async item => {
-            // Calcular el precio promedio de compra basado en las transacciones
-            const transacciones = await Transaccion.findAll({
-                where: { 
-                    usuario_id: usuarioId,
-                    activo_id: item.activo.id
-                },
-                order: [['fecha', 'ASC']]
-            });
-            
-            console.log(`Transacciones para activo ${item.activo.id}: ${transacciones.length}`);
-            
-            // Calcular precio promedio de compra
-            let cantidadTotal = 0;
-            let costoTotal = 0;
-            
-            transacciones.forEach(t => {
-                if (t.tipo === 'compra') {
-                    cantidadTotal += t.cantidad;
-                    costoTotal += t.cantidad * t.precio;
-                } else if (t.tipo === 'venta') {
-                    cantidadTotal -= t.cantidad;
-                    // No restamos del costo total para mantener el precio promedio de compra
+        for (const item of activosEnPortafolio) {
+            try {
+                const activo = await Activo.findByPk(item.activo_id, {
+                    attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio'],
+                    include: [{
+                        model: require("../models/index").TipoActivo,
+                        attributes: ['id', 'nombre'],
+                        required: false
+                    }]
+                });
+                
+                if (activo) {
+                    // Obtener precio de compra de manera segura
+                    let precioCompra = 0;
+                    
+                    // Verificar si las columnas precio_compra existen
+                    if (item.dataValues && typeof item.dataValues.precio_compra !== 'undefined') {
+                        precioCompra = parseFloat(item.precio_compra) || 0;
+                    } else if (item.precio_compra_safe) {
+                        precioCompra = parseFloat(item.precio_compra_safe) || 0;
+                    }
+                    
+                    // Si no hay precio de compra, calcularlo desde transacciones
+                    if (precioCompra === 0) {
+                        const { Transaccion } = require("../models/index");
+                        const transacciones = await Transaccion.findAll({
+                            where: { 
+                                usuario_id: usuarioId,
+                                activo_id: activo.id,
+                                tipo: 'compra'
+                            },
+                            order: [['fecha', 'ASC']]
+                        });
+                        
+                        if (transacciones.length > 0) {
+                            let cantidadTotal = 0;
+                            let costoTotal = 0;
+                            
+                            transacciones.forEach(t => {
+                                cantidadTotal += t.cantidad;
+                                costoTotal += t.cantidad * t.precio;
+                            });
+                            
+                            precioCompra = cantidadTotal > 0 ? costoTotal / cantidadTotal : 0;
+                        }
+                    }
+                    
+                    const precioActual = parseFloat(activo.ultimo_precio) || 0;
+                    const cantidad = parseFloat(item.cantidad) || 0;
+                    const valorTotal = cantidad * precioActual;
+                    const rendimiento = (precioActual - precioCompra) * cantidad;
+                    const rendimientoPorcentaje = precioCompra > 0 ? ((precioActual - precioCompra) / precioCompra) * 100 : 0;
+                    
+                    activos.push({
+                        id: activo.id,
+                        nombre: activo.nombre,
+                        simbolo: activo.simbolo,
+                        cantidad: cantidad,
+                        precioCompra: parseFloat(precioCompra.toFixed(2)),
+                        precioActual: precioActual,
+                        valorTotal: parseFloat(valorTotal.toFixed(2)),
+                        rendimiento: parseFloat(rendimiento.toFixed(2)),
+                        rendimientoPorcentaje: parseFloat(rendimientoPorcentaje.toFixed(2)),
+                        activoId: activo.id // Para compatibilidad con el frontend
+                    });
                 }
-            });
-            
-            const precioCompra = cantidadTotal > 0 ? costoTotal / cantidadTotal : 0;
-            const precioActual = item.activo.ultimo_precio || 0;
-            const valorTotal = item.cantidad * precioActual;
-            const rendimiento = (precioActual - precioCompra) * item.cantidad;
-            const rendimientoPorcentaje = precioCompra > 0 ? ((precioActual - precioCompra) / precioCompra) * 100 : 0;
-            
-            return {
-                id: item.activo.id,
-                nombre: item.activo.nombre,
-                simbolo: item.activo.simbolo,
-                cantidad: item.cantidad,
-                precioCompra,
-                precioActual,
-                valorTotal,
-                rendimiento,
-                rendimientoPorcentaje
-            };
-        }));
+            } catch (activoError) {
+                console.error(`Error al procesar activo ${item.activo_id}:`, activoError.message);
+                // Continuar con el siguiente activo en caso de error
+            }
+        }
 
-        // Calcular el valor total del portafolio y el rendimiento total
+        // Calcular totales
         const valorTotal = activos.reduce((total, activo) => total + activo.valorTotal, 0);
         const rendimientoTotal = activos.reduce((total, activo) => total + activo.rendimiento, 0);
 
         console.log(`Enviando respuesta con ${activos.length} activos`);
         
-        // Incluir el saldo del portafolio en la respuesta
         res.status(200).json({
             id: portafolio.id,
             nombre: portafolio.nombre,
-            descripcion: portafolio.descripcion,
-            saldo: portafolio.saldo,
+            descripcion: portafolio.descripcion || '',
+            saldo: parseFloat(portafolio.saldo) || 0,
             activos,
-            valorTotal,
-            rendimientoTotal
+            valorTotal: parseFloat(valorTotal.toFixed(2)),
+            rendimientoTotal: parseFloat(rendimientoTotal.toFixed(2))
         });
+        
     } catch (error) {
-        console.error('Error al obtener el portafolio:', error);
-        res.status(500).json({ error: "Error al obtener el portafolio" });
+        console.error('Error detallado al obtener el portafolio:', error);
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({ 
+            error: "Error al obtener el portafolio",
+            details: error.message 
+        });
     }
 };
 
@@ -319,19 +336,21 @@ exports.crearPortafolio = async (req, res) => {
         // Crear el nuevo portafolio
         const nuevoPortafolio = await Portafolio.create({
             nombre,
-            usuario_id: usuarioId
+            usuario_id: usuarioId,
+            saldo: 10000.00 // Asignar saldo inicial de 10,000
         });
 
         // Guardar el ID del nuevo portafolio en la sesión del usuario
         req.session.portafolioSeleccionado = nuevoPortafolio.id;
 
-        // Asignar un saldo inicial fijo de 10,000 para cada nuevo portafolio
         res.status(201).json({
             id: nuevoPortafolio.id,
             nombre: nuevoPortafolio.nombre,
-            fechaCreacion: new Date(), // Usando fecha actual ya que la tabla no tiene timestamps
-            valorTotal: 10000, // Saldo inicial fijo de 10.000
-            activos: [] // Sin activos iniciales
+            descripcion: nuevoPortafolio.descripcion,
+            fechaCreacion: new Date(),
+            valorTotal: 0, // Valor inicial es 0 ya que no tiene activos
+            saldo: 10000.00, // Saldo inicial
+            activos: []
         });
     } catch (error) {
         console.error('Error al crear nuevo portafolio:', error);

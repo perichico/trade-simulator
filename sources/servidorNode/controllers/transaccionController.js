@@ -1,4 +1,4 @@
-const { sequelize, Usuario, Activo, Transaccion } = require("../models/index");
+const { sequelize, Usuario, Activo, Transaccion, Portafolio, PortafolioActivo } = require("../models/index");
 const portafolioController = require('./portafolioController');
 
 // Obtener todas las transacciones
@@ -102,145 +102,152 @@ exports.crearTransaccion = async (req, res) => {
         return res.status(400).json({ error: "El activo no tiene un precio válido para realizar la transacción" });
       }
       const costoTotal = precioEnTransaccion * cantidad;
+
+      // Obtener el portafolio del usuario
+      let portafolio;
+      
+      if (portafolioSeleccionado) {
+        portafolio = await Portafolio.findOne({
+          where: { 
+            id: portafolioSeleccionado,
+            usuario_id: usuarioId 
+          }
+        });
+      } else {
+        // Si no hay portafolio seleccionado, usar el portafolio principal
+        portafolio = await Portafolio.findOne({
+          where: { usuario_id: usuarioId },
+          order: [['id', 'ASC']]
+        });
+      }
+      
+      if (!portafolio) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Portafolio no encontrado" });
+      }
+
+      const portafolioId = portafolio.id;
   
       // Lógica de compra
       if (tipo === "compra") {
-        
-        // Obtener el portafolio del usuario
-        const { Portafolio } = require("../models/index");
-        let portafolio;
-        
-        if (portafolioSeleccionado) {
-          portafolio = await Portafolio.findOne({
-            where: { 
-              id: portafolioSeleccionado,
-              usuario_id: usuarioId 
-            }
-          });
-        } else {
-          // Si no hay portafolio seleccionado, usar el portafolio principal
-          portafolio = await Portafolio.findOne({
-            where: { usuario_id: usuarioId },
-            order: [['id', 'ASC']]
-          });
-        }
-        
-        if (!portafolio) {
-          await transaction.rollback();
-          return res.status(404).json({ error: "Portafolio no encontrado" });
-        }
-        
+        // Verificar que el usuario tenga suficiente saldo
         if (portafolio.saldo < costoTotal) {
           await transaction.rollback();
-          return res.status(400).json({ error: "Saldo insuficiente en el portafolio" });
+          return res.status(400).json({ error: "Saldo insuficiente" });
         }
-        
-        // Asegurar que el saldo tenga formato decimal válido
-        const saldoActual = parseFloat(portafolio.saldo) || 0;
-        const costoTotalNumerico = parseFloat(costoTotal) || 0;
-        const nuevoSaldo = parseFloat((saldoActual - costoTotalNumerico).toFixed(2));
-        await portafolio.update({ saldo: nuevoSaldo }, { transaction });
-  
-        // Registrar transacción de compra
-        const transaccion = await Transaccion.create({
-          usuario_id: usuarioId,
-          activo_id: activoId,
-          tipo,
-          cantidad,
-          precio: precioEnTransaccion,
-          fecha: new Date()
-        }, { transaction });
-        
-        // Actualizar el portafolio del usuario
-        await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidad, transaction, portafolioSeleccionado);
 
-        await transaction.commit();
-  
-        return res.status(201).json({
-          mensaje: "Transacción realizada con éxito",
-          transaccion: {
-            ...transaccion.toJSON(),
-            valorTotal: costoTotal
-          }
-        });
-      }
-  
-      // Lógica de venta
-      if (tipo === "venta") {
-        // Verificar cuántos activos tiene el usuario
-        const cantidadActivosUsuario = await Transaccion.sum("cantidad", {
-          where: {
-            usuario_id: usuarioId,
-            activo_id: activoId,
+        // Actualizar el saldo del portafolio
+        await portafolio.update({ saldo: portafolio.saldo - costoTotal }, { transaction });
+
+        // Verificar si el usuario ya tiene este activo en el portafolio
+        let portafolioActivo = await PortafolioActivo.findOne({
+          where: { 
+            portafolio_id: portafolioId, 
+            activo_id: activoId 
           },
           transaction
         });
-  
-        // Si no tiene suficientes activos para vender
-        if (cantidadActivosUsuario < cantidad) {
+
+        if (portafolioActivo) {
+          // Si ya tiene el activo, actualizar cantidad y precio promedio
+          const cantidadAnterior = parseFloat(portafolioActivo.cantidad) || 0;
+          const precioAnterior = parseFloat(portafolioActivo.precio_compra) || 0;
+          const nuevaCantidad = cantidadAnterior + parseInt(cantidad);
+          
+          // Calcular precio promedio ponderado
+          const valorAnterior = cantidadAnterior * precioAnterior;
+          const valorNuevo = cantidad * precioEnTransaccion;
+          const precioPromedio = (valorAnterior + valorNuevo) / nuevaCantidad;
+
+          console.log('=== CALCULANDO PRECIO PROMEDIO ===');
+          console.log('Cantidad anterior:', cantidadAnterior);
+          console.log('Precio anterior:', precioAnterior);
+          console.log('Nueva cantidad a comprar:', cantidad);
+          console.log('Precio actual transacción:', precioEnTransaccion);
+          console.log('Valor anterior:', valorAnterior);
+          console.log('Valor nuevo:', valorNuevo);
+          console.log('Precio promedio calculado:', precioPromedio);
+          console.log('Cantidad total final:', nuevaCantidad);
+          console.log('================================');
+
+          await portafolioActivo.update({ 
+            cantidad: nuevaCantidad,
+            precio_compra: precioPromedio,
+            fecha_compra: new Date()
+          }, { transaction });
+        } else {
+          // Si no tiene el activo, crear nueva entrada
+          console.log('=== CREANDO NUEVA POSICIÓN ===');
+          console.log('Activo ID:', activoId);
+          console.log('Cantidad:', cantidad);
+          console.log('Precio de compra:', precioEnTransaccion);
+          console.log('==============================');
+
+          await PortafolioActivo.create({
+            portafolio_id: portafolioId,
+            activo_id: activoId,
+            cantidad: cantidad,
+            precio_compra: precioEnTransaccion,
+            fecha_compra: new Date()
+          }, { transaction });
+        }
+
+      } else if (tipo === "venta") {
+        // Lógica para venta - verificar que tenga suficientes activos
+        const portafolioActivo = await PortafolioActivo.findOne({
+          where: { 
+            portafolio_id: portafolioId, 
+            activo_id: activoId 
+          },
+          transaction
+        });
+
+        if (!portafolioActivo || portafolioActivo.cantidad < cantidad) {
           await transaction.rollback();
           return res.status(400).json({ error: "No tienes suficientes activos para vender" });
         }
-        
-        
-        // Obtener el portafolio del usuario
-        const { Portafolio } = require("../models/index");
-        let portafolio;
-        
-        if (portafolioSeleccionado) {
-          portafolio = await Portafolio.findOne({
-            where: { 
-              id: portafolioSeleccionado,
-              usuario_id: usuarioId 
-            }
-          });
-        } else {
-          // Si no hay portafolio seleccionado, usar el portafolio principal
-          portafolio = await Portafolio.findOne({
-            where: { usuario_id: usuarioId },
-            order: [['id', 'ASC']]
-          });
-        }
-        
-        if (!portafolio) {
-          await transaction.rollback();
-          return res.status(404).json({ error: "Portafolio no encontrado" });
-        }
-  
-        // Actualizar el saldo del portafolio
-        // Asegurar que el saldo tenga formato decimal válido
+
+        // Actualizar el saldo del portafolio (agregar dinero por la venta)
         const saldoActual = parseFloat(portafolio.saldo) || 0;
         const costoTotalNumerico = parseFloat(costoTotal) || 0;
         const nuevoSaldo = parseFloat((saldoActual + costoTotalNumerico).toFixed(2));
         await portafolio.update({ saldo: nuevoSaldo }, { transaction });
-  
-        // Registrar transacción de venta
-        const transaccion = await Transaccion.create({
-          usuario_id: usuarioId,
-          activo_id: activoId,
-          tipo,
-          cantidad: -cantidad,
-          precio: precioEnTransaccion,
-          fecha: new Date()
-        }, { transaction });
-        
-        // Actualizar el portafolio del usuario (con cantidad negativa para venta)
-        await portafolioController.actualizarPortafolio(usuarioId, activoId, -cantidad, transaction, portafolioSeleccionado);
 
-        await transaction.commit();
-  
-        return res.status(201).json({
-          mensaje: "Transacción realizada con éxito",
-          transaccion: {
-            ...transaccion.toJSON(),
-            valorTotal: costoTotal
-          }
-        });
+        // Actualizar o eliminar el activo del portafolio
+        if (portafolioActivo.cantidad === cantidad) {
+          // Si vende todos los activos, eliminar la entrada
+          await portafolioActivo.destroy({ transaction });
+        } else {
+          // Si vende parcialmente, actualizar la cantidad
+          await portafolioActivo.update({ 
+            cantidad: portafolioActivo.cantidad - cantidad 
+          }, { transaction });
+        }
       }
   
-      // Si el tipo no es válido
-      await transaction.rollback();
-      return res.status(400).json({ error: "Tipo de transacción inválido" });
+      // Registrar transacción
+      const transaccion = await Transaccion.create({
+        usuario_id: usuarioId,
+        activo_id: activoId,
+        tipo,
+        cantidad: tipo === "venta" ? -cantidad : cantidad,
+        precio: precioEnTransaccion,
+        fecha: new Date()
+      }, { transaction });
+      
+      // NO llamar a actualizarPortafolio ya que ya manejamos PortafolioActivo arriba
+      // await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidadParaPortafolio, transaction, portafolioSeleccionado);
+
+      await transaction.commit();
+  
+      return res.status(201).json({
+        mensaje: "Transacción realizada con éxito",
+        transaccion: {
+          ...transaccion.toJSON(),
+          valorTotal: costoTotal
+        }
+      });
+
     } catch (error) {
       await transaction.rollback();
       console.error('Error en la transacción:', error);
@@ -256,8 +263,7 @@ exports.crearTransaccion = async (req, res) => {
       
       return res.status(500).json({ error: mensajeError });
     }
-  };
-  
+};
 
 // Obtener transacciones de un usuario
 exports.obtenerTransaccionesPorUsuario = async (req, res) => {

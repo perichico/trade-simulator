@@ -78,8 +78,32 @@ export class TransaccionComponent implements OnInit {
 
   calcularCantidadDisponible(): void {
     if (this.tipo === 'venta' && this.portafolioActual && this.activo) {
-      const activoEnPortafolio = this.portafolioActual.activos?.find(a => a.activoId === this.activo?.id);
-      this.cantidadDisponible = activoEnPortafolio?.cantidad || 0;
+      // Buscar TODOS los activos con el mismo ID en el portafolio
+      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => a.activoId === this.activo?.id);
+      
+      if (activosEnPortafolio && activosEnPortafolio.length > 0) {
+        // Sumar todas las cantidades del mismo activo
+        this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {
+          return total + (activo.cantidad || 0);
+        }, 0);
+        console.log(`Cantidad disponible calculada para ${this.activo.simbolo}: ${this.cantidadDisponible}`);
+      } else {
+        this.cantidadDisponible = 0;
+        console.log(`No se encontraron activos ${this.activo.simbolo} en el portafolio`);
+      }
+    } else if (this.tipo === 'compra' && this.portafolioActual && this.activo) {
+      // Para compra, también calcular cuántos ya tiene para mostrar información
+      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => a.activoId === this.activo?.id);
+      
+      if (activosEnPortafolio && activosEnPortafolio.length > 0) {
+        this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {
+          return total + (activo.cantidad || 0);
+        }, 0);
+      } else {
+        this.cantidadDisponible = 0;
+      }
+    } else {
+      this.cantidadDisponible = 0;
     }
   }
 
@@ -87,6 +111,12 @@ export class TransaccionComponent implements OnInit {
     if (this.activo) {
       // Usar ultimo_precio si precio no está disponible
       const precio = this.activo.precio || this.activo.ultimo_precio || 0;
+      
+      console.log('=== DEBUG CÁLCULO COSTO ===');
+      console.log('Activo:', this.activo);
+      console.log('Precio usado:', precio);
+      console.log('Cantidad:', this.cantidad);
+      console.log('===========================');
       
       if (precio > 0) {
         this.costoTotal = this.cantidad * precio;
@@ -97,10 +127,12 @@ export class TransaccionComponent implements OnInit {
           this.saldoRestante = this.saldoActual + this.costoTotal;
         }
       } else {
+        console.warn('Precio del activo es 0 o inválido');
         this.costoTotal = 0;
         this.saldoRestante = this.saldoActual;
       }
     } else {
+      console.warn('No hay activo disponible para calcular costo');
       this.costoTotal = 0;
       this.saldoRestante = this.saldoActual;
     }
@@ -130,50 +162,84 @@ export class TransaccionComponent implements OnInit {
   }
 
   puedeRealizarTransaccion(): boolean {
-    if (!this.activo || this.cantidad < 1 || this.procesandoTransaccion) {
+    console.log('=== DEBUG VALIDACIÓN TRANSACCIÓN ===');
+    console.log('Activo:', !!this.activo);
+    console.log('Cantidad:', this.cantidad);
+    console.log('Procesando:', this.procesandoTransaccion);
+    console.log('Precio activo:', this.getPrecioActivo());
+    console.log('Costo total:', this.costoTotal);
+    console.log('Saldo actual:', this.saldoActual);
+    console.log('================================');
+
+    // Separar las validaciones básicas del estado de procesamiento
+    if (!this.activo || this.cantidad < 1) {
+      console.log('Falló validación básica: activo o cantidad inválida');
       return false;
     }
 
     // Verificar que haya un precio válido
-    const precio = this.activo.precio || this.activo.ultimo_precio || 0;
+    const precio = this.getPrecioActivo();
     if (precio <= 0) {
+      console.log('Precio inválido:', precio);
       return false;
     }
 
+    // Validaciones específicas por tipo de transacción
     if (this.tipo === 'compra') {
-      return this.saldoActual >= this.costoTotal;
+      const puedeComprar = this.saldoActual >= this.costoTotal;
+      console.log('Puede comprar:', puedeComprar);
+      return puedeComprar;
     } else {
-      return this.cantidadDisponible >= this.cantidad;
+      const puedeVender = this.cantidadDisponible >= this.cantidad;
+      console.log('Puede vender:', puedeVender);
+      return puedeVender;
     }
   }
 
-  private navegarConNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {
-    this.router.navigate(['/notificacion-temporal'], {
-      queryParams: {
-        mensaje: mensaje,
-        tipo: tipo,
-        retorno: '/dashboard'
-      }
-    });
+  cambiarTipoTransaccion(nuevoTipo: 'compra' | 'venta'): void {
+    if (this.procesandoTransaccion) return;
+    
+    this.tipo = nuevoTipo;
+    this.calcularCantidadDisponible();
+    this.calcularCostoTotal();
+  }
+
+  puedeIniciarTransaccion(): boolean {
+    return this.puedeRealizarTransaccion() && !this.procesandoTransaccion;
   }
 
   confirmarTransaccion(): void {
-    if (!this.puedeRealizarTransaccion() || !this.activo) {
+    console.log('=== INICIANDO TRANSACCIÓN ===');
+    console.log('Puede realizar transacción:', this.puedeRealizarTransaccion());
+    console.log('Puede iniciar transacción:', this.puedeIniciarTransaccion());
+    
+    if (!this.puedeIniciarTransaccion() || !this.activo) {
+      console.log('No se puede iniciar la transacción');
       return;
     }
 
     this.procesandoTransaccion = true;
     const portafolioId = this.portafolioActual?.id;
 
+    console.log('Datos de transacción:', {
+      activoId: this.activo.id,
+      tipo: this.tipo,
+      cantidad: this.cantidad,
+      portafolioId: portafolioId
+    });
+
     this.transaccionService.crearTransaccion(this.activo.id, this.tipo, this.cantidad, portafolioId)
       .subscribe({
         next: (respuesta) => {
+          console.log('Transacción exitosa:', respuesta);
+          this.procesandoTransaccion = false; // Resetear el estado
           const accion = this.tipo === 'compra' ? 'Compra' : 'Venta';
           const mensaje = `${accion} de ${this.cantidad} ${this.activo?.simbolo} realizada con éxito`;
           this.navegarConNotificacion(mensaje, 'success');
         },
         error: (error) => {
-          this.procesandoTransaccion = false;
+          console.error('Error en transacción:', error);
+          this.procesandoTransaccion = false; // Resetear el estado también en error
           const mensaje = `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`;
           this.navegarConNotificacion(mensaje, 'error');
         }
@@ -194,5 +260,15 @@ export class TransaccionComponent implements OnInit {
   getPrecioActivo(): number {
     if (!this.activo) return 0;
     return this.activo.precio || this.activo.ultimo_precio || 0;
+  }
+
+  navegarConNotificacion(mensaje: string, tipo: 'success' | 'error'): void {
+    // Por ahora mostramos un alert, pero puedes implementar un sistema de notificaciones más sofisticado
+    if (tipo === 'success') {
+      alert(mensaje);
+    } else {
+      alert(mensaje);
+    }
+    this.router.navigate(['/dashboard']);
   }
 }

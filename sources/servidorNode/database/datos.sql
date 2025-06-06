@@ -44,6 +44,8 @@ CREATE TABLE portafolio_activo (
     portafolio_id INT NOT NULL,
     activo_id INT NOT NULL,
     cantidad DECIMAL(10, 2) NOT NULL,
+    precio_compra DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    fecha_compra DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (portafolio_id, activo_id),
     FOREIGN KEY (portafolio_id) REFERENCES portafolio(id) ON DELETE CASCADE,
     FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
@@ -217,29 +219,31 @@ INSERT INTO usuarios (nombre, email, contrasena, rol, estado, fechaRegistro) VAL
 ('admin', 'admin@admin.com', '$2b$10$Y2iHdCdAsRNc/bYVnsll..geCglB1AR9Tz8oEbjZWnjzdbJnu84oK', 'admin', 'activo', '2024-01-01 08:00:00');
 
 -- Insertar portafolios de prueba
-INSERT INTO portafolio (nombre, usuario_id) VALUES
-('Portafolio Principal', 1),
-('Inversiones Largo Plazo', 1),
-('Trading Activo', 2);
+INSERT INTO portafolio (nombre, usuario_id, saldo) VALUES
+('Portafolio Principal', 1, 15000.00),
+('Inversiones Largo Plazo', 1, 25000.00),
+('Trading Activo', 2, 8000.00);
 
--- Insertar posiciones en portafolios
-INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
-(1, 1, 10.00),  -- 10 acciones de Apple en Portafolio Principal
-(1, 2, 5.00),   -- 5 acciones de Microsoft en Portafolio Principal
-(2, 6, 20.00),  -- 20 unidades de SPY en Inversiones Largo Plazo
-(3, 9, 0.5);    -- 0.5 BTC en Trading Activo
+-- Insertar posiciones en portafolios con precios de compra
+INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad, precio_compra, fecha_compra) VALUES
+(1, 1, 10.00, 180.50, '2024-01-15 10:30:00'),  -- 10 acciones de Apple compradas a $180.50
+(1, 2, 5.00, 380.25, '2024-01-20 14:15:00'),   -- 5 acciones de Microsoft compradas a $380.25
+(1, 7, 3.00, 220.75, '2024-02-01 09:45:00'),   -- 3 acciones de NVIDIA compradas a $220.75
+(2, 31, 20.00, 450.80, '2024-01-10 11:00:00'), -- 20 unidades de SPY compradas a $450.80
+(2, 32, 15.00, 350.25, '2024-01-25 16:30:00'), -- 15 unidades de QQQ compradas a $350.25
+(3, 36, 0.5, 45000.00, '2024-02-15 13:20:00'); -- 0.5 BTC comprados a $45,000
 
 -- Insertar portafolio para el usuario test (ID 3)
 INSERT INTO portafolio (nombre, usuario_id, saldo) VALUES
 ('Mi Portafolio', 3, 10000.00);
 
--- Insertar posiciones para el usuario test
-INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad) VALUES
-(4, 1, 15.00),   -- 15 acciones de Apple
-(4, 2, 8.00),    -- 8 acciones de Microsoft
-(4, 7, 5.00),    -- 5 acciones de NVIDIA
-(4, 11, 10.00),  -- 10 acciones de Visa
-(4, 31, 5.00);   -- 5 unidades de SPY ETF
+-- Insertar posiciones para el usuario test con precios de compra realistas
+INSERT INTO portafolio_activo (portafolio_id, activo_id, cantidad, precio_compra, fecha_compra) VALUES
+(4, 1, 15.00, 175.30, '2024-02-10 10:15:00'),  -- 15 acciones de Apple compradas a $175.30
+(4, 2, 8.00, 375.50, '2024-02-12 14:30:00'),   -- 8 acciones de Microsoft compradas a $375.50
+(4, 7, 5.00, 205.80, '2024-02-15 11:45:00'),   -- 5 acciones de NVIDIA compradas a $205.80
+(4, 11, 10.00, 260.40, '2024-02-18 09:20:00'), -- 10 acciones de Visa compradas a $260.40
+(4, 31, 5.00, 485.75, '2024-02-20 16:10:00');  -- 5 unidades de SPY ETF compradas a $485.75
 
 -- Insertar dividendos de ejemplo para los activos del usuario test (ID 3)
 INSERT INTO dividendos (activo_id, fecha, monto_por_accion, estado) VALUES

@@ -38,17 +38,33 @@ export class TransaccionService {
 
   // Crear una nueva transacción (compra o venta)
   crearTransaccion(activoId: number, tipo: 'compra' | 'venta', cantidad: number, portafolioSeleccionado?: number): Observable<Transaccion> {
-    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/creartransaccion`, {
+    console.log('=== CREANDO TRANSACCIÓN EN SERVICIO ===');
+    console.log('Datos:', { activoId, tipo, cantidad, portafolioSeleccionado });
+    
+    const body = {
       activoId,
       tipo,
       cantidad,
       portafolioSeleccionado
-    }, { withCredentials: true }).pipe(
+    };
+    
+    console.log('Body de la petición:', body);
+    
+    return this.http.post<Transaccion>(`${this.apiUrl}/transacciones/creartransaccion`, body, { 
+      withCredentials: true 
+    }).pipe(
       catchError(error => {
-        console.error('Error al crear transacción', error);
+        console.error('=== ERROR EN TRANSACCIÓN ===');
+        console.error('Error completo:', error);
+        console.error('Status:', error.status);
+        console.error('Error body:', error.error);
+        console.error('==========================');
+        
         let mensajeError = 'Error desconocido';
         
-        if (error.status === 401) {
+        if (error.status === 0) {
+          mensajeError = 'No se pudo conectar con el servidor. Verifica tu conexión.';
+        } else if (error.status === 401) {
           mensajeError = 'No estás autenticado. Por favor, inicia sesión.';
         } else if (error.status === 400) {
           mensajeError = error.error?.error || 'Datos de transacción inválidos';

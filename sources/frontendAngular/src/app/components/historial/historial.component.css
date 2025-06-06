@@ -29,6 +29,7 @@
   width: 100%;
   margin-left: auto;
   margin-right: auto;
+  background-color: transparent;
 }
 
 .historial-header {
@@ -49,9 +50,11 @@
 
 .historial-card {
   width: 100%;
+  background-color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
+  border: none;
 }
 
 .historial-table {
@@ -123,6 +126,7 @@
   max-width: 400px;
   padding: 24px;
   text-align: center;
+  background-color: #ffffff;
 }
 
 .login-buttons {
@@ -138,7 +142,7 @@ body.dark-mode .historial-container {
 }
 
 body.dark-mode .content-container {
-  background-color: #1a1a1a;
+  background-color: transparent;
 }
 
 body.dark-mode .historial-header h1 {
@@ -152,6 +156,7 @@ body.dark-mode .subtitle {
 body.dark-mode .historial-card {
   background-color: #2d2d2d;
   border-color: #404040;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .loading-container {
@@ -172,6 +177,15 @@ body.dark-mode .empty-state p {
 
 body.dark-mode .empty-icon {
   color: #555;
+}
+
+body.dark-mode .login-required {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .login-required mat-card {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
 }
 
 /* Responsive adjustments */

@@ -118,74 +118,73 @@
 
   <div class="row mt-4" *ngIf="portafolio$ | async as portafolio">
     <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
+      <div class="card shadow-sm portfolio-table-card">
+        <div class="card-header bg-transparent border-0 py-3">
           <h5 class="mb-0">
             <i class="bi bi-briefcase me-2 text-primary"></i>
             Mi Portafolio
           </h5>
         </div>
-           <div class="card-body">
-             <div class="table-responsive" *ngIf="portafolio.activos.length > 0">
-               <table class="table table-hover align-middle">
-                 <thead class="table-light">
-                   <tr>
-                     <th>Activo</th>
-                     <th>Cantidad</th>
-                     <th>Precio Compra</th>
-                     <th>Precio Actual</th>
-                     <th>Valor Total</th>
-                     <th>Rendimiento</th>
-                     <th>Acciones</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   <tr *ngFor="let activo of portafolio.activos">
-                     <td>
-                       <div class="d-flex align-items-center">
-                         <strong class="me-2">{{activo.simbolo || 'N/A'}}</strong>
-                         <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
-                       </div>
-                     </td>
-                     <td>{{activo.cantidad}}</td>
-                     <td>{{formatearDinero(activo.precioCompra)}}</td>
-                     <td>{{formatearDinero(activo.precioActual)}}</td>
-                     <td>{{formatearDinero(activo.valorTotal)}}</td>
-                     <td>
-                       <span class="badge" [ngClass]="{
-                         'bg-success': activo.rendimiento > 0,
-                         'bg-danger': activo.rendimiento < 0,
-                         'bg-secondary': activo.rendimiento === 0
-                       }">
-                         {{formatearDinero(activo.rendimiento)}} ({{activo.rendimientoPorcentaje | number:'1.2-2'}}%)
-                       </span>
-                     </td>
-                     <td>
-                       <div class="btn-group btn-group-sm">
-                         <button class="btn btn-outline-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
-                           <i class="bi bi-plus-circle me-1"></i>Comprar
-                         </button>
-                         <button class="btn btn-outline-danger" (click)="abrirDialogoTransaccion(activo, 'venta')">
-                           <i class="bi bi-dash-circle me-1"></i>Vender
-                         </button>
-                       </div>
-                     </td>
-                   </tr>
-                 </tbody>
-               </table>
-             </div>
+        <div class="card-body">
+          <div class="table-responsive" *ngIf="portafolio.activos.length > 0">
+            <table class="table table-hover align-middle portfolio-table">
+              <thead class="table-light">
+                <tr>
+                  <th>Activo</th>
+                  <th>Cantidad</th>
+                  <th>Precio Compra</th>
+                  <th>Precio Actual</th>
+                  <th>Valor Total</th>
+                  <th>Rendimiento</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let activo of portafolio.activos">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <strong class="me-2">{{activo.simbolo || 'N/A'}}</strong>
+                      <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
+                    </div>
+                  </td>
+                  <td>{{activo.cantidad}}</td>
+                  <td>{{formatearDinero(activo.precioCompra)}}</td>
+                  <td>{{formatearDinero(activo.precioActual)}}</td>
+                  <td>{{formatearDinero(activo.valorTotal)}}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': activo.rendimiento > 0,
+                      'bg-danger': activo.rendimiento < 0,
+                      'bg-secondary': activo.rendimiento === 0
+                    }">
+                      {{formatearDinero(activo.rendimiento)}} ({{activo.rendimientoPorcentaje | number:'1.2-2'}}%)
+                    </span>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
+                        <i class="bi bi-plus-circle me-1"></i>Comprar
+                      </button>
+                      <button class="btn btn-outline-danger" (click)="abrirDialogoTransaccion(activo, 'venta')">
+                        <i class="bi bi-dash-circle me-1"></i>Vender
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-             <div class="text-center py-5" *ngIf="portafolio.activos.length === 0">
-               <i class="bi bi-wallet2 display-1 text-muted mb-3"></i>
-               <h5 class="text-muted">No tienes activos en tu portafolio</h5>
-               <a routerLink="/mercado" class="btn btn-primary mt-3">
-                 <i class="bi bi-cart me-2"></i>Ir al Mercado
-               </a>
-             </div>
-           </div>
-         </div>
-       </div>
-     </div>
+          <div class="text-center py-5" *ngIf="portafolio.activos.length === 0">
+            <i class="bi bi-wallet2 display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">No tienes activos en tu portafolio</h5>
+            <a routerLink="/mercado" class="btn btn-primary mt-3">
+              <i class="bi bi-cart me-2"></i>Ir al Mercado
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
 
 <!-- Modal para crear nuevo portafolio -->
 <div class="modal fade" id="nuevoPortafolioModal" tabindex="-1" aria-labelledby="nuevoPortafolioModalLabel" aria-hidden="true">

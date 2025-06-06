@@ -179,6 +179,24 @@ body.dark-mode .portfolio-table-card {
 
 body.dark-mode .portfolio-table {
   color: #e0e0e0;
+  --bs-table-bg: #2d2d2d;
+  --bs-table-border-color: #555;
+}
+
+body.dark-mode .portfolio-table thead th {
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .portfolio-table tbody td {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .portfolio-table tbody tr:hover td {
+  background-color: #404040;
 }
 
 body.dark-mode .balance-card,

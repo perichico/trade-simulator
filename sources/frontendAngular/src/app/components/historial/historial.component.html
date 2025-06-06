@@ -1,95 +1,110 @@
-<div class="historial-container" *ngIf="usuario">
-  <mat-toolbar color="primary" class="toolbar">
-    <button mat-icon-button aria-label="Volver al dashboard" routerLink="/dashboard">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <span>Historial de Transacciones</span>
-    <span class="spacer"></span>
-    <span class="user-info">{{ usuario.nombre }} | {{ formatearDinero(portafolioSeleccionado?.valorTotal || 0) }}</span>
-    <button mat-icon-button aria-label="Cerrar sesión">
-      <mat-icon>exit_to_app</mat-icon>
-    </button>
-  </mat-toolbar>
-
-  <div class="content-container">
-    <div class="historial-header">
-      <h1>Mis Transacciones</h1>
-      <p class="subtitle">Historial completo de operaciones de compra y venta</p>
-    </div>
-
-    <mat-card class="historial-card">
-      <mat-card-content>
-        <div class="loading-container" *ngIf="cargando">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>Cargando transacciones...</p>
-        </div>
-
-        <div class="empty-state" *ngIf="(transacciones$ | async)?.length === 0 && !cargando">
-          <mat-icon class="empty-icon">history</mat-icon>
-          <p>No has realizado ninguna transacción todavía</p>
-          <button mat-raised-button color="primary" routerLink="/mercado">
-            Ir al Mercado
+<div class="container-fluid py-4" *ngIf="usuario">
+  <div class="row mb-4">
+    <div class="col">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">
+          <i class="bi bi-clock-history text-primary me-2"></i>
+          Historial de Transacciones
+        </h2>
+        <div class="d-flex align-items-center">
+          <span class="badge bg-info me-2">{{ usuario.nombre }}</span>
+          <span class="badge bg-success me-2">{{ formatearDinero(portafolioSeleccionado?.valorTotal || 0) }}</span>
+          <button class="btn btn-outline-secondary btn-sm" routerLink="/dashboard">
+            <i class="bi bi-arrow-left me-1"></i>Volver
           </button>
         </div>
+      </div>
+      <p class="text-muted mt-2">
+        Historial completo de operaciones de compra y venta
+      </p>
+    </div>
+  </div>
 
-        <table mat-table [dataSource]="$any(transacciones$)" class="mat-elevation-z0 historial-table" *ngIf="(transacciones$ | async)?.length && !cargando">
-          <!-- Fecha Column -->
-          <ng-container matColumnDef="fecha">
-            <th mat-header-cell *matHeaderCellDef> Fecha </th>
-            <td mat-cell *matCellDef="let transaccion"> {{formatearFecha(transaccion.fecha)}} </td>
-          </ng-container>
+  <!-- Tabla de transacciones -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-0 py-3">
+          <h5 class="mb-0">
+            <i class="bi bi-list-check text-primary me-2"></i>
+            Mis Transacciones
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive" *ngIf="!cargando && (transacciones$ | async)?.length && (transacciones$ | async)!.length > 0">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Activo</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unitario</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let transaccion of (transacciones$ | async)">
+                  <td>{{ transaccion.fecha ? formatearFecha(transaccion.fecha.toString()) : '-' }}</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <strong class="me-2">{{ transaccion.activo?.simbolo || '-' }}</strong>
+                      <small class="text-muted">{{ transaccion.activo?.nombre || '-' }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge fs-6 px-3 py-2" 
+                          [ngClass]="transaccion.tipo === 'compra' ? 'bg-success' : 'bg-danger'">
+                      <i class="bi me-1" [ngClass]="transaccion.tipo === 'compra' ? 'bi-cart-plus' : 'bi-cart-dash'"></i>
+                      {{ transaccion.tipo === 'compra' ? 'Compra' : 'Venta' }}
+                    </span>
+                  </td>
+                  <td>{{ transaccion.cantidad }}</td>
+                  <td>{{ formatearDinero(transaccion.precio) }}</td>
+                  <td>{{ formatearDinero(transaccion.precio * transaccion.cantidad) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-          <!-- Activo Column -->
-          <ng-container matColumnDef="activo">
-            <th mat-header-cell *matHeaderCellDef> Activo </th>
-            <td mat-cell *matCellDef="let transaccion"> 
-              <strong>{{transaccion.activo?.simbolo || '-'}}</strong> - {{transaccion.activo?.nombre || '-'}}
-            </td>
-          </ng-container>
-
-          <!-- Tipo Column -->
-          <ng-container matColumnDef="tipo">
-            <th mat-header-cell *matHeaderCellDef> Tipo </th>
-            <td mat-cell *matCellDef="let transaccion" [ngClass]="obtenerClaseTipo(transaccion.tipo)">
-              <mat-icon class="tipo-icon">{{transaccion.tipo === 'compra' ? 'add_shopping_cart' : 'remove_shopping_cart'}}</mat-icon>
-              {{transaccion.tipo === 'compra' ? 'Compra' : 'Venta'}}
-            </td>
-          </ng-container>
-
-          <!-- Cantidad Column -->
-          <ng-container matColumnDef="cantidad">
-            <th mat-header-cell *matHeaderCellDef> Cantidad </th>
-            <td mat-cell *matCellDef="let transaccion"> {{transaccion.cantidad}} </td>
-          </ng-container>
-
-          <!-- Precio Column -->
-          <ng-container matColumnDef="precio">
-            <th mat-header-cell *matHeaderCellDef> Precio Unitario </th>
-            <td mat-cell *matCellDef="let transaccion"> {{formatearDinero(transaccion.precio)}} </td>
-          </ng-container>
-
-          <!-- Total Column -->
-          <ng-container matColumnDef="total">
-            <th mat-header-cell *matHeaderCellDef> Total </th>
-            <td mat-cell *matCellDef="let transaccion"> {{formatearDinero(transaccion.precio * transaccion.cantidad)}} </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="columnasMostradas"></tr>
-          <tr mat-row *matRowDef="let row; columns: columnasMostradas;"></tr>
-        </table>
-      </mat-card-content>
-    </mat-card>
+          <!-- Estado de carga -->
+          <div class="text-center py-5" *ngIf="cargando">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando transacciones...</p>
+          </div>
+          
+          <!-- Sin transacciones -->
+          <div class="text-center py-5" *ngIf="!cargando && (transacciones$ | async)?.length === 0">
+            <i class="bi bi-clock-history text-muted display-1 mb-3"></i>
+            <h5 class="text-muted">No has realizado ninguna transacción todavía</h5>
+            <p class="text-muted">Comienza a invertir para ver tu historial aquí</p>
+            <a routerLink="/mercado" class="btn btn-primary mt-3">
+              <i class="bi bi-cart-plus me-2"></i>Ir al Mercado
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- Mensaje si no hay sesión -->
 <div class="login-required" *ngIf="!usuario">
-  <mat-card>
-    <mat-card-content>
-      <p>Debes iniciar sesión para ver tu historial de transacciones.</p>
-      <div class="login-buttons">
-        <button mat-raised-button color="primary" routerLink="/login">Iniciar Sesión</button>
-        <button mat-raised-button routerLink="/registro">Registrarse</button>
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="bi bi-shield-lock display-1 text-muted mb-3"></i>
+      <h3 class="text-muted">Acceso restringido</h3>
+      <p class="mb-4">Debes iniciar sesión para ver tu historial de transacciones</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a routerLink="/login" class="btn btn-primary">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+        </a>
+        <a routerLink="/registro" class="btn btn-outline-secondary">
+          <i class="bi bi-person-plus me-2"></i>Registrarse
+        </a>
       </div>
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </div>
 </div>

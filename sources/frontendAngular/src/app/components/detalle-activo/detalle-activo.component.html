@@ -72,21 +72,6 @@
         </div>
       </mat-card>
 
-      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-        <div class="stat-content">
-          <div class="stat-icon rendimiento-icon" [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
-            <i class="bi" [ngClass]="getIconoTendencia(activoPortafolio.rendimientoPorcentaje)"></i>
-          </div>
-          <div class="stat-info">
-            <h3>Rendimiento</h3>
-            <p [ngClass]="getTendenciaClass(activoPortafolio.rendimientoPorcentaje)">
-              {{ activoPortafolio.rendimiento | currency:'EUR':'symbol':'1.2-2' }} 
-              ({{ activoPortafolio.rendimientoPorcentaje | number:'1.2-2' }}%)
-            </p>
-          </div>
-        </div>
-      </mat-card>
-
       <mat-card class="stat-card">
         <div class="stat-content">
           <div class="stat-icon saldo-icon">

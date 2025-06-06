@@ -30,13 +30,30 @@
       
       <form [formGroup]="alertaForm" (ngSubmit)="crearAlerta()" class="alerta-form">
         <div class="form-row">
+          <!-- Selector de portafolio (nuevo) -->
+          <div class="form-group">
+            <label class="form-label">
+              <i class="bi bi-briefcase"></i>
+              Portafolio
+            </label>
+            <select class="form-control" formControlName="portafolioId" [class.is-invalid]="alertaForm.get('portafolioId')?.touched && alertaForm.get('portafolioId')?.errors">
+              <option value="">Seleccionar portafolio...</option>
+              <option *ngFor="let portafolio of portafolios" [value]="portafolio.id">
+                {{ portafolio.nombre }}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="alertaForm.get('portafolioId')?.touched && alertaForm.get('portafolioId')?.errors">
+              Selecciona un portafolio
+            </div>
+          </div>
+
           <!-- Selector de activo -->
           <div class="form-group">
             <label class="form-label">
               <i class="bi bi-graph-up"></i>
               Activo
             </label>
-            <select class="form-control" formControlName="activoId" [class.is-invalid]="alertaForm.get('activoId')?.touched && alertaForm.get('activoId')?.errors">
+            <select class="form-control" formControlName="activoId" [class.is-invalid]="alertaForm.get('activoId')?.touched && alertaForm.get('activoId')?.errors" [disabled]="!alertaForm.get('portafolioId')?.value">
               <option value="">Seleccionar activo...</option>
               <option *ngFor="let activo of activosFiltrados" [value]="activo.id">
                 {{ activo.simbolo }} - {{ activo.nombre }}
@@ -49,7 +66,9 @@
               Precio actual: <strong>${{ activoSeleccionado.ultimo_precio | number:'1.2-2' }}</strong>
             </div>
           </div>
+        </div>
 
+        <div class="form-row">
           <!-- Condición -->
           <div class="form-group">
             <label class="form-label">
@@ -96,13 +115,24 @@
               [class.is-invalid]="alertaForm.get('cantidadVenta')?.touched && alertaForm.get('cantidadVenta')?.errors"
               step="1"
               min="1"
+              [max]="cantidadDisponibleEnPortafolio > 0 ? cantidadDisponibleEnPortafolio : null"
+              [disabled]="!alertaForm.get('activoId')?.value || !alertaForm.get('portafolioId')?.value"
               placeholder="Ingresa la cantidad a vender">
+            <div class="form-hint" *ngIf="cantidadDisponibleEnPortafolio > 0">
+              Tienes <strong>{{ cantidadDisponibleEnPortafolio }}</strong> unidades disponibles en este portafolio
+            </div>
+            <div class="form-hint text-warning" *ngIf="alertaForm.get('activoId')?.value && alertaForm.get('portafolioId')?.value && cantidadDisponibleEnPortafolio === 0">
+              ⚠️ No tienes este activo en el portafolio seleccionado
+            </div>
             <div class="invalid-feedback" *ngIf="alertaForm.get('cantidadVenta')?.touched && alertaForm.get('cantidadVenta')?.errors">
               <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('required')">
                 La cantidad a vender es obligatoria
               </div>
               <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('min')">
                 La cantidad debe ser mayor a 0
+              </div>
+              <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('max')">
+                No puedes vender más de {{ cantidadDisponibleEnPortafolio }} unidades
               </div>
             </div>
           </div>
@@ -221,6 +251,10 @@
           <div class="cantidad-section">
             <i class="bi bi-box-seam"></i>
             <span>Vender {{ alerta.cantidadVenta }} unidades automáticamente</span>
+            <div class="portafolio-info" *ngIf="alerta.nombrePortafolio">
+              <i class="bi bi-briefcase"></i>
+              <small>desde {{ alerta.nombrePortafolio }}</small>
+            </div>
           </div>
 
           <!-- Barra de progreso -->

@@ -234,6 +234,9 @@ exports.crearTransaccion = async (req, res) => {
         precio: precioEnTransaccion,
         fecha: new Date()
       }, { transaction });
+
+      // Registrar el precio actual en el historial
+      await historialService.registrarPrecio(activoId, precioEnTransaccion);
       
       // NO llamar a actualizarPortafolio ya que ya manejamos PortafolioActivo arriba
       // await portafolioController.actualizarPortafolio(usuarioId, activoId, cantidadParaPortafolio, transaction, portafolioSeleccionado);
@@ -413,5 +416,124 @@ exports.obtenerTransaccionPorId = async (req, res) => {
             error: 'Error al obtener la transacción',
             details: error.message 
         });
+    }
+};
+
+// Nuevo método para ejecutar ventas automáticas desde alertas
+exports.ejecutarVentaAutomatica = async (usuarioId, activoId, cantidadVenta, precioVenta, portafolioId = null) => {
+    const { sequelize, Transaccion, PortafolioActivo, Portafolio, Activo } = require('../models/index');
+    const transaction = await sequelize.transaction();
+
+    try {
+        console.log(`🤖 Ejecutando venta automática: Usuario ${usuarioId}, Activo ${activoId}, Cantidad ${cantidadVenta}, Precio ${precioVenta}`);
+
+        // Obtener información del activo
+        const activo = await Activo.findByPk(activoId);
+        if (!activo) {
+            throw new Error(`Activo con ID ${activoId} no encontrado`);
+        }
+
+        let portafoliosAVender = [];
+        
+        if (portafolioId) {
+            // Verificar si el portafolio específico tiene el activo
+            const portafolio = await Portafolio.findOne({
+                where: { id: portafolioId, usuario_id: usuarioId },
+                transaction
+            });
+            
+            if (!portafolio) {
+                throw new Error(`Portafolio con ID ${portafolioId} no encontrado para el usuario`);
+            }
+            
+            portafoliosAVender.push(portafolio);
+        } else {
+            // Obtener todos los portafolios del usuario
+            portafoliosAVender = await Portafolio.findAll({
+                where: { usuario_id: usuarioId },
+                transaction
+            });
+        }
+
+        let cantidadRestante = parseInt(cantidadVenta);
+        let cantidadVendidaTotal = 0;
+        let valorTotalVenta = 0;
+
+        // Recorrer portafolios y vender desde cada uno
+        for (const portafolio of portafoliosAVender) {
+            if (cantidadRestante <= 0) break;
+
+            const posicionActivo = await PortafolioActivo.findOne({
+                where: {
+                    portafolio_id: portafolio.id,
+                    activo_id: activoId
+                },
+                transaction
+            });
+
+            if (!posicionActivo || posicionActivo.cantidad <= 0) {
+                continue;
+            }
+
+            const cantidadDisponible = parseInt(posicionActivo.cantidad);
+            const cantidadAVender = Math.min(cantidadRestante, cantidadDisponible);
+            const valorVenta = cantidadAVender * precioVenta;
+
+            // Actualizar la posición del activo
+            const nuevaCantidad = cantidadDisponible - cantidadAVender;
+            
+            if (nuevaCantidad > 0) {
+                await posicionActivo.update({
+                    cantidad: nuevaCantidad
+                }, { transaction });
+            } else {
+                await posicionActivo.destroy({ transaction });
+            }
+
+            // Actualizar el saldo del portafolio
+            await portafolio.update({
+                saldo: parseFloat(portafolio.saldo) + valorVenta
+            }, { transaction });
+
+            // Crear registro de transacción
+            await Transaccion.create({
+                usuario_id: usuarioId,
+                activo_id: activoId,
+                tipo: 'venta',
+                cantidad: cantidadAVender,
+                precio: precioVenta,
+                fecha: new Date(),
+                portafolio_id: portafolio.id
+            }, { transaction });
+
+            cantidadVendidaTotal += cantidadAVender;
+            valorTotalVenta += valorVenta;
+            cantidadRestante -= cantidadAVender;
+
+            console.log(`✅ Vendidos ${cantidadAVender} de ${activo.simbolo} del portafolio ${portafolio.nombre} por $${valorVenta.toFixed(2)}`);
+        }
+
+        if (cantidadVendidaTotal === 0) {
+            await transaction.rollback();
+            throw new Error('No se encontraron activos suficientes para vender en ningún portafolio');
+        }
+
+        if (cantidadVendidaTotal < cantidadVenta) {
+            console.warn(`⚠️ Solo se pudieron vender ${cantidadVendidaTotal} de ${cantidadVenta} unidades solicitadas`);
+        }
+
+        await transaction.commit();
+
+        return {
+            cantidadVendida: cantidadVendidaTotal,
+            valorTotal: valorTotalVenta,
+            cantidadSolicitada: cantidadVenta,
+            vendidoCompleto: cantidadVendidaTotal === cantidadVenta
+        };
+
+    } catch (error) {
+        await transaction.rollback();
+        console.error('Error en venta automática:', error);
+        throw error;
     }
 };

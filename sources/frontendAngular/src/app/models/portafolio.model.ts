@@ -11,12 +11,25 @@ export interface ActivoEnPortafolio {
 }
 
 export interface Portafolio {
-  id?: number; // Identificador único del portafolio
-  nombre: string; // Nombre del portafolio
+  id: number;
+  nombre: string;
   usuarioId: number;
-  activos: ActivoEnPortafolio[];
-  valorTotal: number; // Suma del valor de todos los activos
-  rendimientoTotal: number; // Suma de los rendimientos
-  saldo: number; // Balance disponible en el portafolio
-  fechaCreacion?: Date; // Fecha de creación del portafolio
+  saldo: number;
+  activos?: ActivoPortafolio[];
+  fechaCreacion?: Date;
+  fechaActualizacion?: Date;
+  valorTotal?: number;
+  rendimientoTotal?: number;
+}
+
+export interface ActivoPortafolio {
+  activoId: number;
+  simbolo: string;
+  nombre: string;
+  cantidad: number;
+  precioCompra: number;
+  precioActual: number;
+  valorTotal: number;
+  rendimiento: number;
+  rendimientoPorcentaje: number;
 }

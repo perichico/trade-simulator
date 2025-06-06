@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import * as bootstrap from 'bootstrap';
 import { Observable, Subscription, interval } from 'rxjs';
-import { startWith, switchMap } from 'rxjs/operators';
+import { startWith, switchMap, tap } from 'rxjs/operators';
 import { Usuario } from '../../models/usuario.model';
 import { Portafolio } from '../../models/portafolio.model';
 import { Activo } from '../../models/activo.model';
@@ -153,12 +153,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     // Actualizar el portafolio seleccionado
     this.portafolio$ = interval(10000).pipe(
       startWith(0),
-      switchMap(() => this.portafolioService.obtenerPortafolioPorId(portafolioId))
+      switchMap(() => this.portafolioService.obtenerPortafolioPorId(portafolioId)),
+      tap(portafolio => {
+        console.log('Portafolio recibido en componente:', portafolio);
+      })
     );
     
     // Suscribirse al portafolio actual
     this.actualizacionSubscription = this.portafolioService.seleccionarPortafolio(portafolioId).subscribe(portafolio => {
       this.portafolioSeleccionado = portafolio;
+      console.log('Portafolio seleccionado actualizado:', portafolio);
       
       // Actualizar el historial de patrimonio al cambiar de portafolio
       if (this.usuario) {

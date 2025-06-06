@@ -356,12 +356,17 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
       return;
     }
     
+    // Obtener cantidad disponible del activo
+    const activoEnPortafolio = this.getActivoEnPortafolio();
+    const cantidadDisponible = activoEnPortafolio?.cantidad || 0;
+    
     // Navegar al componente de alertas con parámetros
     this.router.navigate(['/alertas'], {
       queryParams: {
         activoId: this.activo.id,
         simbolo: this.activo.simbolo,
-        precioActual: this.activo.ultimo_precio || this.activo.precio
+        precioActual: this.activo.ultimo_precio || this.activo.precio,
+        cantidadDisponible: cantidadDisponible
       }
     });
   }

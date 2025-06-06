@@ -9,6 +9,7 @@ import { Activo } from '../../models/activo.model';
 import { AlertaService } from '../../services/alerta.service';
 import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
+import { PortafolioService } from '../../services/portafolio.service';
 
 @Component({
   selector: 'app-alertas',
@@ -21,9 +22,11 @@ export class AlertasComponent implements OnInit, OnDestroy {
   // Estados del componente
   alertas: Alerta[] = [];
   activos: Activo[] = [];
+  portafolios: any[] = []; // Nuevo: lista de portafolios
   activosFiltrados: Activo[] = [];
   cargandoAlertas = false;
   cargandoActivos = false;
+  cargandoPortafolios = false;
   
   // Formulario
   alertaForm: FormGroup;
@@ -35,19 +38,20 @@ export class AlertasComponent implements OnInit, OnDestroy {
   // Pre-población desde query params
   activoPreseleccionado: number | null = null;
   precioActualPreseleccionado: number | null = null;
-
   constructor(
     private fb: FormBuilder,
     private alertaService: AlertaService,
     private activoService: ActivoService,
     private authService: AuthService,
+    private portafolioService: PortafolioService,
     private route: ActivatedRoute,
     private router: Router
   ) {
     this.alertaForm = this.fb.group({
       activoId: ['', Validators.required],
+      portafolioId: ['', Validators.required], // Nuevo campo obligatorio
       precioObjetivo: ['', [Validators.required, Validators.min(0.01)]],
-      cantidadVenta: ['', [Validators.required, Validators.min(1)]], // Ahora es obligatorio
+      cantidadVenta: ['', [Validators.required, Validators.min(1)]],
       condicion: ['mayor', Validators.required]
     });
   }
@@ -55,7 +59,10 @@ export class AlertasComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.verificarAutenticacion();
     this.procesarQueryParams();
-    this.cargarActivos().then(() => {
+    Promise.all([
+      this.cargarActivos(),
+      this.cargarPortafolios()
+    ]).then(() => {
       this.cargarAlertas();
     });
     this.suscribirCambiosFormulario();
@@ -92,6 +99,13 @@ export class AlertasComponent implements OnInit, OnDestroy {
   }
 
   private suscribirCambiosFormulario(): void {
+    // Reaccionar a cambios en el portafolio seleccionado
+    this.alertaForm.get('portafolioId')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.alertaForm.patchValue({ cantidadVenta: '' });
+      });
+
     this.alertaForm.get('activoId')?.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(activoId => {
@@ -103,7 +117,19 @@ export class AlertasComponent implements OnInit, OnDestroy {
             });
           }
         }
+        // Resetear cantidad cuando cambie el activo
+        if (!this.route.snapshot.queryParams['cantidadDisponible']) {
+          this.alertaForm.patchValue({ cantidadVenta: '' });
+        }
       });
+  }
+
+  get cantidadDisponible(): number {
+    return +(this.route.snapshot.queryParams['cantidadDisponible'] || 0);
+  }
+
+  get mostrarCantidadDisponible(): boolean {
+    return this.cantidadDisponible > 0 && this.activoPreseleccionado !== null;
   }
 
   cargarActivos(): Promise<void> {
@@ -126,6 +152,34 @@ export class AlertasComponent implements OnInit, OnDestroy {
             console.error('Error al cargar activos:', error);
             this.cargandoActivos = false;
             this.mostrarNotificacion('Error al cargar los activos disponibles', 'error');
+            reject(error);
+          }
+        });
+    });
+  }
+
+  cargarPortafolios(): Promise<void> {
+    this.cargandoPortafolios = true;
+    return new Promise((resolve, reject) => {
+      const usuario = this.authService.obtenerUsuario();
+      if (!usuario) {
+        this.cargandoPortafolios = false;
+        reject(new Error('Usuario no autenticado'));
+        return;
+      }
+
+      this.portafolioService.obtenerPortafolios(usuario.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (portafolios) => {
+            this.portafolios = portafolios;
+            this.cargandoPortafolios = false;
+            resolve();
+          },
+          error: (error) => {
+            console.error('Error al cargar portafolios:', error);
+            this.cargandoPortafolios = false;
+            this.mostrarNotificacion('Error al cargar los portafolios', 'error');
             reject(error);
           }
         });
@@ -161,14 +215,29 @@ export class AlertasComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Obtener cantidad disponible del activo en el portafolio seleccionado
+  get cantidadDisponibleEnPortafolio(): number {
+    const portafolioId = this.alertaForm.get('portafolioId')?.value;
+    const activoId = this.alertaForm.get('activoId')?.value;
+    
+    if (!portafolioId || !activoId) return 0;
+    
+    const portafolio = this.portafolios.find(p => p.id === +portafolioId);
+    if (!portafolio || !portafolio.activos) return 0;
+    
+    const activo = portafolio.activos.find((a: any) => a.activoId === +activoId);
+    return activo ? activo.cantidad : 0;
+  }
+
   crearAlerta(): void {
     if (this.alertaForm.valid) {
       const formData = this.alertaForm.value;
       const nuevaAlerta: Alerta = {
         usuarioId: 0, // Se asigna en el backend
+        portafolioId: +formData.portafolioId, // Nuevo campo
         activoId: +formData.activoId,
         precioObjetivo: +formData.precioObjetivo,
-        cantidadVenta: +formData.cantidadVenta, // Ahora siempre presente
+        cantidadVenta: +formData.cantidadVenta,
         condicion: formData.condicion,
         activa: true
       };
@@ -176,10 +245,17 @@ export class AlertasComponent implements OnInit, OnDestroy {
       this.alertaService.crearAlerta(nuevaAlerta)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: () => {
-            this.mostrarNotificacion('Alerta creada exitosamente. Se venderán ' + nuevaAlerta.cantidadVenta + ' unidades cuando se alcance el precio objetivo.', 'success');
+          next: (response: any) => {
+            let mensaje = 'Alerta creada exitosamente.';
+            if (response.venta_ejecutada) {
+              mensaje += ` Se ejecutó una venta automática de ${nuevaAlerta.cantidadVenta} unidades por haberse cumplido la condición inmediatamente.`;
+            } else {
+              mensaje += ` Se venderán ${nuevaAlerta.cantidadVenta} unidades cuando se alcance el precio objetivo.`;
+            }
+            this.mostrarNotificacion(mensaje, 'success');
             this.resetearFormulario();
             this.cargarAlertas();
+            this.cargarPortafolios(); // Actualizar portafolios por si cambió el saldo
           },
           error: (error) => {
             this.mostrarNotificacion(error.message || 'Error al crear la alerta', 'error');

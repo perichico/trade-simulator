@@ -1,40 +1,36 @@
 const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
-    return sequelize.define("alerta", {
-        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    const Alerta = sequelize.define('Alerta', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true
+        },
         usuarioId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            field: 'usuario_id',
-            references: {
-                model: "usuarios",
-                key: "id"
-            },
-            onDelete: 'CASCADE'
+            field: 'usuario_id'
+        },
+        portafolioId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            field: 'portafolio_id'
         },
         activoId: {
             type: DataTypes.INTEGER,
             allowNull: false,
-            field: 'activo_id',
-            references: {
-                model: "activos",
-                key: "id"
-            },
-            onDelete: 'CASCADE'
+            field: 'activo_id'
         },
-        precioObjetivo: { 
-            type: DataTypes.DECIMAL(10, 2), 
+        precioObjetivo: {
+            type: DataTypes.DECIMAL(10, 2),
             allowNull: false,
             field: 'precio_objetivo'
         },
         cantidadVenta: {
             type: DataTypes.INTEGER,
-            allowNull: false, // Ahora es obligatorio
-            field: 'cantidad_venta',
-            validate: {
-                min: 1 // Debe ser al menos 1
-            }
+            allowNull: false,
+            field: 'cantidad_venta'
         },
         condicion: {
             type: DataTypes.ENUM('mayor', 'menor'),
@@ -51,18 +47,36 @@ module.exports = (sequelize) => {
             allowNull: false,
             defaultValue: true
         },
-        fechaCreacion: { 
-            type: DataTypes.DATE, 
-            allowNull: false,
-            field: 'fecha_creacion',
-            defaultValue: DataTypes.NOW
-        },
-        fechaDisparo: { 
+        fechaCreacion: {
             type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+            field: 'fecha_creacion'
+        },
+        fechaDisparo: {
+            type: DataTypes.DATE,
+            allowNull: true,
             field: 'fecha_disparo'
         }
     }, {
-        tableName: "alertas",
+        tableName: 'alertas',
         timestamps: false
     });
+
+    Alerta.associate = function(models) {
+        Alerta.belongsTo(models.Usuario, {
+            foreignKey: 'usuarioId',
+            as: 'usuario'
+        });
+        Alerta.belongsTo(models.Portafolio, {
+            foreignKey: 'portafolioId',
+            as: 'portafolio'
+        });
+        Alerta.belongsTo(models.Activo, {
+            foreignKey: 'activoId',
+            as: 'activo'
+        });
+    };
+
+    return Alerta;
 };

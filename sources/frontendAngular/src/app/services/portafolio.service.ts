@@ -36,7 +36,6 @@ export class PortafolioService {
         // Asegurarse de que cada portafolio tenga los campos necesarios
         return portafolios.map(portafolio => ({
           ...portafolio,
-          activos: portafolio.activos || [],
           valorTotal: portafolio.valorTotal || 0,
           rendimientoTotal: portafolio.rendimientoTotal || 0
         }));
@@ -99,34 +98,49 @@ export class PortafolioService {
   obtenerPortafolioPorId(portafolioId: number): Observable<Portafolio> {
     return this.http.get<any>(`${this.apiUrl}/${portafolioId}`).pipe(
       map(response => {
+        console.log('Respuesta del backend para portafolio:', response);
+        
+        // Verificar si la respuesta tiene activos
+        if (!response.activos || !Array.isArray(response.activos)) {
+          console.warn('No se encontraron activos en la respuesta o no es un array');
+          response.activos = [];
+        }
+        
         // Transformar la respuesta del backend al formato que espera el frontend
         const activos: ActivoEnPortafolio[] = response.activos
           .filter((activo: any) => {
-            // Filtrar activos sin ID o símbolo
-            if (!activo || !activo.id) {
-              console.warn('Activo sin ID detectado en el portafolio');
+            // Filtrar activos sin ID
+            if (!activo || (!activo.id && !activo.activoId && !activo.activo_id)) {
+              console.warn('Activo sin ID detectado en el portafolio:', activo);
               return false;
-            }
-            if (!activo.simbolo) {
-              console.warn(`Activo con ID ${activo.id} no tiene símbolo`);
-              // Permitimos activos sin símbolo pero con advertencia
             }
             return true;
           })
           .map((activo: any) => {
+            console.log('Procesando activo:', activo);
+            
+            // Intentar diferentes nombres de propiedades que puede usar el backend
+            const id = activo.id || activo.activoId || activo.activo_id || 0;
+            const nombre = activo.nombre || activo.name || 'Activo sin nombre';
+            const simbolo = activo.simbolo || activo.symbol || activo.ticker || 'N/A';
+            const cantidad = activo.cantidad || activo.quantity || activo.shares || 0;
+            const precioCompra = activo.precioCompra || activo.precio_compra || activo.purchase_price || 0;
+            const precioActual = activo.precioActual || activo.precio_actual || activo.current_price || activo.ultimo_precio || 0;
+            const valorTotal = activo.valorTotal || activo.valor_total || activo.total_value || (cantidad * precioActual);
+            
             // Calcular el rendimiento para cada activo
-            const rendimiento = (activo.precioActual - activo.precioCompra) * activo.cantidad;
-            const rendimientoPorcentaje = activo.precioCompra > 0 ? 
-              ((activo.precioActual - activo.precioCompra) / activo.precioCompra) * 100 : 0;
+            const rendimiento = (precioActual - precioCompra) * cantidad;
+            const rendimientoPorcentaje = precioCompra > 0 ? 
+              ((precioActual - precioCompra) / precioCompra) * 100 : 0;
               
             return {
-              activoId: activo.id,
-              nombre: activo.nombre || 'Activo sin nombre',
-              simbolo: activo.simbolo || 'N/A',
-              cantidad: activo.cantidad,
-              precioCompra: activo.precioCompra,
-              precioActual: activo.precioActual,
-              valorTotal: activo.valorTotal,
+              activoId: id,
+              nombre: nombre,
+              simbolo: simbolo,
+              cantidad: cantidad,
+              precioCompra: precioCompra,
+              precioActual: precioActual,
+              valorTotal: valorTotal,
               rendimiento: rendimiento,
               rendimientoPorcentaje: rendimientoPorcentaje
             };
@@ -135,17 +149,19 @@ export class PortafolioService {
         // Calcular rendimiento total sumando los rendimientos individuales
         const rendimientoTotal = activos.reduce((total, activo) => total + activo.rendimiento, 0);
         
-        return {
+        const portafolio = {
           id: response.id,
           nombre: response.nombre || 'Portafolio sin nombre',
-          usuarioId: response.usuarioId,
+          usuarioId: response.usuarioId || response.usuario_id || 0,
           activos,
-          valorTotal: response.valorTotal || 0,
+          valorTotal: response.valorTotal || response.valor_total || 0,
           rendimientoTotal,
           fechaCreacion: response.fechaCreacion ? new Date(response.fechaCreacion) : new Date(),
-          saldo: response.saldo || 0,
-
+          saldo: response.saldo || response.balance || 0,
         };
+        
+        console.log('Portafolio procesado:', portafolio);
+        return portafolio;
       }),
       catchError(error => {
         console.error('Error al obtener portafolio', error);
@@ -158,7 +174,6 @@ export class PortafolioService {
           rendimientoTotal: 0,
           fechaCreacion: new Date(),
           saldo: 0,
-
         });
       })
     );
@@ -263,9 +278,9 @@ export class PortafolioService {
     return portafolio.activos.reduce((total, activo) => {
       // Validar que el activo tenga un rendimiento válido
       if (!activo || typeof activo.rendimiento !== 'number') {
-        console.warn('Activo con rendimiento inválido detectado:', activo);
         return total;
       }
+      
       return total + activo.rendimiento;
     }, 0);
   }
@@ -290,7 +305,7 @@ export class PortafolioService {
     
     if (inversionTotal === 0) return 0;
     
-    return (portafolio.rendimientoTotal / inversionTotal) * 100;
+    return ((portafolio.rendimientoTotal || 0) / inversionTotal) * 100;
   }
 
   // Eliminar un portafolio y sus activos asociados

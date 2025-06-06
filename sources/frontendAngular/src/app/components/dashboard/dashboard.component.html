@@ -88,29 +88,17 @@
         <div class="card-body text-center">
           <i class="bi bi-graph-up-arrow display-4 text-success mb-3"></i>
           <h5 class="card-title">Valor del Portafolio</h5>
-          <h3 class="card-text">{{ formatearDinero(portafolio.valorTotal) }}</h3>
+          <h3 class="card-text">{{ formatearDinero(0) }}</h3>
         </div>
       </div>
     </div>
 
     <div class="col-12 col-md-4">
-      <div class="card h-100" [ngClass]="{
-        'border-success border-opacity-25': portafolio.rendimientoTotal > 0,
-        'border-danger border-opacity-25': portafolio.rendimientoTotal < 0,
-        'border-secondary border-opacity-25': portafolio.rendimientoTotal === 0
-      }">
+      <div class="card h-100 border-secondary border-opacity-25">
         <div class="card-body text-center">
-          <i class="bi" [ngClass]="{
-            'bi-graph-up-arrow text-success': portafolio.rendimientoTotal > 0,
-            'bi-graph-down-arrow text-danger': portafolio.rendimientoTotal < 0,
-            'bi-dash-circle text-secondary': portafolio.rendimientoTotal === 0
-          }" class="display-4 mb-3"></i>
+          <i class="bi bi-dash-circle text-secondary display-4 mb-3"></i>
           <h5 class="card-title">Rendimiento</h5>
-          <h3 class="card-text" [ngClass]="{
-            'text-success': portafolio.rendimientoTotal > 0,
-            'text-danger': portafolio.rendimientoTotal < 0,
-            'text-secondary': portafolio.rendimientoTotal === 0
-          }">{{ formatearDinero(portafolio.rendimientoTotal) }}</h3>
+          <h3 class="card-text text-secondary">{{ formatearDinero(0) }}</h3>
         </div>
       </div>
     </div>
@@ -126,7 +114,7 @@
           </h5>
         </div>
         <div class="card-body">
-          <div class="table-responsive" *ngIf="portafolio.activos.length > 0">
+          <div class="table-responsive" *ngIf="portafolio.activos && portafolio.activos.length > 0">
             <table class="table table-hover align-middle portfolio-table">
               <thead class="table-light">
                 <tr>
@@ -147,17 +135,17 @@
                       <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
                     </div>
                   </td>
-                  <td>{{activo.cantidad}}</td>
-                  <td>{{formatearDinero(activo.precioCompra)}}</td>
-                  <td>{{formatearDinero(activo.precioActual)}}</td>
-                  <td>{{formatearDinero(activo.valorTotal)}}</td>
+                  <td>{{activo.cantidad || 0}}</td>
+                  <td>{{formatearDinero(activo.precioCompra || 0)}}</td>
+                  <td>{{formatearDinero(activo.precioActual || 0)}}</td>
+                  <td>{{formatearDinero(activo.valorTotal || 0)}}</td>
                   <td>
                     <span class="badge" [ngClass]="{
-                      'bg-success': activo.rendimiento > 0,
-                      'bg-danger': activo.rendimiento < 0,
-                      'bg-secondary': activo.rendimiento === 0
+                      'bg-success': (activo.rendimiento || 0) > 0,
+                      'bg-danger': (activo.rendimiento || 0) < 0,
+                      'bg-secondary': (activo.rendimiento || 0) === 0
                     }">
-                      {{formatearDinero(activo.rendimiento)}} ({{activo.rendimientoPorcentaje | number:'1.2-2'}}%)
+                      {{formatearDinero(activo.rendimiento || 0)}} ({{(activo.rendimientoPorcentaje || 0) | number:'1.2-2'}}%)
                     </span>
                   </td>
                   <td>
@@ -175,9 +163,10 @@
             </table>
           </div>
 
-          <div class="text-center py-5" *ngIf="portafolio.activos.length === 0">
+          <div class="text-center py-5" *ngIf="!portafolio.activos || portafolio.activos.length === 0">
             <i class="bi bi-wallet2 display-1 text-muted mb-3"></i>
             <h5 class="text-muted">No tienes activos en tu portafolio</h5>
+            <p class="text-muted">Para comenzar a invertir, ve al mercado y compra algunos activos</p>
             <a routerLink="/mercado" class="btn btn-primary mt-3">
               <i class="bi bi-cart me-2"></i>Ir al Mercado
             </a>

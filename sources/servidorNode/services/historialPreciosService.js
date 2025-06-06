@@ -71,14 +71,26 @@ class HistorialPreciosService {
 
     async registrarPrecio(activoId, precio) {
         try {
-            // Verificar si existe un registro en los últimos 5 minutos
-            const cincoMinutosAtras = new Date(Date.now() - 5 * 60 * 1000);
+            // Verificar si hay alertas activas para este activo
+            const { Alerta } = require('../models/index');
+            const alertasActivas = await Alerta.findAll({
+                where: { 
+                    activo_id: activoId,
+                    estado: 'activa',
+                    activa: true
+                }
+            });
+
+            // Si hay alertas activas, registrar más frecuentemente (cada minuto)
+            // Si no hay alertas, usar el intervalo normal (5 minutos)
+            const intervaloMinutos = alertasActivas.length > 0 ? 1 : 5;
+            const intervaloAtras = new Date(Date.now() - intervaloMinutos * 60 * 1000);
             
             const registroReciente = await HistorialPrecios.findOne({
                 where: {
                     activo_id: activoId,
                     fecha: {
-                        [Op.gte]: cincoMinutosAtras
+                        [Op.gte]: intervaloAtras
                     }
                 },
                 order: [['fecha', 'DESC']]
@@ -91,6 +103,8 @@ class HistorialPreciosService {
                     precio: precio,
                     fecha: new Date()
                 });
+                
+                console.log(`Precio registrado para activo ${activoId}: $${precio} (${alertasActivas.length} alertas activas)`);
             }
         } catch (error) {
             console.error('Error al registrar precio en historial:', error);

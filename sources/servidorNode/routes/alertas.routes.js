@@ -27,20 +27,21 @@ router.get('/', async (req, res) => {
 // Crear una nueva alerta
 router.post('/', async (req, res) => {
   try {
-    const userId = req.session?.usuario?.id || req.usuario?.id; // Manejar ambos casos
-    const { activoId, precioObjetivo, cantidadVenta, condicion } = req.body;
+    const userId = req.usuario.id;
+    const { activoId, precioObjetivo, cantidadVenta, condicion, portafolioId } = req.body;
     
     console.log('Datos recibidos para crear alerta:', {
       usuarioId: userId,
       activoId,
       precioObjetivo,
       cantidadVenta,
-      condicion
+      condicion,
+      portafolioId
     });
     
-    if (!activoId || !precioObjetivo || !cantidadVenta) {
+    if (!activoId || !precioObjetivo || !cantidadVenta || !portafolioId) {
       return res.status(400).json({ 
-        error: 'Activo, precio objetivo y cantidad a vender son obligatorios' 
+        error: 'Activo, precio objetivo, cantidad a vender y portafolio son obligatorios' 
       });
     }
     
@@ -49,9 +50,38 @@ router.post('/', async (req, res) => {
         error: 'La cantidad a vender debe ser mayor a 0' 
       });
     }
+
+    // Verificar que el portafolio pertenezca al usuario
+    const { PortafolioActivo, Portafolio } = require('../models');
+    const portafolio = await Portafolio.findOne({
+      where: { id: portafolioId, usuario_id: userId }
+    });
+
+    if (!portafolio) {
+      return res.status(400).json({
+        error: 'El portafolio especificado no te pertenece'
+      });
+    }
+
+    // Verificar activos en el portafolio específico
+    const posicion = await PortafolioActivo.findOne({
+      where: {
+        portafolio_id: portafolioId,
+        activo_id: activoId
+      }
+    });
+
+    const cantidadDisponible = posicion ? parseFloat(posicion.cantidad) : 0;
+
+    if (cantidadDisponible < cantidadVenta) {
+      return res.status(400).json({
+        error: `No tienes suficientes activos en este portafolio. Tienes ${cantidadDisponible} unidades, necesitas ${cantidadVenta}.`
+      });
+    }
     
     const alerta = await Alerta.create({
       usuarioId: userId,
+      portafolioId,
       activoId,
       precioObjetivo,
       cantidadVenta,

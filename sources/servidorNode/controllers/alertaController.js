@@ -39,13 +39,13 @@ exports.crearAlerta = async (req, res) => {
             });
         }
 
-        const { activo_id, precio_objetivo, condicion, cantidad_venta } = req.body;
+        const { activo_id, precio_objetivo, condicion, cantidad_venta, portafolio_id } = req.body;
         const usuario_id = req.session.usuario.id;
 
         // Validación más estricta de datos requeridos
-        if (!activo_id || !precio_objetivo || !condicion || !cantidad_venta) {
+        if (!activo_id || !precio_objetivo || !condicion || !cantidad_venta || !portafolio_id) {
             return res.status(400).json({ 
-                error: 'Todos los campos son requeridos: activo, precio objetivo, condición y cantidad a vender' 
+                error: 'Todos los campos son requeridos: activo, precio objetivo, condición, cantidad a vender y portafolio' 
             });
         }
 
@@ -61,8 +61,42 @@ exports.crearAlerta = async (req, res) => {
             });
         }
 
+        // Verificar que el portafolio pertenezca al usuario
+        const { Portafolio, PortafolioActivo } = require('../models/index');
+        const portafolio = await Portafolio.findOne({
+            where: { id: portafolio_id, usuario_id: usuario_id }
+        });
+
+        if (!portafolio) {
+            return res.status(400).json({
+                error: 'El portafolio especificado no te pertenece'
+            });
+        }
+
+        // Verificar que el usuario tenga suficientes activos en el portafolio específico
+        const posicion = await PortafolioActivo.findOne({
+            where: {
+                portafolio_id: portafolio_id,
+                activo_id: activo_id
+            }
+        });
+
+        const cantidadDisponible = posicion ? parseFloat(posicion.cantidad) : 0;
+
+        if (cantidadDisponible < cantidad_venta) {
+            return res.status(400).json({
+                error: `No tienes suficientes activos en este portafolio. Tienes ${cantidadDisponible} unidades, necesitas ${cantidad_venta}.`
+            });
+        }
+
+        // Obtener precio actual para verificar si la alerta ya se cumple
+        const HistorialPreciosService = require('../services/historialPreciosService');
+        const historialService = new HistorialPreciosService();
+        const precioActual = await historialService.obtenerUltimoPrecio(activo_id);
+
         const alerta = await Alerta.create({
             usuario_id,
+            portafolio_id,
             activo_id,
             precio_objetivo,
             condicion,
@@ -71,7 +105,59 @@ exports.crearAlerta = async (req, res) => {
             fecha_creacion: new Date()
         });
 
-        res.status(201).json(alerta);
+        // Verificar si la alerta ya se cumple al momento de crearla
+        if (precioActual) {
+            const condicionCumplida = condicion === 'mayor' ?
+                precioActual >= precio_objetivo :
+                precioActual <= precio_objetivo;
+
+            if (condicionCumplida) {
+                console.log(`🚨 ALERTA CUMPLIDA AL CREAR: ID ${alerta.id} - Ejecutando venta inmediata`);
+                
+                try {
+                    const resultadoVenta = await transaccionController.ejecutarVentaAutomatica(
+                        usuario_id,
+                        activo_id,
+                        cantidad_venta,
+                        precioActual,
+                        portafolio_id
+                    );
+
+                    // Actualizar estado de la alerta
+                    await alerta.update({
+                        estado: 'disparada',
+                        activa: false,
+                        fecha_disparo: new Date()
+                    });
+
+                    return res.status(201).json({
+                        alerta,
+                        mensaje: 'Alerta creada y ejecutada inmediatamente',
+                        venta_ejecutada: true,
+                        resultado_venta: resultadoVenta
+                    });
+
+                } catch (ventaError) {
+                    console.error(`❌ Error al ejecutar venta inmediata:`, ventaError.message);
+                    
+                    // Cancelar la alerta si no se puede ejecutar
+                    await alerta.update({
+                        estado: 'cancelada',
+                        activa: false
+                    });
+
+                    return res.status(400).json({
+                        error: `Alerta creada pero no se pudo ejecutar la venta: ${ventaError.message}`
+                    });
+                }
+            }
+        }
+
+        res.status(201).json({
+            alerta,
+            mensaje: 'Alerta creada exitosamente',
+            venta_ejecutada: false
+        });
     } catch (error) {
         console.error('Error al crear alerta:', error);
         res.status(500).json({ error: 'Error al crear la alerta' });
@@ -82,60 +168,81 @@ exports.crearAlerta = async (req, res) => {
 exports.verificarAlertas = async () => {
     try {
         const alertasActivas = await Alerta.findAll({
-            where: { estado: 'activa' },
-            include: [Activo, Usuario]
+            where: { 
+                estado: 'activa',
+                activa: true
+            },
+            include: [
+                { model: require('../models/index').Activo, as: 'activo' },
+                { model: require('../models/index').Usuario, as: 'usuario' },
+                { model: require('../models/index').Portafolio, as: 'portafolio' }
+            ]
         });
 
+        console.log(`Verificando ${alertasActivas.length} alertas activas...`);
         const historialService = new HistorialPreciosService();
 
         for (const alerta of alertasActivas) {
-            const precioActual = await historialService.obtenerUltimoPrecio(alerta.activo_id);
-            
-            if (!precioActual) continue;
+            try {
+                const precioActual = await historialService.obtenerUltimoPrecio(alerta.activo_id);
+                
+                if (!precioActual) {
+                    console.log(`No hay precio disponible para activo ${alerta.activo_id}`);
+                    continue;
+                }
 
-            const condicionCumplida = alerta.condicion === 'mayor' ?
-                precioActual >= alerta.precio_objetivo :
-                precioActual <= alerta.precio_objetivo;
+                const condicionCumplida = alerta.condicion === 'mayor' ?
+                    precioActual >= alerta.precio_objetivo :
+                    precioActual <= alerta.precio_objetivo;
 
-            if (condicionCumplida) {
-                // Ejecutar venta automática con la cantidad especificada en la alerta
-                const ventaAutomatica = {
-                    body: {
-                        activoId: alerta.activo_id,
-                        tipo: 'venta',
-                        cantidad: alerta.cantidad_venta // Usar la cantidad específica de la alerta
-                    },
-                    session: { usuario: { id: alerta.usuario_id } }
-                };
+                console.log(`Alerta ${alerta.id}: Precio actual $${precioActual}, Objetivo $${alerta.precio_objetivo}, Condición: ${alerta.condicion}, Cumplida: ${condicionCumplida}`);
 
-                try {
-                    await transaccionController.crearTransaccion(ventaAutomatica, {
-                        status: () => ({ json: () => {} }),
-                        json: () => {}
-                    });
+                if (condicionCumplida) {
+                    console.log(`🚨 ALERTA DISPARADA: ID ${alerta.id} - Vendiendo ${alerta.cantidad_venta} unidades del activo ${alerta.activo_id} del portafolio ${alerta.portafolio_id}`);
 
-                    // Actualizar estado de la alerta
-                    await alerta.update({
-                        estado: 'disparada',
-                        fecha_disparo: new Date()
-                    });
+                    try {
+                        const resultadoVenta = await transaccionController.ejecutarVentaAutomatica(
+                            alerta.usuario_id,
+                            alerta.activo_id,
+                            alerta.cantidad_venta,
+                            precioActual,
+                            alerta.portafolio_id
+                        );
 
-                    console.log(`Alerta ejecutada: Venta automática de ${alerta.cantidad_venta} unidades del activo ${alerta.activo_id} para usuario ${alerta.usuario_id}`);
-                } catch (error) {
-                    console.error('Error al ejecutar venta automática:', error);
-                    // Podríamos desactivar la alerta si hay errores recurrentes
-                    if (error.message && error.message.includes('suficientes activos')) {
+                        // Actualizar estado de la alerta
                         await alerta.update({
-                            estado: 'cancelada',
-                            activa: false
+                            estado: 'disparada',
+                            activa: false,
+                            fecha_disparo: new Date()
                         });
-                        console.log(`Alerta cancelada automáticamente: Usuario no tiene suficientes activos para vender`);
+
+                        console.log(`✅ Alerta ${alerta.id} ejecutada exitosamente:`);
+                        console.log(`   - Usuario: ${alerta.usuario.nombre}`);
+                        console.log(`   - Portafolio: ${alerta.portafolio.nombre}`);
+                        console.log(`   - Activo: ${alerta.activo.simbolo}`);
+                        console.log(`   - Cantidad vendida: ${resultadoVenta.cantidadVendida}`);
+                        console.log(`   - Valor total: $${resultadoVenta.valorTotal.toFixed(2)}`);
+
+                    } catch (ventaError) {
+                        console.error(`❌ Error al ejecutar venta automática para alerta ${alerta.id}:`, ventaError.message);
+                        
+                        // Si no tiene suficientes activos, cancelar la alerta
+                        if (ventaError.message.includes('suficientes activos') || 
+                            ventaError.message.includes('No se encontraron activos')) {
+                            await alerta.update({
+                                estado: 'cancelada',
+                                activa: false
+                            });
+                            console.log(`⚠️ Alerta ${alerta.id} cancelada automáticamente: ${ventaError.message}`);
+                        }
                     }
                 }
+            } catch (alertaError) {
+                console.error(`Error al procesar alerta ${alerta.id}:`, alertaError);
             }
         }
     } catch (error) {
-        console.error('Error al verificar alertas:', error);
+        console.error('Error general al verificar alertas:', error);
     }
 };
 

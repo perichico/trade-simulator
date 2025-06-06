@@ -69,8 +69,8 @@ export class PatrimonioService {
       // Calculamos valores basados en los actuales con variación
       // Para el día actual (i=0) usamos exactamente los valores actuales
       const factorTiempo = i === 0 ? 1 : (1 - (i * 0.05)); // Reducción gradual hacia el pasado
-      const balance = i === 0 ? balanceActual : balanceActual * factorTiempo * (1 + variacionBalance);
-      const valorPortafolio = i === 0 ? valorPortafolioActual : valorPortafolioActual * factorTiempo * (1 + variacionValor);
+      const balance = i === 0 ? balanceActual : Math.round(balanceActual * factorTiempo * (1 + variacionBalance) * 100) / 100;
+      const valorPortafolio = i === 0 ? valorPortafolioActual : Math.round(valorPortafolioActual * factorTiempo * (1 + variacionValor) * 100) / 100;
       
       datosMuestra.push({
         usuarioId: usuarioId,
@@ -78,7 +78,7 @@ export class PatrimonioService {
         fecha: fecha.toISOString(),
         balance: balance,
         valorPortafolio: valorPortafolio,
-        patrimonioTotal: balance + valorPortafolio
+        patrimonioTotal: Math.round((balance + valorPortafolio) * 100) / 100
       });
     }
     

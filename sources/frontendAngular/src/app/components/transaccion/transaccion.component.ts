@@ -78,22 +78,31 @@ export class TransaccionComponent implements OnInit {
 
   calcularCantidadDisponible(): void {
     if (this.tipo === 'venta' && this.portafolioActual && this.activo) {
-      // Buscar TODOS los activos con el mismo ID en el portafolio
-      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => a.activoId === this.activo?.id);
+      // Buscar TODOS los activos con el mismo ID en el portafolio, manejando diferentes formatos
+      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => {
+        const activoIdEnPortafolio = a.activoId || (a as any).id || (a as any).activo_id;
+        return activoIdEnPortafolio === this.activo?.id;
+      });
       
       if (activosEnPortafolio && activosEnPortafolio.length > 0) {
         // Sumar todas las cantidades del mismo activo
         this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {
-          return total + (activo.cantidad || 0);
+          const cantidad = parseFloat((activo.cantidad || 0).toString());
+          return total + cantidad;
         }, 0);
         console.log(`Cantidad disponible calculada para ${this.activo.simbolo}: ${this.cantidadDisponible}`);
       } else {
         this.cantidadDisponible = 0;
         console.log(`No se encontraron activos ${this.activo.simbolo} en el portafolio`);
+        console.log('Activos en portafolio:', this.portafolioActual.activos);
+        console.log('ID del activo buscado:', this.activo.id);
       }
     } else if (this.tipo === 'compra' && this.portafolioActual && this.activo) {
       // Para compra, también calcular cuántos ya tiene para mostrar información
-      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => a.activoId === this.activo?.id);
+      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => {
+        const activoIdEnPortafolio = a.activoId || (a as any).id || (a as any).activo_id;
+        return activoIdEnPortafolio === this.activo?.id;
+      });
       
       if (activosEnPortafolio && activosEnPortafolio.length > 0) {
         this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {

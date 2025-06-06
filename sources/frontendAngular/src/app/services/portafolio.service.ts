@@ -109,8 +109,9 @@ export class PortafolioService {
         // Transformar la respuesta del backend al formato que espera el frontend
         const activos: ActivoEnPortafolio[] = response.activos
           .filter((activo: any) => {
-            // Filtrar activos sin ID
-            if (!activo || (!activo.id && !activo.activoId && !activo.activo_id)) {
+            // Filtrar activos sin ID - mejorar la detección de IDs
+            const id = activo.id || activo.activoId || activo.activo_id;
+            if (!activo || !id) {
               console.warn('Activo sin ID detectado en el portafolio:', activo);
               return false;
             }
@@ -119,17 +120,25 @@ export class PortafolioService {
           .map((activo: any) => {
             console.log('Procesando activo:', activo);
             
-            // Intentar diferentes nombres de propiedades que puede usar el backend
+            // Normalizar los diferentes nombres de propiedades que puede usar el backend
             const id = activo.id || activo.activoId || activo.activo_id || 0;
-            const nombre = activo.nombre || activo.name || 'Activo sin nombre';
-            const simbolo = activo.simbolo || activo.symbol || activo.ticker || 'N/A';
-            const cantidad = activo.cantidad || activo.quantity || activo.shares || 0;
-            const precioCompra = activo.precioCompra || activo.precio_compra || activo.purchase_price || 0;
-            const precioActual = activo.precioActual || activo.precio_actual || activo.current_price || activo.ultimo_precio || 0;
-            const valorTotal = activo.valorTotal || activo.valor_total || activo.total_value || (cantidad * precioActual);
+            const nombre = activo.nombre || activo.name || activo.Activo?.nombre || 'Activo sin nombre';
+            const simbolo = activo.simbolo || activo.symbol || activo.ticker || activo.Activo?.simbolo || 'N/A';
+            const cantidad = parseFloat(activo.cantidad || activo.quantity || activo.shares || '0');
+            const precioCompra = parseFloat(activo.precioCompra || activo.precio_compra || activo.purchase_price || '0');
+            const precioActual = parseFloat(activo.precioActual || activo.precio_actual || activo.current_price || activo.ultimo_precio || activo.Activo?.ultimo_precio || '0');
             
-            // Calcular el rendimiento para cada activo
-            const rendimiento = (precioActual - precioCompra) * cantidad;
+            // Validar que tenemos datos válidos para el cálculo
+            if (cantidad <= 0 || precioCompra <= 0 || precioActual <= 0) {
+              console.warn('Datos insuficientes para calcular rendimiento del activo:', {
+                id, cantidad, precioCompra, precioActual
+              });
+            }
+            
+            // Calcular valores derivados correctamente
+            const valorTotal = cantidad * precioActual;
+            const costoBasis = cantidad * precioCompra;
+            const rendimiento = valorTotal - costoBasis;
             const rendimientoPorcentaje = precioCompra > 0 ? 
               ((precioActual - precioCompra) / precioCompra) * 100 : 0;
               
@@ -140,13 +149,14 @@ export class PortafolioService {
               cantidad: cantidad,
               precioCompra: precioCompra,
               precioActual: precioActual,
-              valorTotal: valorTotal,
-              rendimiento: rendimiento,
-              rendimientoPorcentaje: rendimientoPorcentaje
+              valorTotal: Math.round(valorTotal * 100) / 100,
+              rendimiento: Math.round(rendimiento * 100) / 100,
+              rendimientoPorcentaje: Math.round(rendimientoPorcentaje * 100) / 100
             };
           });
 
-        // Calcular rendimiento total sumando los rendimientos individuales
+        // Calcular valores totales del portafolio
+        const valorTotal = activos.reduce((total, activo) => total + activo.valorTotal, 0);
         const rendimientoTotal = activos.reduce((total, activo) => total + activo.rendimiento, 0);
         
         const portafolio = {
@@ -154,13 +164,19 @@ export class PortafolioService {
           nombre: response.nombre || 'Portafolio sin nombre',
           usuarioId: response.usuarioId || response.usuario_id || 0,
           activos,
-          valorTotal: response.valorTotal || response.valor_total || 0,
-          rendimientoTotal,
+          valorTotal: Math.round(valorTotal * 100) / 100,
+          rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
           fechaCreacion: response.fechaCreacion ? new Date(response.fechaCreacion) : new Date(),
           saldo: response.saldo || response.balance || 0,
         };
         
-        console.log('Portafolio procesado:', portafolio);
+        console.log('Portafolio procesado con valores:', {
+          valorTotal: portafolio.valorTotal,
+          rendimientoTotal: portafolio.rendimientoTotal,
+          activosCount: activos.length,
+          activosConRendimiento: activos.filter(a => a.rendimiento !== 0).length
+        });
+        
         return portafolio;
       }),
       catchError(error => {

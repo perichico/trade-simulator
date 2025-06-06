@@ -223,10 +223,31 @@ export class AlertasComponent implements OnInit, OnDestroy {
     if (!portafolioId || !activoId) return 0;
     
     const portafolio = this.portafolios.find(p => p.id === +portafolioId);
-    if (!portafolio || !portafolio.activos) return 0;
+    if (!portafolio) {
+      console.log('Portafolio no encontrado:', portafolioId);
+      return 0;
+    }
     
-    const activo = portafolio.activos.find((a: any) => a.activoId === +activoId);
-    return activo ? activo.cantidad : 0;
+    // Verificar que el portafolio tenga activos
+    if (!portafolio.activos || !Array.isArray(portafolio.activos)) {
+      console.log('Portafolio sin activos o activos no es array:', portafolio);
+      return 0;
+    }
+    
+    // Buscar el activo específico, manejando diferentes formatos de ID
+    const activo = portafolio.activos.find((a: any) => {
+      const activoIdEnPortafolio = a.activoId || a.id || a.activo_id;
+      return activoIdEnPortafolio === +activoId;
+    });
+    
+    if (!activo) {
+      console.log('Activo no encontrado en portafolio. ActivoId buscado:', activoId, 'Activos en portafolio:', portafolio.activos);
+      return 0;
+    }
+    
+    const cantidad = parseFloat(activo.cantidad || '0');
+    console.log('Cantidad disponible encontrada:', cantidad, 'para activo:', activoId);
+    return Math.floor(cantidad); // Devolver cantidad como entero
   }
 
   crearAlerta(): void {

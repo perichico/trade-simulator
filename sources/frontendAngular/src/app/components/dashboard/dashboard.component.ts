@@ -96,7 +96,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para formatear valores monetarios
   formatearDinero(valor: number): string {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(valor);
+    return new Intl.NumberFormat('es-ES', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
+    }).format(valor || 0);
   }
 
   // Método para determinar la clase CSS según el valor (positivo/negativo)
@@ -279,7 +284,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para convertir ActivoEnPortafolio a Activo
   private convertirAActivo(activoPortafolio: any): Activo {
-    if (!activoPortafolio || !activoPortafolio.activoId) {
+    if (!activoPortafolio) {
       console.warn('Intento de convertir un activo inválido:', activoPortafolio);
       // Crear un activo con valores predeterminados para evitar errores
       return {
@@ -294,8 +299,25 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       };
     }
     
+    // Normalizar el ID del activo
+    const activoId = activoPortafolio.activoId || activoPortafolio.id || activoPortafolio.activo_id;
+    
+    if (!activoId) {
+      console.warn('Activo sin ID válido:', activoPortafolio);
+      return {
+        id: 0,
+        nombre: 'Activo sin ID',
+        simbolo: 'N/A',
+        ultimo_precio: 0,
+        ultima_actualizacion: new Date(),
+        tipo: 'accion',
+        tipoActivo: { id: 1, nombre: 'Acción' },
+        variacion: 0
+      };
+    }
+    
     return {
-      id: activoPortafolio.activoId,
+      id: activoId,
       nombre: activoPortafolio.nombre || 'Activo sin nombre',
       simbolo: activoPortafolio.simbolo || 'N/A',
       ultimo_precio: activoPortafolio.precioActual || 0,
@@ -445,10 +467,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     const hoy = new Date();
     const datosMuestra: PatrimonioHistorico[] = [];
     
-    // Usar el valor actual del portafolio como base para generar datos históricos
+    // Usar valores reales calculados del portafolio
     const saldoActual = portafolio.saldo || 10000;
-    const valorPortafolioActual = portafolio.valorTotal || 0;
-    const patrimonioActual = saldoActual + valorPortafolioActual;
+    const valorPortafolioActual = this.obtenerValorTotalPortafolio();
     
     // Generar datos de muestra para los últimos 7 días
     for (let i = 6; i >= 0; i--) {
@@ -465,13 +486,99 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       datosMuestra.push({
         usuarioId: portafolio.usuarioId || 0,
         fecha: fecha.toISOString(),
-        balance: balanceDia,
-        valorPortafolio: valorPortafolioDia,
-        patrimonioTotal: balanceDia + valorPortafolioDia
+        balance: Math.round(balanceDia * 100) / 100,
+        valorPortafolio: Math.round(valorPortafolioDia * 100) / 100,
+        patrimonioTotal: Math.round((balanceDia + valorPortafolioDia) * 100) / 100
       });
     }
     
     this.historialPatrimonio = datosMuestra;
+  }
+
+  // Método para calcular el rendimiento porcentual del portafolio seleccionado
+  calcularRendimientoPorcentual(): number {
+    if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
+      return 0;
+    }
+
+    // Calcular la inversión total (costo base)
+    const inversionTotal = this.portafolioSeleccionado.activos.reduce((total, activo) => {
+      const costoBasis = (activo.precioCompra || 0) * (activo.cantidad || 0);
+      return total + costoBasis;
+    }, 0);
+
+    console.log('Calculando rendimiento porcentual:', {
+      inversionTotal,
+      rendimientoTotal: this.portafolioSeleccionado.rendimientoTotal,
+      activos: this.portafolioSeleccionado.activos.length
+    });
+
+    if (inversionTotal === 0) {
+      console.warn('Inversión total es 0, no se puede calcular rendimiento porcentual');
+      return 0;
+    }
+
+    const rendimientoTotal = this.portafolioSeleccionado.rendimientoTotal || 0;
+    const rendimientoPorcentual = (rendimientoTotal / inversionTotal) * 100;
+    
+    console.log('Rendimiento porcentual calculado:', rendimientoPorcentual);
+    return Math.round(rendimientoPorcentual * 100) / 100;
+  }
+
+  // Método para obtener el valor total actualizado del portafolio
+  obtenerValorTotalPortafolio(): number {
+    if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
+      return 0;
+    }
+
+    const valorTotal = this.portafolioSeleccionado.activos.reduce((total, activo) => {
+      return total + (activo.valorTotal || 0);
+    }, 0);
+    
+    console.log('Valor total del portafolio:', valorTotal);
+    return valorTotal;
+  }
+
+  // Método para obtener el rendimiento total del portafolio
+  obtenerRendimientoTotal(): number {
+    if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
+      return 0;
+    }
+
+    const rendimientoTotal = this.portafolioSeleccionado.activos.reduce((total, activo) => {
+      return total + (activo.rendimiento || 0);
+    }, 0);
+    
+    console.log('Rendimiento total del portafolio:', rendimientoTotal);
+    return rendimientoTotal;
+  }
+
+  // Método helper para validar datos del portafolio
+  validarDatosPortafolio(): boolean {
+    if (!this.portafolioSeleccionado) {
+      console.warn('No hay portafolio seleccionado');
+      return false;
+    }
+
+    if (!this.portafolioSeleccionado.activos || this.portafolioSeleccionado.activos.length === 0) {
+      console.log('Portafolio sin activos');
+      return true; // Es válido tener un portafolio vacío
+    }
+
+    // Validar que los activos tienen datos consistentes
+    const activosInvalidos = this.portafolioSeleccionado.activos.filter(activo => 
+      !activo.activoId || 
+      typeof activo.cantidad !== 'number' ||
+      typeof activo.precioCompra !== 'number' ||
+      typeof activo.precioActual !== 'number'
+    );
+
+    if (activosInvalidos.length > 0) {
+      console.warn('Activos con datos inválidos encontrados:', activosInvalidos);
+      return false;
+    }
+
+    return true;
   }
 
   actualizarGrafico(): void {

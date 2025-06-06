@@ -173,16 +173,30 @@ exports.obtenerDatosDashboard = async (req, res) => {
     const activosEnPortafolio = [];
     for (const [activoId, datosActivo] of Object.entries(activosAgrupados)) {
       if (datosActivo.cantidadTotal > 0) {
-        const precioActual = await preciosService.obtenerPrecioActual(datosActivo.activo.simbolo);
-        const valorActual = datosActivo.cantidadTotal * (precioActual || datosActivo.activo.ultimo_precio);
+        const precioActualResponse = await preciosService.obtenerPrecioActual(datosActivo.activo.simbolo, activoId);
+        const precioActual = precioActualResponse?.precio || datosActivo.activo.ultimo_precio || 0;
+        const valorActual = datosActivo.cantidadTotal * precioActual;
+        
+        // Calcular precio promedio de compra
+        const precioPromedioCompra = datosActivo.valorInvertido / datosActivo.cantidadTotal;
+        
+        // Calcular rendimiento
+        const costoBasis = datosActivo.cantidadTotal * precioPromedioCompra;
+        const rendimiento = valorActual - costoBasis;
+        const rendimientoPorcentaje = precioPromedioCompra > 0 ? 
+          ((precioActual - precioPromedioCompra) / precioPromedioCompra) * 100 : 0;
         
         activosEnPortafolio.push({
           id: datosActivo.activo.id,
+          activoId: datosActivo.activo.id, // Añadir para compatibilidad
           nombre: datosActivo.activo.nombre,
           simbolo: datosActivo.activo.simbolo,
           cantidad: datosActivo.cantidadTotal,
-          precio: precioActual || datosActivo.activo.ultimo_precio,
-          valorActual: valorActual,
+          precioCompra: precioPromedioCompra,
+          precioActual: precioActual,
+          valorTotal: Math.round(valorActual * 100) / 100,
+          rendimiento: Math.round(rendimiento * 100) / 100,
+          rendimientoPorcentaje: Math.round(rendimientoPorcentaje * 100) / 100,
           porcentajeDividendo: datosActivo.activo.porcentaje_dividendo || 0,
           ultima_actualizacion: new Date(),
           tipo: datosActivo.activo.TipoActivo?.nombre || 'Acción'
@@ -190,9 +204,13 @@ exports.obtenerDatosDashboard = async (req, res) => {
       }
     }
 
-    // Calcular valor total del portafolio
+    // Calcular valor total del portafolio y rendimiento total
     const valorTotalActivos = activosEnPortafolio.reduce((total, activo) => 
-      total + activo.valorActual, 0
+      total + activo.valorTotal, 0
+    );
+    
+    const rendimientoTotal = activosEnPortafolio.reduce((total, activo) => 
+      total + activo.rendimiento, 0
     );
 
     const valorTotalPortafolio = portafolio.saldo + valorTotalActivos;
@@ -206,8 +224,9 @@ exports.obtenerDatosDashboard = async (req, res) => {
         id: portafolio.id,
         nombre: portafolio.nombre,
         saldo: portafolio.saldo,
-        valorTotalActivos: valorTotalActivos,
-        valorTotal: valorTotalPortafolio,
+        valorTotalActivos: Math.round(valorTotalActivos * 100) / 100,
+        valorTotal: Math.round(valorTotalPortafolio * 100) / 100,
+        rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
         activos: activosEnPortafolio
       },
       portafolios: portafolios.map(p => ({

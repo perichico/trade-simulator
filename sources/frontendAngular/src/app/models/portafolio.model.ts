@@ -15,21 +15,9 @@ export interface Portafolio {
   nombre: string;
   usuarioId: number;
   saldo: number;
-  activos?: ActivoPortafolio[];
+  activos?: ActivoEnPortafolio[]; // Usar la misma interfaz
   fechaCreacion?: Date;
   fechaActualizacion?: Date;
   valorTotal?: number;
   rendimientoTotal?: number;
-}
-
-export interface ActivoPortafolio {
-  activoId: number;
-  simbolo: string;
-  nombre: string;
-  cantidad: number;
-  precioCompra: number;
-  precioActual: number;
-  valorTotal: number;
-  rendimiento: number;
-  rendimientoPorcentaje: number;
 }

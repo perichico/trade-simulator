@@ -103,8 +103,11 @@
               [class.text-danger]="obtenerRendimientoTotal() < 0">
             {{ formatearDinero(obtenerRendimientoTotal()) }}
           </h3>
-          <small class="text-muted" *ngIf="portafolioSeleccionado && portafolioSeleccionado.activos && portafolioSeleccionado.activos.length > 0">
-            ({{ calcularRendimientoPorcentual() | number:'1.2-2' }}%)
+          <small class="text-muted" *ngIf="portafolioSeleccionado && obtenerValorTotalPortafolio() > 0">
+            ({{ calcularRendimientoPorcentual() >= 0 ? '+' : '' }}{{ calcularRendimientoPorcentual() | number:'1.2-2' }}%)
+          </small>
+          <small class="text-muted" *ngIf="!portafolioSeleccionado || obtenerValorTotalPortafolio() === 0">
+            (Sin inversiones)
           </small>
         </div>
       </div>
@@ -135,7 +138,7 @@
                 </tr>
               </thead>
               <tbody>
-                <ng-container *ngFor="let activo of portafolio.activos">
+                <ng-container *ngFor="let activo of portafolio.activos; let i = index">
                   <tr *ngIf="activo.cantidad > 0">
                     <td>
                       <div class="d-flex align-items-center">
@@ -143,23 +146,38 @@
                         <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
                       </div>
                     </td>
-                    <td>{{activo.cantidad || 0}}</td>
-                    <td>{{formatearDinero(activo.precioCompra || 0)}}</td>
-                    <td>{{formatearDinero(activo.precioActual || 0)}}</td>
-                    <td>{{formatearDinero(activo.valorTotal || 0)}}</td>
+                    <td>
+                      <span class="fw-bold">{{activo.cantidad || 0}}</span>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{formatearDinero(activo.precioCompra || 0)}}</span>
+                    </td>
+                    <td>
+                      <span class="fw-bold">{{formatearDinero(activo.precioActual || 0)}}</span>
+                    </td>
+                    <td>
+                      <span class="fw-bold text-primary">
+                        {{formatearDinero((activo.cantidad || 0) * (activo.precioActual || 0))}}
+                      </span>
+                    </td>
                     <td>
                       <span class="badge" [ngClass]="{
-                        'bg-success': (activo.rendimiento || 0) > 0,
-                        'bg-danger': (activo.rendimiento || 0) < 0,
-                        'bg-secondary': (activo.rendimiento || 0) === 0
+                        'bg-success': ((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0)) > 0,
+                        'bg-danger': ((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0)) < 0,
+                        'bg-secondary': ((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0)) === 0
                       }">
-                        {{formatearDinero(activo.rendimiento || 0)}} ({{((activo.rendimientoPorcentaje || 0)).toFixed(2)}}%)
+                        {{ ((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0)) >= 0 ? '+' : '' }}{{formatearDinero((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0))}}
+                        ({{ ((activo.cantidad || 0) * (activo.precioActual || 0) - (activo.cantidad || 0) * (activo.precioCompra || 0)) >= 0 ? '+' : '' }}{{(activo.precioCompra > 0 ? ((activo.precioActual - activo.precioCompra) / activo.precioCompra) * 100 : 0).toFixed(2)}}%)
                       </span>
                     </td>
                     <td>
                       <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
                           <i class="bi bi-plus-circle me-1"></i>Comprar
+                        </button>
+                        <button class="btn btn-outline-success" (click)="abrirDialogoTransaccion(activo, 'venta')"
+                                [disabled]="(activo.cantidad || 0) <= 0">
+                          <i class="bi bi-dash-circle me-1"></i>Vender
                         </button>
                       </div>
                     </td>

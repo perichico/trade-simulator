@@ -1,283 +1,247 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TransaccionService } from '../../services/transaccion.service';
-import { AuthService } from '../../services/auth.service';
-import { PortafolioService } from '../../services/portafolio.service';
-import { ActivoService } from '../../services/activo.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
 import { Activo } from '../../models/activo.model';
 import { Usuario } from '../../models/usuario.model';
 import { Portafolio } from '../../models/portafolio.model';
+import { ActivoService } from '../../services/activo.service';
+import { AuthService } from '../../services/auth.service';
+import { PortafolioService } from '../../services/portafolio.service';
+import { TransaccionService } from '../../services/transaccion.service';
 
 @Component({
   selector: 'app-transaccion',
   templateUrl: './transaccion.component.html',
   styleUrls: ['./transaccion.component.scss']
 })
-export class TransaccionComponent implements OnInit {
+export class TransaccionComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  
   activo: Activo | null = null;
   usuario: Usuario | null = null;
   portafolioActual: Portafolio | null = null;
+  tipoTransaccion: 'compra' | 'venta' = 'compra';
   
-  tipo: 'compra' | 'venta' = 'compra';
-  cantidad: number = 1;
-  cantidadDisponible: number = 0;
-  costoTotal: number = 0;
-  saldoActual: number = 0;
-  saldoRestante: number = 0;
-  
-  procesandoTransaccion: boolean = false;
+  transaccionForm: FormGroup;
+  procesandoTransaccion = false;
+  cantidadDisponible = 0;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private transaccionService: TransaccionService,
+    private fb: FormBuilder,
+    private activoService: ActivoService,
     private authService: AuthService,
     private portafolioService: PortafolioService,
-    private activoService: ActivoService
-  ) { }
+    private transaccionService: TransaccionService
+  ) {
+    this.transaccionForm = this.fb.group({
+      cantidad: ['', [Validators.required, Validators.min(1)]],
+      precioUnidad: [{ value: '', disabled: true }],
+      costoTotal: [{ value: '', disabled: true }]
+    });
+  }
 
   ngOnInit(): void {
-    // Obtener parámetros de la ruta
-    this.route.queryParams.subscribe(params => {
-      this.tipo = params['tipo'] || 'compra';
+    this.verificarAutenticacion();
+    this.procesarParametros();
+    this.configurarFormulario();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private verificarAutenticacion(): void {
+    this.authService.usuario$.pipe(takeUntil(this.destroy$)).subscribe(usuario => {
+      this.usuario = usuario;
+      if (!usuario) {
+        this.router.navigate(['/login']);
+      }
+    });
+
+    this.portafolioService.portafolioActual$.pipe(takeUntil(this.destroy$)).subscribe(portafolio => {
+      this.portafolioActual = portafolio;
+      this.actualizarCantidadDisponible();
+    });
+  }
+
+  private procesarParametros(): void {
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const activoId = +params['activoId'];
+      this.tipoTransaccion = params['tipo'] || 'compra';
       
       if (activoId) {
         this.cargarActivo(activoId);
-      }
-    });
-
-    // Obtener usuario actual
-    this.authService.usuario$.subscribe(usuario => {
-      this.usuario = usuario;
-    });
-
-    // Obtener portafolio actual
-    this.portafolioService.portafolioActual$.subscribe(portafolio => {
-      this.portafolioActual = portafolio;
-      this.saldoActual = portafolio?.saldo || 0;
-      this.calcularCantidadDisponible();
-      this.calcularCostoTotal();
-    });
-  }
-
-  cargarActivo(id: number): void {
-    this.activoService.obtenerActivoPorId(id).subscribe({
-      next: (activo) => {
-        this.activo = activo;
-        console.log('Activo cargado:', activo); // Para debug
-        this.calcularCostoTotal();
-      },
-      error: (error) => {
-        console.error('Error al cargar el activo:', error);
-        alert('Error al cargar la información del activo');
-        this.router.navigate(['/dashboard']); // O la ruta principal que tengas
-      }
-    });
-  }
-
-  calcularCantidadDisponible(): void {
-    if (this.tipo === 'venta' && this.portafolioActual && this.activo) {
-      // Buscar TODOS los activos con el mismo ID en el portafolio, manejando diferentes formatos
-      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => {
-        const activoIdEnPortafolio = a.activoId || (a as any).id || (a as any).activo_id;
-        return activoIdEnPortafolio === this.activo?.id;
-      });
-      
-      if (activosEnPortafolio && activosEnPortafolio.length > 0) {
-        // Sumar todas las cantidades del mismo activo
-        this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {
-          const cantidad = parseFloat((activo.cantidad || 0).toString());
-          return total + cantidad;
-        }, 0);
-        console.log(`Cantidad disponible calculada para ${this.activo.simbolo}: ${this.cantidadDisponible}`);
       } else {
-        this.cantidadDisponible = 0;
-        console.log(`No se encontraron activos ${this.activo.simbolo} en el portafolio`);
-        console.log('Activos en portafolio:', this.portafolioActual.activos);
-        console.log('ID del activo buscado:', this.activo.id);
+        this.router.navigate(['/mercado']);
       }
-    } else if (this.tipo === 'compra' && this.portafolioActual && this.activo) {
-      // Para compra, también calcular cuántos ya tiene para mostrar información
-      const activosEnPortafolio = this.portafolioActual.activos?.filter(a => {
-        const activoIdEnPortafolio = a.activoId || (a as any).id || (a as any).activo_id;
-        return activoIdEnPortafolio === this.activo?.id;
-      });
-      
-      if (activosEnPortafolio && activosEnPortafolio.length > 0) {
-        this.cantidadDisponible = activosEnPortafolio.reduce((total, activo) => {
-          return total + (activo.cantidad || 0);
-        }, 0);
-      } else {
-        this.cantidadDisponible = 0;
-      }
-    } else {
-      this.cantidadDisponible = 0;
-    }
+    });
   }
 
-  calcularCostoTotal(): void {
-    if (this.activo) {
-      // Usar ultimo_precio si precio no está disponible
-      const precio = this.activo.precio || this.activo.ultimo_precio || 0;
-      
-      console.log('=== DEBUG CÁLCULO COSTO ===');
-      console.log('Activo:', this.activo);
-      console.log('Precio usado:', precio);
-      console.log('Cantidad:', this.cantidad);
-      console.log('===========================');
-      
-      if (precio > 0) {
-        this.costoTotal = this.cantidad * precio;
-        
-        if (this.tipo === 'compra') {
-          this.saldoRestante = this.saldoActual - this.costoTotal;
-        } else {
-          this.saldoRestante = this.saldoActual + this.costoTotal;
+  private cargarActivo(activoId: number): void {
+    this.activoService.obtenerActivoPorId(activoId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (activo) => {
+          this.activo = activo;
+          this.transaccionForm.patchValue({
+            precioUnidad: activo.ultimo_precio || activo.precio
+          });
+          this.actualizarCantidadDisponible();
+        },
+        error: (error) => {
+          console.error('Error al cargar activo:', error);
+          this.mostrarNotificacion('Error al cargar la información del activo', 'error');
+          this.router.navigate(['/mercado']);
         }
-      } else {
-        console.warn('Precio del activo es 0 o inválido');
-        this.costoTotal = 0;
-        this.saldoRestante = this.saldoActual;
-      }
+      });
+  }
+
+  private configurarFormulario(): void {
+    this.transaccionForm.get('cantidad')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(cantidad => {
+        this.calcularCostoTotal();
+        this.validarCantidad();
+      });
+  }
+
+  private actualizarCantidadDisponible(): void {
+    if (!this.portafolioActual?.activos || !this.activo) {
+      this.cantidadDisponible = 0;
+      return;
+    }
+
+    const activoEnPortafolio = this.portafolioActual.activos.find(
+      a => a.activoId === this.activo!.id
+    );
+    this.cantidadDisponible = activoEnPortafolio?.cantidad || 0;
+    
+    // Actualizar validadores según el tipo de transacción
+    this.actualizarValidadores();
+  }
+
+  private actualizarValidadores(): void {
+    const cantidadControl = this.transaccionForm.get('cantidad');
+    
+    if (this.tipoTransaccion === 'venta') {
+      cantidadControl?.setValidators([
+        Validators.required,
+        Validators.min(1),
+        Validators.max(this.cantidadDisponible)
+      ]);
     } else {
-      console.warn('No hay activo disponible para calcular costo');
-      this.costoTotal = 0;
-      this.saldoRestante = this.saldoActual;
-    }
-  }
-
-  onCantidadInput(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.cantidad = parseInt(target.value) || 1;
-    this.onCantidadChange();
-  }
-
-  onCantidadChange(): void {
-    if (this.cantidad < 1) {
-      this.cantidad = 1;
+      cantidadControl?.setValidators([
+        Validators.required,
+        Validators.min(1)
+      ]);
     }
     
-    if (this.tipo === 'venta' && this.cantidad > this.cantidadDisponible) {
-      this.cantidad = this.cantidadDisponible;
-    }
+    cantidadControl?.updateValueAndValidity();
+  }
+
+  private validarCantidad(): void {
+    const cantidad = this.transaccionForm.get('cantidad')?.value || 0;
     
-    this.calcularCostoTotal();
+    if (this.tipoTransaccion === 'venta' && cantidad > this.cantidadDisponible) {
+      this.transaccionForm.get('cantidad')?.setErrors({ 
+        'cantidadInsuficiente': true 
+      });
+    }
   }
 
-  formatearPrecio(precio: number | undefined): string {
-    if (precio === undefined || precio === null) return '$0.00';
-    return `$${precio.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  private calcularCostoTotal(): void {
+    const cantidad = this.transaccionForm.get('cantidad')?.value || 0;
+    const precio = this.activo?.ultimo_precio || this.activo?.precio || 0;
+    const total = cantidad * precio;
+    
+    this.transaccionForm.patchValue({
+      costoTotal: total
+    });
   }
 
-  puedeRealizarTransaccion(): boolean {
-    console.log('=== DEBUG VALIDACIÓN TRANSACCIÓN ===');
-    console.log('Activo:', !!this.activo);
-    console.log('Cantidad:', this.cantidad);
-    console.log('Procesando:', this.procesandoTransaccion);
-    console.log('Precio activo:', this.getPrecioActivo());
-    console.log('Costo total:', this.costoTotal);
-    console.log('Saldo actual:', this.saldoActual);
-    console.log('================================');
+  get saldoSuficiente(): boolean {
+    const costoTotal = this.transaccionForm.get('costoTotal')?.value || 0;
+    const saldoDisponible = this.portafolioActual?.saldo || 0;
+    return this.tipoTransaccion === 'venta' || saldoDisponible >= costoTotal;
+  }
 
-    // Separar las validaciones básicas del estado de procesamiento
-    if (!this.activo || this.cantidad < 1) {
-      console.log('Falló validación básica: activo o cantidad inválida');
+  get puedeRealizarTransaccion(): boolean {
+    if (!this.transaccionForm.valid || this.procesandoTransaccion) {
       return false;
     }
 
-    // Verificar que haya un precio válido
-    const precio = this.getPrecioActivo();
-    if (precio <= 0) {
-      console.log('Precio inválido:', precio);
-      return false;
-    }
-
-    // Validaciones específicas por tipo de transacción
-    if (this.tipo === 'compra') {
-      const puedeComprar = this.saldoActual >= this.costoTotal;
-      console.log('Puede comprar:', puedeComprar);
-      return puedeComprar;
+    if (this.tipoTransaccion === 'compra') {
+      return this.saldoSuficiente;
     } else {
-      const puedeVender = this.cantidadDisponible >= this.cantidad;
-      console.log('Puede vender:', puedeVender);
-      return puedeVender;
+      const cantidad = this.transaccionForm.get('cantidad')?.value || 0;
+      return cantidad <= this.cantidadDisponible && this.cantidadDisponible > 0;
     }
   }
 
-  cambiarTipoTransaccion(nuevoTipo: 'compra' | 'venta'): void {
-    if (this.procesandoTransaccion) return;
-    
-    this.tipo = nuevoTipo;
-    this.calcularCantidadDisponible();
-    this.calcularCostoTotal();
-  }
-
-  puedeIniciarTransaccion(): boolean {
-    return this.puedeRealizarTransaccion() && !this.procesandoTransaccion;
-  }
-
-  confirmarTransaccion(): void {
-    console.log('=== INICIANDO TRANSACCIÓN ===');
-    console.log('Puede realizar transacción:', this.puedeRealizarTransaccion());
-    console.log('Puede iniciar transacción:', this.puedeIniciarTransaccion());
-    
-    if (!this.puedeIniciarTransaccion() || !this.activo) {
-      console.log('No se puede iniciar la transacción');
+  ejecutarTransaccion(): void {
+    if (!this.puedeRealizarTransaccion || !this.activo) {
       return;
     }
 
     this.procesandoTransaccion = true;
+    const cantidad = this.transaccionForm.get('cantidad')?.value;
     const portafolioId = this.portafolioActual?.id;
 
-    console.log('Datos de transacción:', {
-      activoId: this.activo.id,
-      tipo: this.tipo,
-      cantidad: this.cantidad,
-      portafolioId: portafolioId
+    this.transaccionService.crearTransaccion(
+      this.activo.id,
+      this.tipoTransaccion,
+      cantidad,
+      portafolioId
+    ).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (respuesta) => {
+        this.procesandoTransaccion = false;
+        const mensaje = `Transacción de ${this.tipoTransaccion} realizada con éxito`;
+        this.mostrarNotificacion(mensaje, 'success');
+        
+        // Actualizar datos y navegar
+        this.authService.verificarSesion();
+        this.router.navigate(['/dashboard']);
+      },
+      error: (error) => {
+        this.procesandoTransaccion = false;
+        const mensaje = error.error?.error || 'Error al realizar la transacción';
+        this.mostrarNotificacion(mensaje, 'error');
+      }
     });
-
-    this.transaccionService.crearTransaccion(this.activo.id, this.tipo, this.cantidad, portafolioId)
-      .subscribe({
-        next: (respuesta) => {
-          console.log('Transacción exitosa:', respuesta);
-          this.procesandoTransaccion = false; // Resetear el estado
-          const accion = this.tipo === 'compra' ? 'Compra' : 'Venta';
-          const mensaje = `${accion} de ${this.cantidad} ${this.activo?.simbolo} realizada con éxito`;
-          this.navegarConNotificacion(mensaje, 'success');
-        },
-        error: (error) => {
-          console.error('Error en transacción:', error);
-          this.procesandoTransaccion = false; // Resetear el estado también en error
-          const mensaje = `Error al realizar la transacción: ${error.error?.error || 'Error desconocido'}`;
-          this.navegarConNotificacion(mensaje, 'error');
-        }
-      });
   }
 
-  cancelar(): void {
-    this.router.navigate(['/dashboard']); // O la ruta principal que tengas
+  cancelarTransaccion(): void {
+    this.router.navigate(['/detalle-activo', this.activo?.id || '']);
   }
 
-  getMensajeConfirmacion(): string {
-    if (!this.activo) return '';
-    
-    const accion = this.tipo === 'compra' ? 'comprar' : 'vender';
-    return `¿Confirmas que deseas ${accion} ${this.cantidad} ${this.cantidad === 1 ? 'unidad' : 'unidades'} de ${this.activo.simbolo}?`;
+  private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error'): void {
+    // Implementar notificación (puedes usar MatSnackBar o similar)
+    alert(mensaje);
   }
 
-  getPrecioActivo(): number {
-    if (!this.activo) return 0;
-    return this.activo.precio || this.activo.ultimo_precio || 0;
+  // Métodos helper para el template
+  formatearDinero(valor: number): string {
+    return new Intl.NumberFormat('es-ES', { 
+      style: 'currency', 
+      currency: 'EUR' 
+    }).format(valor || 0);
   }
 
-  navegarConNotificacion(mensaje: string, tipo: 'success' | 'error'): void {
-    // Por ahora mostramos un alert, pero puedes implementar un sistema de notificaciones más sofisticado
-    if (tipo === 'success') {
-      alert(mensaje);
-    } else {
-      alert(mensaje);
-    }
-    this.router.navigate(['/dashboard']);
+  get tituloTransaccion(): string {
+    return this.tipoTransaccion === 'compra' ? 'Comprar' : 'Vender';
+  }
+
+  get colorBoton(): string {
+    return this.tipoTransaccion === 'compra' ? 'btn-success' : 'btn-danger';
+  }
+
+  get iconoTransaccion(): string {
+    return this.tipoTransaccion === 'compra' ? 'bi-cart-plus' : 'bi-cart-dash';
   }
 }

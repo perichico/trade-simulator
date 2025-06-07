@@ -1,109 +1,212 @@
-<div class="transaccion-container">
+<div class="transaccion-container" *ngIf="activo && usuario">
+  <!-- Header -->
+  <div class="header-section">
+    <button class="btn-back" (click)="cancelarTransaccion()">
+      <i class="bi bi-arrow-left"></i>
+      Volver
+    </button>
+    <h1 class="page-title">
+      <i class="bi" [ngClass]="iconoTransaccion"></i>
+      {{ tituloTransaccion }} {{ activo.simbolo }}
+    </h1>
+  </div>
+
   <!-- Información del activo -->
-  <div class="activo-info" *ngIf="activo">
-    <h2>{{activo.nombre}} ({{activo.simbolo}})</h2>
-    <div class="precio-actual">{{formatearPrecio(getPrecioActivo())}}</div>
+  <div class="activo-info-card">
+    <div class="activo-header">
+      <div class="activo-details">
+        <h2 class="activo-nombre">{{ activo.nombre }}</h2>
+        <span class="activo-simbolo">{{ activo.simbolo }}</span>
+      </div>
+      <div class="precio-actual">
+        <span class="precio">{{ formatearDinero((activo.ultimo_precio || activo.precio) || 0) }}</span>
+        <div class="variacion" [ngClass]="{
+          'variacion-positiva': (activo.variacion || 0) > 0,
+          'variacion-negativa': (activo.variacion || 0) < 0,
+          'variacion-neutral': (activo.variacion || 0) === 0
+        }">
+          <i class="bi" [ngClass]="{
+            'bi-arrow-up': (activo.variacion || 0) > 0,
+            'bi-arrow-down': (activo.variacion || 0) < 0,
+            'bi-dash': (activo.variacion || 0) === 0
+          }"></i>
+          {{ activo.variacion ? (activo.variacion > 0 ? '+' : '') + activo.variacion + '%' : '0%' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información del portafolio -->
+  <div class="portafolio-info-section" *ngIf="portafolioActual">
+    <div class="info-grid">
+      <div class="info-card">
+        <i class="bi bi-wallet2 info-icon"></i>
+        <div class="info-content">
+          <span class="info-label">Saldo Disponible</span>
+          <span class="info-value">{{ formatearDinero(portafolioActual.saldo) }}</span>
+        </div>
+      </div>
+
+      <div class="info-card" *ngIf="tipoTransaccion === 'venta'">
+        <i class="bi bi-collection info-icon"></i>
+        <div class="info-content">
+          <span class="info-label">Cantidad Disponible</span>
+          <span class="info-value">{{ cantidadDisponible }} unidades</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Formulario de transacción -->
-  <div class="transaccion-form">
-    <!-- Selector de tipo de transacción -->
-    <div class="tipo-selector">
-      <div 
-        class="tipo-option compra"
-        [class.active]="tipo === 'compra'"
-        [class.disabled]="procesandoTransaccion"
-        (click)="cambiarTipoTransaccion('compra')">
-        Comprar
-      </div>
-      <div 
-        class="tipo-option venta"
-        [class.active]="tipo === 'venta'"
-        [class.disabled]="procesandoTransaccion"
-        (click)="cambiarTipoTransaccion('venta')">
-        Vender
-      </div>
-    </div>
-
-    <!-- Información disponible para ventas -->
-    <div class="info-disponible" *ngIf="tipo === 'venta'">
-      <div *ngIf="cantidadDisponible > 0; else noDisponible">
-        <strong>Cantidad disponible: {{cantidadDisponible}} unidades</strong>
-        <small class="text-muted d-block">Puedes vender hasta {{cantidadDisponible}} {{cantidadDisponible === 1 ? 'unidad' : 'unidades'}} de {{activo?.simbolo}}</small>
-      </div>
-      <ng-template #noDisponible>
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          No tienes unidades de {{activo?.simbolo}} en tu portafolio para vender.
+  <div class="formulario-section">
+    <form [formGroup]="transaccionForm" (ngSubmit)="ejecutarTransaccion()" class="transaccion-form">
+      
+      <!-- Cantidad -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="bi bi-hash"></i>
+          Cantidad
+        </label>
+        <input 
+          type="number" 
+          class="form-control quantity-input"
+          formControlName="cantidad"
+          [class.is-invalid]="transaccionForm.get('cantidad')?.touched && transaccionForm.get('cantidad')?.invalid"
+          placeholder="Ingresa la cantidad"
+          min="1"
+          [max]="tipoTransaccion === 'venta' ? cantidadDisponible : null"
+          step="1">
+        
+        <!-- Mensajes de validación -->
+        <div class="form-feedback">
+          <div class="invalid-feedback" *ngIf="transaccionForm.get('cantidad')?.touched && transaccionForm.get('cantidad')?.errors">
+            <div *ngIf="transaccionForm.get('cantidad')?.hasError('required')">
+              La cantidad es obligatoria
+            </div>
+            <div *ngIf="transaccionForm.get('cantidad')?.hasError('min')">
+              La cantidad debe ser mayor a 0
+            </div>
+            <div *ngIf="transaccionForm.get('cantidad')?.hasError('max') || transaccionForm.get('cantidad')?.hasError('cantidadInsuficiente')">
+              No tienes suficientes activos (disponible: {{ cantidadDisponible }})
+            </div>
+          </div>
+          
+          <!-- Información adicional -->
+          <div class="form-hint" *ngIf="tipoTransaccion === 'venta' && cantidadDisponible > 0">
+            <i class="bi bi-info-circle"></i>
+            Máximo disponible: {{ cantidadDisponible }} unidades
+          </div>
+          
+          <div class="form-hint text-warning" *ngIf="tipoTransaccion === 'venta' && cantidadDisponible === 0">
+            <i class="bi bi-exclamation-triangle"></i>
+            No tienes este activo en tu portafolio
+          </div>
         </div>
-      </ng-template>
-    </div>
-
-    <!-- Información para compras cuando ya tienes el activo -->
-    <div class="info-disponible" *ngIf="tipo === 'compra' && cantidadDisponible > 0">
-      <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>
-        Ya tienes {{cantidadDisponible}} {{cantidadDisponible === 1 ? 'unidad' : 'unidades'}} de {{activo?.simbolo}} en tu portafolio.
-        <br><small>Al comprar más, se calculará el precio promedio de compra.</small>
       </div>
-    </div>
 
-    <!-- Entrada de cantidad -->
-    <div class="cantidad-input">
-      <label for="cantidad">Cantidad:</label>
-      <input 
-        type="number" 
-        id="cantidad"
-        [value]="cantidad"
-        [disabled]="procesandoTransaccion"
-        (input)="onCantidadInput($event)"
-        (change)="onCantidadChange()"
-        min="1"
-        [max]="tipo === 'venta' ? cantidadDisponible : undefined">
-    </div>
+      <!-- Precio por unidad (solo lectura) -->
+      <div class="form-group">
+        <label class="form-label">
+          <i class="bi bi-currency-dollar"></i>
+          Precio por Unidad
+        </label>
+        <input 
+          type="text" 
+          class="form-control"
+          formControlName="precioUnidad"
+          [value]="formatearDinero((activo.ultimo_precio || activo.precio) || 0)"
+          readonly>
+      </div>
 
-    <!-- Resumen de la transacción -->
-    <div class="resumen-transaccion" *ngIf="activo">
-      <div class="resumen-linea">
-        <span>Precio por unidad:</span>
-        <span>{{formatearPrecio(getPrecioActivo())}}</span>
+      <!-- Costo total -->
+      <div class="form-group total-section">
+        <label class="form-label total-label">
+          <i class="bi bi-calculator"></i>
+          {{ tipoTransaccion === 'compra' ? 'Costo Total' : 'Valor de Venta' }}
+        </label>
+        <div class="total-display">
+          <span class="total-amount">
+            {{ formatearDinero(transaccionForm.get('costoTotal')?.value || 0) }}
+          </span>
+        </div>
       </div>
-      <div class="resumen-linea">
-        <span>Cantidad:</span>
-        <span>{{cantidad}}</span>
-      </div>
-      <div class="resumen-linea total">
-        <span>Total:</span>
-        <span>{{formatearPrecio(costoTotal)}}</span>
-      </div>
-      <div class="resumen-linea">
-        <span>Saldo {{tipo === 'compra' ? 'restante' : 'resultante'}}:</span>
-        <span [class.saldo-negativo]="saldoRestante < 0">{{formatearPrecio(saldoRestante)}}</span>
-      </div>
-    </div>
 
-    <!-- Botones de acción -->
-    <div class="botones-accion">
-      <button 
-        type="button" 
-        class="btn btn-secondary"
-        [disabled]="procesandoTransaccion"
-        (click)="cancelar()">
-        Cancelar
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-primary"
-        [disabled]="!puedeIniciarTransaccion()"
-        (click)="confirmarTransaccion()">
-        <span *ngIf="procesandoTransaccion" class="spinner-border spinner-border-sm me-2"></span>
-        {{procesandoTransaccion ? 'Procesando...' : (tipo === 'compra' ? 'Confirmar Compra' : 'Confirmar Venta')}}
-      </button>
-    </div>
+      <!-- Alertas de validación -->
+      <div class="alert-section">
+        <div class="alert alert-warning" *ngIf="tipoTransaccion === 'compra' && !saldoSuficiente">
+          <i class="bi bi-exclamation-triangle"></i>
+          Saldo insuficiente para esta transacción
+        </div>
+        
+        <div class="alert alert-danger" *ngIf="tipoTransaccion === 'venta' && cantidadDisponible === 0">
+          <i class="bi bi-x-circle"></i>
+          No tienes suficientes activos para vender
+        </div>
+      </div>
 
-    <!-- Mensaje de confirmación -->
-    <div class="mensaje-confirmacion" *ngIf="activo && puedeRealizarTransaccion()">
-      {{getMensajeConfirmacion()}}
-    </div>
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <button 
+          type="button" 
+          class="btn btn-secondary btn-cancelar" 
+          (click)="cancelarTransaccion()"
+          [disabled]="procesandoTransaccion">
+          <i class="bi bi-x-circle"></i>
+          Cancelar
+        </button>
+        
+        <button 
+          type="submit" 
+          class="btn btn-confirmar"
+          [ngClass]="colorBoton"
+          [disabled]="!puedeRealizarTransaccion"
+          [class.loading]="procesandoTransaccion">
+          
+          <span *ngIf="!procesandoTransaccion">
+            <i class="bi" [ngClass]="iconoTransaccion"></i>
+            Confirmar {{ tituloTransaccion }}
+          </span>
+          
+          <span *ngIf="procesandoTransaccion" class="loading-content">
+            <i class="bi bi-arrow-repeat spin"></i>
+            Procesando...
+          </span>
+        </button>
+      </div>
+
+      <!-- Confirmación final -->
+      <div class="confirmation-section" *ngIf="transaccionForm.get('cantidad')?.value && puedeRealizarTransaccion">
+        <div class="confirmation-card">
+          <h3>
+            <i class="bi bi-question-circle"></i>
+            ¿Confirmas que deseas {{ tipoTransaccion === 'compra' ? 'comprar' : 'vender' }} {{ transaccionForm.get('cantidad')?.value }} unidad(es) de {{ activo.simbolo }}?
+          </h3>
+          <div class="confirmation-details">
+            <div class="detail-row">
+              <span>Cantidad:</span>
+              <strong>{{ transaccionForm.get('cantidad')?.value }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Precio por unidad:</span>
+              <strong>{{ formatearDinero((activo.ultimo_precio || activo.precio) || 0) }}</strong>
+            </div>
+            <div class="detail-row total-row">
+              <span>{{ tipoTransaccion === 'compra' ? 'Total a pagar:' : 'Total a recibir:' }}</span>
+              <strong class="total-value">{{ formatearDinero(transaccionForm.get('costoTotal')?.value || 0) }}</strong>
+            </div>
+            <div class="detail-row" *ngIf="tipoTransaccion === 'compra'">
+              <span>Saldo restante:</span>
+              <strong>{{ formatearDinero((portafolioActual?.saldo || 0) - (transaccionForm.get('costoTotal')?.value || 0)) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
   </div>
+</div>
+
+<!-- Loading state -->
+<div class="loading-container" *ngIf="!activo || !usuario">
+  <div class="spinner"></div>
+  <p>Cargando información...</p>
 </div>

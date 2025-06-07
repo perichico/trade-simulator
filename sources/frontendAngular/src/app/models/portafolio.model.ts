@@ -18,6 +18,6 @@ export interface Portafolio {
   activos?: ActivoEnPortafolio[]; // Usar la misma interfaz
   fechaCreacion?: Date;
   fechaActualizacion?: Date;
-  valorTotal?: number; // Valor total en EUR
+  valorTotal?: number; // Valor total de SOLO los activos en EUR (no incluye saldo)
   rendimientoTotal?: number; // Rendimiento total en EUR
 }

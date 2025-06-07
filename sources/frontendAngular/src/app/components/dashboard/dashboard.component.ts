@@ -533,7 +533,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     return Math.round(rendimientoPorcentual * 100) / 100;
   }
 
-  // Método para obtener el valor total actualizado del portafolio
+  // Método para obtener el valor total actualizado del portafolio (solo activos)
   obtenerValorTotalPortafolio(): number {
     if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
       return 0;
@@ -543,8 +543,26 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       return total + (activo.valorTotal || 0);
     }, 0);
     
-    console.log('Valor total del portafolio:', valorTotal);
+    console.log('Valor total del portafolio (solo activos):', valorTotal);
     return valorTotal;
+  }
+
+  // Método para obtener el patrimonio total (saldo + valor de activos)
+  obtenerPatrimonioTotal(): number {
+    if (!this.portafolioSeleccionado) {
+      return 0;
+    }
+
+    const saldoActual = this.portafolioSeleccionado.saldo || 0;
+    const valorActivos = this.obtenerValorTotalPortafolio();
+    const patrimonioTotal = saldoActual + valorActivos;
+    
+    console.log('Patrimonio total:', {
+      saldo: saldoActual,
+      valorActivos: valorActivos,
+      patrimonioTotal: patrimonioTotal
+    });
+    return patrimonioTotal;
   }
 
   // Método para obtener el rendimiento total del portafolio en euros
@@ -557,9 +575,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     const saldoInicial = 10000;
     
     // Calcular patrimonio total actual
-    const saldoActual = this.portafolioSeleccionado.saldo || 0;
-    const valorActivos = this.obtenerValorTotalPortafolio();
-    const patrimonioTotal = saldoActual + valorActivos;
+    const patrimonioTotal = this.obtenerPatrimonioTotal();
     
     // Rendimiento total = patrimonio total - saldo inicial
     const rendimientoTotal = patrimonioTotal - saldoInicial;

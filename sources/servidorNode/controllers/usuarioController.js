@@ -222,37 +222,23 @@ exports.obtenerDatosDashboard = async (req, res) => {
     const patrimonioTotal = portafolio.saldo + valorTotalActivos;
     
     // Calcular rendimiento basado en el patrimonio total respecto al saldo inicial
-    const saldoInicial = 10000.00; // Saldo inicial del portafolio
+    const saldoInicial = 10000.00;
     const rendimientoTotal = patrimonioTotal - saldoInicial;
 
-    const valorTotalPortafolio = patrimonioTotal;
-
+    // Enviar datos separados: valor del portafolio (solo activos) y patrimonio total
+    const valorTotalPortafolio = valorTotalActivos; // Solo el valor de los activos
+    
     res.status(200).json({
       usuario: {
-        ...usuario.dataValues,
+        ...usuario.toJSON(),
         balance: portafolio.saldo
       },
-      portafolio: {
-        id: portafolio.id,
-        nombre: portafolio.nombre,
-        saldo: portafolio.saldo,
-        valorTotalActivos: Math.round(valorTotalActivos * 100) / 100,
-        valorTotal: Math.round(valorTotalPortafolio * 100) / 100,
-        rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
-        activos: activosConDatos
-      },
-      portafolios: portafolios.map(p => ({
-        id: p.id,
-        nombre: p.nombre,
-        saldo: p.saldo
-      })),
-      transacciones: transacciones.slice(0, 10),
-      estadisticas: {
-        totalActivos: activosConDatos.length,
-        conDividendos: activosConDatos.filter(a => a.porcentajeDividendo > 0).length,
-        transacciones: transacciones.length,
-        tiposActivos: [...new Set(activosConDatos.map(a => a.tipo))].length
-      }
+      transacciones,
+      activos: activosConDatos,
+      valorTotalPortafolio: Math.round(valorTotalPortafolio * 100) / 100,
+      patrimonioTotal: Math.round(patrimonioTotal * 100) / 100,
+      rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
+      saldo: Math.round(portafolio.saldo * 100) / 100
     });
 
   } catch (error) {

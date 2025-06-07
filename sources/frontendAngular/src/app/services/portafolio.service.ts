@@ -164,7 +164,7 @@ export class PortafolioService {
           nombre: response.nombre || 'Portafolio sin nombre',
           usuarioId: response.usuarioId || response.usuario_id || 0,
           activos,
-          valorTotal: Math.round(valorTotal * 100) / 100,
+          valorTotal: Math.round(valorTotal * 100) / 100, // Solo valor de activos
           rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
           fechaCreacion: response.fechaCreacion ? new Date(response.fechaCreacion) : new Date(),
           saldo: response.saldo || response.balance || 0,

@@ -26,7 +26,7 @@
 
   <!-- Estadísticas -->
   <div class="row g-4 mb-4" *ngIf="estadisticas">
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-3" *ngIf="estadisticas.totalActivos > 0">
       <div class="card bg-primary text-white">
         <div class="card-body text-center">
           <i class="bi bi-graph-up display-4 mb-2"></i>
@@ -35,7 +35,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-3" *ngIf="estadisticas.activosConDividendos > 0">
       <div class="card bg-success text-white">
         <div class="card-body text-center">
           <i class="bi bi-cash-coin display-4 mb-2"></i>
@@ -44,7 +44,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-3" *ngIf="estadisticas.totalTransacciones > 0">
       <div class="card bg-info text-white">
         <div class="card-body text-center">
           <i class="bi bi-arrow-left-right display-4 mb-2"></i>
@@ -53,7 +53,7 @@
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-3" *ngIf="estadisticas.tiposActivos > 0">
       <div class="card bg-warning text-white">
         <div class="card-body text-center">
           <i class="bi bi-collection display-4 mb-2"></i>

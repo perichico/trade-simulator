@@ -121,7 +121,7 @@
           </h5>
         </div>
         <div class="card-body">
-          <div class="table-responsive" *ngIf="portafolio.activos && portafolio.activos.length > 0">
+          <div class="table-responsive" *ngIf="tieneActivosConCantidad(portafolio)">
             <table class="table table-hover align-middle portfolio-table">
               <thead class="table-light">
                 <tr>
@@ -135,39 +135,41 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let activo of portafolio.activos">
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <strong class="me-2">{{activo.simbolo || 'N/A'}}</strong>
-                      <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
-                    </div>
-                  </td>
-                  <td>{{activo.cantidad || 0}}</td>
-                  <td>{{formatearDinero(activo.precioCompra || 0)}}</td>
-                  <td>{{formatearDinero(activo.precioActual || 0)}}</td>
-                  <td>{{formatearDinero(activo.valorTotal || 0)}}</td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'bg-success': (activo.rendimiento || 0) > 0,
-                      'bg-danger': (activo.rendimiento || 0) < 0,
-                      'bg-secondary': (activo.rendimiento || 0) === 0
-                    }">
-                      {{formatearDinero(activo.rendimiento || 0)}} ({{(activo.rendimientoPorcentaje || 0) | number:'1.2-2'}}%)
-                    </span>
-                  </td>
-                  <td>
-                    <div class="btn-group btn-group-sm">
-                      <button class="btn btn-outline-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
-                        <i class="bi bi-plus-circle me-1"></i>Comprar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <ng-container *ngFor="let activo of portafolio.activos">
+                  <tr *ngIf="activo.cantidad > 0">
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <strong class="me-2">{{activo.simbolo || 'N/A'}}</strong>
+                        <small class="text-muted">{{activo.nombre || 'Activo sin nombre'}}</small>
+                      </div>
+                    </td>
+                    <td>{{activo.cantidad || 0}}</td>
+                    <td>{{formatearDinero(activo.precioCompra || 0)}}</td>
+                    <td>{{formatearDinero(activo.precioActual || 0)}}</td>
+                    <td>{{formatearDinero(activo.valorTotal || 0)}}</td>
+                    <td>
+                      <span class="badge" [ngClass]="{
+                        'bg-success': (activo.rendimiento || 0) > 0,
+                        'bg-danger': (activo.rendimiento || 0) < 0,
+                        'bg-secondary': (activo.rendimiento || 0) === 0
+                      }">
+                        {{formatearDinero(activo.rendimiento || 0)}} ({{(activo.rendimientoPorcentaje || 0) | number:'1.2-2'}}%)
+                      </span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" (click)="abrirDialogoTransaccion(activo, 'compra')">
+                          <i class="bi bi-plus-circle me-1"></i>Comprar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
               </tbody>
             </table>
           </div>
 
-          <div class="text-center py-5" *ngIf="!portafolio.activos || portafolio.activos.length === 0">
+          <div class="text-center py-5" *ngIf="!tieneActivosConCantidad(portafolio)">
             <i class="bi bi-wallet2 display-1 text-muted mb-3"></i>
             <h5 class="text-muted">No tienes activos en tu portafolio</h5>
             <p class="text-muted">Para comenzar a invertir, ve al mercado y compra algunos activos</p>

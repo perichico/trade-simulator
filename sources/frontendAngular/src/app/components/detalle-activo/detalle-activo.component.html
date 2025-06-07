@@ -49,7 +49,7 @@
   <div class="portafolio-info" *ngIf="usuario && portafolioActual">
     <div class="estadisticas-grid">
       <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-        <div class="stat-content">
+        <div class="stat-content" *ngIf="activoPortafolio.cantidad > 0">
           <div class="stat-icon cantidad-icon">
             <i class="bi bi-collection"></i>
           </div>
@@ -61,7 +61,7 @@
       </mat-card>
 
       <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
-        <div class="stat-content">
+        <div class="stat-content" *ngIf="activoPortafolio.cantidad > 0">
           <div class="stat-icon valor-icon">
             <i class="bi bi-cash-stack"></i>
           </div>
@@ -84,7 +84,7 @@
         </div>
       </mat-card>
 
-      <mat-card class="stat-card" *ngIf="!getActivoEnPortafolio()">
+      <mat-card class="stat-card" *ngIf="!getActivoEnPortafolio() || getActivoEnPortafolio()?.cantidad === 0">
         <div class="stat-content">
           <div class="stat-icon sin-posicion-icon">
             <i class="bi bi-exclamation-circle"></i>

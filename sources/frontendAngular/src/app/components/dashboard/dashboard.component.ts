@@ -581,6 +581,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     return true;
   }
 
+  // Método helper para verificar si el portafolio tiene activos con cantidad > 0
+  tieneActivosValidos(portafolio: Portafolio): boolean {
+    return portafolio?.activos?.some(activo => activo.cantidad > 0) || false;
+  }
+
+  // Método helper para verificar si el portafolio tiene activos con cantidad > 0
+  tieneActivosConCantidad(portafolio: any): boolean {
+    return portafolio?.activos?.some((activo: any) => activo.cantidad > 0) || false;
+  }
+
   actualizarGrafico(): void {
     if (this.chart) {
       this.chart.destroy();

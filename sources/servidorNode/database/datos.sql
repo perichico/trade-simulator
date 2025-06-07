@@ -25,7 +25,7 @@ CREATE TABLE activos (
     ultimo_precio DECIMAL(10, 2),
     ultima_actualizacion DATETIME,
     porcentaje_dividendo DECIMAL(5, 2) DEFAULT 0.00,
-    frecuencia_dividendo ENUM('trimestral', 'semestral', 'anual') DEFAULT 'anual',
+    frecuencia_dividendo ENUM('mensual', 'trimestral', 'semestral', 'anual'),
     ultima_fecha_dividendo DATE DEFAULT NULL,
     FOREIGN KEY (tipo_activo_id) REFERENCES tipo_activo(id) ON DELETE CASCADE
 );
@@ -39,12 +39,58 @@ CREATE TABLE portafolio (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
+-- Crear tabla de ordenes
+CREATE TABLE ordenes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    tipo ENUM('compra', 'venta') NOT NULL,
+    cantidad INT NOT NULL,
+    precio_limite DECIMAL(10, 2),
+    estado ENUM('pendiente', 'ejecutada', 'cancelada') NOT NULL,
+    fecha_creacion DATETIME NOT NULL,
+    fecha_ejecucion DATETIME,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de alertas
+CREATE TABLE alertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    portafolio_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    precio_objetivo DECIMAL(10, 2) NOT NULL,
+    cantidad_venta INT NOT NULL,
+    condicion ENUM('mayor', 'menor') NOT NULL DEFAULT 'mayor',
+    estado ENUM('activa', 'disparada', 'cancelada') NOT NULL DEFAULT 'activa',
+    activa BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_disparo DATETIME NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (portafolio_id) REFERENCES portafolio(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
+-- Crear tabla de transacciones
+CREATE TABLE transacciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    activo_id INT NOT NULL,
+    tipo VARCHAR(255) NOT NULL,
+    cantidad INT NOT NULL,
+    precio DECIMAL(10, 2) NOT NULL,
+    fecha DATETIME NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
+);
+
 -- Crear tabla de portafolio_activo
 CREATE TABLE portafolio_activo (
     portafolio_id INT NOT NULL,
     activo_id INT NOT NULL,
-    cantidad DECIMAL(10, 2) NOT NULL,
-    precio_compra DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    cantidad DECIMAL(15, 6) NOT NULL DEFAULT 0,
+    precio_compra DECIMAL(15, 6) DEFAULT 0,
     fecha_compra DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (portafolio_id, activo_id),
     FOREIGN KEY (portafolio_id) REFERENCES portafolio(id) ON DELETE CASCADE,
@@ -69,55 +115,6 @@ CREATE TABLE dividendos (
     monto_por_accion DECIMAL(15, 6) NOT NULL,
     estado VARCHAR(255) DEFAULT 'pendiente',
     FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
-);
-
--- Crear tabla de ordenes
-CREATE TABLE ordenes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT NOT NULL,
-    activo_id INT NOT NULL,
-    tipo ENUM('compra', 'venta') NOT NULL,
-    cantidad DECIMAL(10, 2) NOT NULL,
-    precio_limite DECIMAL(10, 2),
-    estado ENUM('pendiente', 'ejecutada', 'cancelada') NOT NULL,
-    fecha_creacion DATETIME NOT NULL,
-    fecha_ejecucion DATETIME,
-    precio_ejecutado DECIMAL(10, 2),
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
-);
-
--- Crear tabla de alertas
-CREATE TABLE alertas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT NOT NULL,
-    portafolio_id INT NOT NULL,
-    activo_id INT NOT NULL,
-    precio_objetivo DECIMAL(10, 2) NOT NULL,
-    cantidad_venta INT NOT NULL, -- Obligatorio para ejecutar ventas automáticas
-    condicion ENUM('mayor', 'menor') NOT NULL DEFAULT 'mayor',
-    estado ENUM('activa', 'disparada', 'cancelada') NOT NULL DEFAULT 'activa',
-    activa BOOLEAN NOT NULL DEFAULT TRUE,
-    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    fecha_disparo DATETIME NULL,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (portafolio_id) REFERENCES portafolios(id) ON DELETE CASCADE,
-    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE
-);
-
--- Crear tabla de transacciones
-CREATE TABLE transacciones (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT NOT NULL,
-    activo_id INT NOT NULL,
-    tipo ENUM('compra', 'venta') NOT NULL,
-    cantidad DECIMAL(10, 2) NOT NULL,
-    precio DECIMAL(10, 2) NOT NULL,
-    fecha DATETIME NOT NULL,
-    orden_id INT,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (activo_id) REFERENCES activos(id) ON DELETE CASCADE,
-    FOREIGN KEY (orden_id) REFERENCES ordenes(id) ON DELETE SET NULL
 );
 
 -- Insertar tipos de activo

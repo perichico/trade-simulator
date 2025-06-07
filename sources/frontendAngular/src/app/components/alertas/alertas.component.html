@@ -121,7 +121,7 @@
             
             <!-- Mostrar información cuando hay activos disponibles -->
             <div class="form-hint text-success" *ngIf="cantidadDisponibleEnPortafolio > 0">
-              ✅ Tienes <strong>{{ cantidadDisponibleEnPortafolio }}</strong> unidades disponibles en este portafolio
+              ✅ Tienes <strong>{{ cantidadDisponibleEnPortafolio.toFixed(0) }}</strong> unidades disponibles en este portafolio
             </div>
             
             <!-- Mostrar advertencia cuando no hay activos -->

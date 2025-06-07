@@ -46,7 +46,7 @@
                 'text-danger': (data.activo.variacion || 0) < 0,
                 'text-secondary': (data.activo.variacion || 0) === 0
               }">
-                {{ (data.activo.variacion || 0) | number:'1.2-2' }}%
+                {{ (data.activo.variacion || 0).toFixed(2) }}%
               </div>
             </div>
           </div>

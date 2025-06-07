@@ -231,7 +231,7 @@
                   <td>
                     <div class="text-center">
                       <span *ngIf="activo.porcentajeDividendo > 0" class="badge bg-success">
-                        {{ activo.porcentajeDividendo }}%
+                        {{ activo.porcentajeDividendo.toFixed(2) }}%
                       </span>
                       <span *ngIf="activo.porcentajeDividendo === 0" class="badge bg-secondary">
                         No paga

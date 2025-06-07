@@ -48,26 +48,26 @@
   <!-- Mostrar información del portafolio si el usuario está logueado -->
   <div class="portafolio-info" *ngIf="usuario && portafolioActual">
     <div class="estadisticas-grid">
-      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio() as activoPortafolio">
         <div class="stat-content" *ngIf="activoPortafolio.cantidad > 0">
           <div class="stat-icon cantidad-icon">
             <i class="bi bi-collection"></i>
           </div>
           <div class="stat-info">
             <h3>Cantidad en Portafolio</h3>
-            <p>{{ activoPortafolio.cantidad }} unidades</p>
+            <p>{{ activoPortafolio.cantidad | number:'1.0-6' }} unidades</p>
           </div>
         </div>
       </mat-card>
 
-      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio(); let activoPortafolio">
+      <mat-card class="stat-card" *ngIf="getActivoEnPortafolio() as activoPortafolio">
         <div class="stat-content" *ngIf="activoPortafolio.cantidad > 0">
           <div class="stat-icon valor-icon">
             <i class="bi bi-cash-stack"></i>
           </div>
           <div class="stat-info">
             <h3>Valor de la Posición</h3>
-            <p>{{ activoPortafolio.valorTotal | currency:'EUR':'symbol':'1.2-2' }}</p>
+            <p>{{ (activoPortafolio.cantidad * activoPortafolio.precioActual) | currency:'EUR':'symbol':'1.2-2' }}</p>
           </div>
         </div>
       </mat-card>

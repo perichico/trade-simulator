@@ -313,13 +313,25 @@ export class PortafolioService {
     
     // Calcular patrimonio total actual (saldo + valor de activos)
     const saldoActual = portafolio.saldo || 0;
-    const valorActivos = portafolio.valorTotal || 0;
+    const valorActivos = this.calcularValorTotalActivos(portafolio);
     const patrimonioTotal = saldoActual + valorActivos;
     
     // Calcular rendimiento porcentual basado en el patrimonio total
     const rendimientoPorcentual = ((patrimonioTotal - saldoInicial) / saldoInicial) * 100;
     
     return Math.round(rendimientoPorcentual * 100) / 100;
+  }
+
+  // Método auxiliar para calcular el valor total de activos
+  private calcularValorTotalActivos(portafolio: Portafolio): number {
+    if (!portafolio?.activos || !Array.isArray(portafolio.activos)) {
+      return 0;
+    }
+
+    return portafolio.activos.reduce((total, activo) => {
+      const valor = activo.cantidad * activo.precioActual;
+      return total + (isNaN(valor) ? 0 : valor);
+    }, 0);
   }
 
   // Eliminar un portafolio y sus activos asociados

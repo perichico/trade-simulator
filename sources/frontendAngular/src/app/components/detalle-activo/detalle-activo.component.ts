@@ -402,7 +402,9 @@ export class DetalleActivoComponent implements OnInit, OnDestroy, AfterViewInit 
     if (!this.portafolioActual?.activos || !this.activo) {
       return null;
     }
-    return this.portafolioActual.activos.find(a => a.activoId === this.activo!.id);
+    return this.portafolioActual.activos.find(a => 
+      a.activoId === this.activo!.id
+    );
   }
 
   ngAfterViewInit(): void {

@@ -13,11 +13,14 @@ import { PortafolioService } from '../../services/portafolio.service';
 
 // Interfaz para los activos dentro del portafolio
 interface ActivoEnPortafolio {
-  activoId?: number;
-  id?: number;
-  activo_id?: number;
+  activoId?: number;  // ID normalizado del activo
+  id?: number;        // ID alternativo
+  activo_id?: number; // ID del backend
   nombre?: string;
+  simbolo?: string;
   cantidad: number;
+  precioActual?: number;
+  valorTotal?: number;
 }
 
 @Component({

@@ -52,15 +52,15 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
         for (const portafolio of portafolios) {
             balanceTotal += portafolio.saldo || 0;
 
-            // Obtener activos del portafolio
+            // Obtener activos del portafolio usando PortafolioActivo
             const activosEnPortafolio = await PortafolioActivo.findAll({
-                where: { portafolio_id: portafolio.id }
+                where: { portafolio_id: portafolio.id },
+                include: [Activo]
             });
 
-            for (const item of activosEnPortafolio) {
-                const activo = await Activo.findByPk(item.activo_id);
-                if (activo) {
-                    valorPortafolioTotal += item.cantidad * (activo.ultimo_precio || 0);
+            for (const posicion of activosEnPortafolio) {
+                if (posicion.cantidad > 0 && posicion.Activo) {
+                    valorPortafolioTotal += posicion.cantidad * (posicion.Activo.ultimo_precio || 0);
                 }
             }
         }
@@ -133,15 +133,15 @@ exports.obtenerPatrimonioActual = async (req, res) => {
         for (const portafolio of portafolios) {
             balanceTotal += portafolio.saldo || 0;
 
-            // Obtener activos del portafolio
+            // Obtener activos del portafolio usando PortafolioActivo
             const activosEnPortafolio = await PortafolioActivo.findAll({
-                where: { portafolio_id: portafolio.id }
+                where: { portafolio_id: portafolio.id },
+                include: [Activo]
             });
 
-            for (const item of activosEnPortafolio) {
-                const activo = await Activo.findByPk(item.activo_id);
-                if (activo) {
-                    valorPortafolioTotal += item.cantidad * (activo.ultimo_precio || 0);
+            for (const posicion of activosEnPortafolio) {
+                if (posicion.cantidad > 0 && posicion.Activo) {
+                    valorPortafolioTotal += posicion.cantidad * (posicion.Activo.ultimo_precio || 0);
                 }
             }
         }

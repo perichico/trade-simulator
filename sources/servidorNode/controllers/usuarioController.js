@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const { sequelize, Usuario, Activo, Transaccion, Portafolio } = require("../models/index");
+const { sequelize, Usuario, Activo, Transaccion, Portafolio, PortafolioActivo } = require("../models/index");
 
 // Verificar estado de autenticación
 exports.verificarAutenticacion = (req, res) => {
@@ -170,42 +170,51 @@ exports.obtenerDatosDashboard = async (req, res) => {
     });
 
     // Filtrar activos con cantidad > 0 y obtener precios actuales
-    const activosEnPortafolio = [];
-    for (const [activoId, datosActivo] of Object.entries(activosAgrupados)) {
-      if (datosActivo.cantidadTotal > 0) {
-        const precioActualResponse = await preciosService.obtenerPrecioActual(datosActivo.activo.simbolo, activoId);
-        const precioActual = precioActualResponse?.precio || datosActivo.activo.ultimo_precio || 0;
-        const valorActual = datosActivo.cantidadTotal * precioActual;
+    const activosEnPortafolio = await PortafolioActivo.findAll({
+      where: { portafolio_id: portafolio.id },
+      include: [{
+        model: Activo,
+        include: [TipoActivo]
+      }]
+    });
+
+    // Crear array de activos con sus datos calculados
+    const activosConDatos = [];
+    for (const posicion of activosEnPortafolio) {
+      if (posicion.cantidad > 0) {
+        const activo = posicion.Activo;
         
-        // Calcular precio promedio de compra
-        const precioPromedioCompra = datosActivo.valorInvertido / datosActivo.cantidadTotal;
+        // Obtener precio actual
+        const precioActualResponse = await preciosService.obtenerPrecioActual(activo.simbolo, activo.id);
+        const precioActual = precioActualResponse?.precio || activo.ultimo_precio || 0;
         
-        // Calcular rendimiento
-        const costoBasis = datosActivo.cantidadTotal * precioPromedioCompra;
-        const rendimiento = valorActual - costoBasis;
-        const rendimientoPorcentaje = precioPromedioCompra > 0 ? 
-          ((precioActual - precioPromedioCompra) / precioPromedioCompra) * 100 : 0;
+        // Calcular valores
+        const valorTotal = posicion.cantidad * precioActual;
+        const costoBasis = posicion.cantidad * (posicion.precio_compra || 0);
+        const rendimiento = valorTotal - costoBasis;
+        const rendimientoPorcentaje = posicion.precio_compra > 0 ? 
+          ((precioActual - posicion.precio_compra) / posicion.precio_compra) * 100 : 0;
         
-        activosEnPortafolio.push({
-          id: datosActivo.activo.id,
-          activoId: datosActivo.activo.id, // Añadir para compatibilidad
-          nombre: datosActivo.activo.nombre,
-          simbolo: datosActivo.activo.simbolo,
-          cantidad: datosActivo.cantidadTotal,
-          precioCompra: precioPromedioCompra,
+        activosConDatos.push({
+          id: activo.id,
+          activoId: activo.id,
+          nombre: activo.nombre,
+          simbolo: activo.simbolo,
+          cantidad: posicion.cantidad,
+          precioCompra: posicion.precio_compra || 0,
           precioActual: precioActual,
-          valorTotal: Math.round(valorActual * 100) / 100,
+          valorTotal: Math.round(valorTotal * 100) / 100,
           rendimiento: Math.round(rendimiento * 100) / 100,
           rendimientoPorcentaje: Math.round(rendimientoPorcentaje * 100) / 100,
-          porcentajeDividendo: datosActivo.activo.porcentaje_dividendo || 0,
+          porcentajeDividendo: activo.porcentaje_dividendo || 0,
           ultima_actualizacion: new Date(),
-          tipo: datosActivo.activo.TipoActivo?.nombre || 'Acción'
+          tipo: activo.TipoActivo?.nombre || 'Acción'
         });
       }
     }
 
     // Calcular valor total del portafolio y rendimiento total
-    const valorTotalActivos = activosEnPortafolio.reduce((total, activo) => 
+    const valorTotalActivos = activosConDatos.reduce((total, activo) => 
       total + activo.valorTotal, 0
     );
     
@@ -230,7 +239,7 @@ exports.obtenerDatosDashboard = async (req, res) => {
         valorTotalActivos: Math.round(valorTotalActivos * 100) / 100,
         valorTotal: Math.round(valorTotalPortafolio * 100) / 100,
         rendimientoTotal: Math.round(rendimientoTotal * 100) / 100,
-        activos: activosEnPortafolio
+        activos: activosConDatos
       },
       portafolios: portafolios.map(p => ({
         id: p.id,
@@ -239,10 +248,10 @@ exports.obtenerDatosDashboard = async (req, res) => {
       })),
       transacciones: transacciones.slice(0, 10),
       estadisticas: {
-        totalActivos: activosEnPortafolio.length,
-        conDividendos: activosEnPortafolio.filter(a => a.porcentajeDividendo > 0).length,
+        totalActivos: activosConDatos.length,
+        conDividendos: activosConDatos.filter(a => a.porcentajeDividendo > 0).length,
         transacciones: transacciones.length,
-        tiposActivos: [...new Set(activosEnPortafolio.map(a => a.tipo))].length
+        tiposActivos: [...new Set(activosConDatos.map(a => a.tipo))].length
       }
     });
 

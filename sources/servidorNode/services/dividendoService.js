@@ -265,8 +265,6 @@ class DividendoService {
           // Sumar el dividendo al saldo del portafolio
           const nuevoSaldo = parseFloat(portafolio.saldo || 0) + parseFloat(montoTotal);
           await portafolio.update({ saldo: nuevoSaldo }, { transaction });
-          
-          console.log(`Dividendo pagado al portafolio ${portafolio.id}: ${montoTotal}`);
         }
       }
     } catch (error) {

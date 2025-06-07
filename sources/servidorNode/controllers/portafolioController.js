@@ -292,32 +292,27 @@ exports.obtenerPortafolio = async (req, res) => {
 
 // Método para calcular el valor total de un portafolio
 exports.calcularValorPortafolio = async (portafolioId) => {
-    try {
-        const activosEnPortafolio = await PortafolioActivo.findAll({
-            where: { portafolio_id: portafolioId }
-        });
-        
-        // Obtener los detalles de los activos por separado
-        const activosConDetalles = [];
-        for (const item of activosEnPortafolio) {
-            const activo = await Activo.findByPk(item.activo_id, {
-                attributes: ['id', 'ultimo_precio']
-            });
-            if (activo) {
-                activosConDetalles.push({
-                    ...item.toJSON(),
-                    activo
-                });
-            }
-        }
-
-        return activosConDetalles.reduce((total, item) => {
-            return total + (item.cantidad * (item.activo.ultimo_precio || 0));
-        }, 0);
-    } catch (error) {
-        console.error('Error al calcular valor del portafolio:', error);
-        return 0;
+  try {
+    // Obtener todas las posiciones del portafolio
+    const posiciones = await PortafolioActivo.findAll({
+      where: { portafolio_id: portafolioId },
+      include: [Activo]
+    });
+    
+    let valorTotal = 0;
+    
+    for (const posicion of posiciones) {
+      if (posicion.cantidad > 0 && posicion.Activo) {
+        const precioActual = posicion.Activo.ultimo_precio || 0;
+        valorTotal += posicion.cantidad * precioActual;
+      }
     }
+    
+    return Math.round(valorTotal * 100) / 100;
+  } catch (error) {
+    console.error('Error al calcular valor del portafolio:', error);
+    return 0;
+  }
 };
 
 // Crear un nuevo portafolio

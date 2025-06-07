@@ -118,12 +118,27 @@
               [max]="cantidadDisponibleEnPortafolio > 0 ? cantidadDisponibleEnPortafolio : null"
               [disabled]="!alertaForm.get('activoId')?.value || !alertaForm.get('portafolioId')?.value"
               placeholder="Ingresa la cantidad a vender">
-            <div class="form-hint" *ngIf="cantidadDisponibleEnPortafolio > 0">
-              Tienes <strong>{{ cantidadDisponibleEnPortafolio }}</strong> unidades disponibles en este portafolio
+            
+            <!-- Mostrar información cuando hay activos disponibles -->
+            <div class="form-hint text-success" *ngIf="cantidadDisponibleEnPortafolio > 0">
+              ✅ Tienes <strong>{{ cantidadDisponibleEnPortafolio }}</strong> unidades disponibles en este portafolio
             </div>
+            
+            <!-- Mostrar advertencia cuando no hay activos -->
             <div class="form-hint text-warning" *ngIf="alertaForm.get('activoId')?.value && alertaForm.get('portafolioId')?.value && cantidadDisponibleEnPortafolio === 0">
               ⚠️ No tienes este activo en el portafolio seleccionado
             </div>
+            
+            <!-- Mostrar información de carga -->
+            <div class="form-hint text-info" *ngIf="cargandoPortafolios">
+              <i class="bi bi-arrow-repeat"></i> Cargando información del portafolio...
+            </div>
+            
+            <!-- Debug: Mostrar información detallada (temporal) -->
+            <div class="form-hint text-muted small" *ngIf="alertaForm.get('portafolioId')?.value && alertaForm.get('activoId')?.value" style="font-size: 0.8em;">
+              Debug: Portafolio {{ alertaForm.get('portafolioId')?.value }}, Activo {{ alertaForm.get('activoId')?.value }}
+            </div>
+            
             <div class="invalid-feedback" *ngIf="alertaForm.get('cantidadVenta')?.touched && alertaForm.get('cantidadVenta')?.errors">
               <div *ngIf="alertaForm.get('cantidadVenta')?.hasError('required')">
                 La cantidad a vender es obligatoria

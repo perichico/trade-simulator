@@ -11,6 +11,15 @@ import { ActivoService } from '../../services/activo.service';
 import { AuthService } from '../../services/auth.service';
 import { PortafolioService } from '../../services/portafolio.service';
 
+// Interfaz para los activos dentro del portafolio
+interface ActivoEnPortafolio {
+  activoId?: number;
+  id?: number;
+  activo_id?: number;
+  nombre?: string;
+  cantidad: number;
+}
+
 @Component({
   selector: 'app-alertas',
   templateUrl: './alertas.component.html',
@@ -172,9 +181,24 @@ export class AlertasComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (portafolios) => {
-            this.portafolios = portafolios;
-            this.cargandoPortafolios = false;
-            resolve();
+            // Cargar cada portafolio completo con sus activos
+            const promesasPortafolios = portafolios.map(portafolio => 
+              this.portafolioService.obtenerPortafolioPorId(portafolio.id!).toPromise()
+            );
+            
+            Promise.all(promesasPortafolios)
+              .then(portafoliosCompletos => {
+                this.portafolios = portafoliosCompletos.filter(p => p !== undefined);
+                console.log('Portafolios cargados con activos:', this.portafolios);
+                this.cargandoPortafolios = false;
+                resolve();
+              })
+              .catch(error => {
+                console.error('Error al cargar portafolios completos:', error);
+                this.portafolios = portafolios; // Fallback a portafolios básicos
+                this.cargandoPortafolios = false;
+                resolve();
+              });
           },
           error: (error) => {
             console.error('Error al cargar portafolios:', error);
@@ -220,24 +244,51 @@ export class AlertasComponent implements OnInit, OnDestroy {
     const portafolioId = this.alertaForm.get('portafolioId')?.value;
     const activoId = this.alertaForm.get('activoId')?.value;
     
-    if (!portafolioId || !activoId) return 0;
+    if (!portafolioId || !activoId) {
+      console.log('Faltan IDs:', { portafolioId, activoId });
+      return 0;
+    }
     
     const portafolio = this.portafolios.find(p => p.id === +portafolioId);
     if (!portafolio) {
-      console.log('Portafolio no encontrado:', portafolioId);
+      console.log('Portafolio no encontrado:', portafolioId, 'Portafolios disponibles:', this.portafolios.map(p => ({ id: p.id, nombre: p.nombre })));
       return 0;
     }
     
     // Verificar que el portafolio tenga activos
     if (!portafolio.activos || !Array.isArray(portafolio.activos)) {
-      console.log('Portafolio sin activos o activos no es array:', portafolio);
+      console.log('Portafolio sin activos o activos no es array:', {
+        portafolioId: portafolio.id,
+        nombre: portafolio.nombre,
+        activos: portafolio.activos,
+        tipoActivos: typeof portafolio.activos
+      });
       return 0;
     }
     
+    console.log('Buscando activo en portafolio:', {
+      portafolioId,
+      activoId,
+      activosEnPortafolio: portafolio.activos.map((a: ActivoEnPortafolio) => ({
+        activoId: a.activoId || a.id || a.activo_id,
+        nombre: a.nombre,
+        cantidad: a.cantidad
+      }))
+    });
+    
     // Buscar el activo específico, manejando diferentes formatos de ID
-    const activo = portafolio.activos.find((a: any) => {
+    const activo = portafolio.activos.find((a: ActivoEnPortafolio) => {
       const activoIdEnPortafolio = a.activoId || a.id || a.activo_id;
-      return activoIdEnPortafolio === +activoId;
+      const match = activoIdEnPortafolio === +activoId;
+      if (match) {
+        console.log('Activo encontrado:', {
+          activoIdEnPortafolio,
+          activoIdBuscado: +activoId,
+          cantidad: a.cantidad,
+          activo: a
+        });
+      }
+      return match;
     });
     
     if (!activo) {
@@ -253,9 +304,19 @@ export class AlertasComponent implements OnInit, OnDestroy {
   crearAlerta(): void {
     if (this.alertaForm.valid) {
       const formData = this.alertaForm.value;
+      
+      // Verificar cantidad disponible antes de enviar
+      if (this.cantidadDisponibleEnPortafolio < formData.cantidadVenta) {
+        this.mostrarNotificacion(
+          `No tienes suficientes activos. Disponibles: ${this.cantidadDisponibleEnPortafolio}, solicitados: ${formData.cantidadVenta}`,
+          'error'
+        );
+        return;
+      }
+
       const nuevaAlerta: Alerta = {
         usuarioId: 0, // Se asigna en el backend
-        portafolioId: +formData.portafolioId, // Nuevo campo
+        portafolioId: +formData.portafolioId,
         activoId: +formData.activoId,
         precioObjetivo: +formData.precioObjetivo,
         cantidadVenta: +formData.cantidadVenta,
@@ -263,22 +324,37 @@ export class AlertasComponent implements OnInit, OnDestroy {
         activa: true
       };
 
+      console.log('Creando alerta:', nuevaAlerta);
+
       this.alertaService.crearAlerta(nuevaAlerta)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (response: any) => {
+            console.log('Respuesta del servidor:', response);
+            
             let mensaje = 'Alerta creada exitosamente.';
+            
             if (response.venta_ejecutada) {
-              mensaje += ` Se ejecutó una venta automática de ${nuevaAlerta.cantidadVenta} unidades por haberse cumplido la condición inmediatamente.`;
+              // La condición ya se cumplía al crear la alerta
+              mensaje = `🎯 ¡Condición cumplida inmediatamente!\n`;
+              mensaje += `Se ejecutó una venta automática de ${nuevaAlerta.cantidadVenta} unidades `;
+              mensaje += `de ${this.activoSeleccionado?.simbolo || 'el activo'} `;
+              mensaje += `a $${response.precio_ejecutacion?.toFixed(2) || 'N/A'} por unidad.\n`;
+              mensaje += `Valor total: $${(response.precio_ejecutacion * nuevaAlerta.cantidadVenta).toFixed(2)}`;
             } else {
-              mensaje += ` Se venderán ${nuevaAlerta.cantidadVenta} unidades cuando se alcance el precio objetivo.`;
+              // Alerta creada normalmente
+              const condicionTexto = nuevaAlerta.condicion === 'mayor' ? 'alcance o supere' : 'baje a';
+              mensaje += ` Se venderán ${nuevaAlerta.cantidadVenta} unidades automáticamente `;
+              mensaje += `cuando el precio ${condicionTexto} $${nuevaAlerta.precioObjetivo.toFixed(2)}.`;
             }
+            
             this.mostrarNotificacion(mensaje, 'success');
             this.resetearFormulario();
             this.cargarAlertas();
             this.cargarPortafolios(); // Actualizar portafolios por si cambió el saldo
           },
           error: (error) => {
+            console.error('Error al crear alerta:', error);
             this.mostrarNotificacion(error.message || 'Error al crear la alerta', 'error');
           }
         });

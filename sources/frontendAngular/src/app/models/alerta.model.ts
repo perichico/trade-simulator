@@ -16,3 +16,16 @@ export interface Alerta {
     nombrePortafolio?: string;
     precioActual?: number;
 }
+
+// Interfaz para la respuesta del servidor al crear alerta
+export interface RespuestaCreacionAlerta {
+    alerta: Alerta;
+    mensaje: string;
+    venta_ejecutada: boolean;
+    resultado_venta?: {
+        cantidadVendida: number;
+        valorTotal: number;
+        precioVenta: number;
+    };
+    precio_ejecucion?: number;
+}

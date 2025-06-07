@@ -72,12 +72,28 @@ router.post('/', async (req, res) => {
     });
 
     const cantidadDisponible = posicion ? parseFloat(posicion.cantidad) : 0;
+    
+    console.log('Verificación de activos en alerta:', {
+      portafolioId,
+      activoId,
+      posicion: posicion ? {
+        cantidad: posicion.cantidad,
+        precio_compra: posicion.precio_compra
+      } : null,
+      cantidadDisponible,
+      cantidadSolicitada: cantidadVenta
+    });
 
     if (cantidadDisponible < cantidadVenta) {
       return res.status(400).json({
         error: `No tienes suficientes activos en este portafolio. Tienes ${cantidadDisponible} unidades, necesitas ${cantidadVenta}.`
       });
     }
+
+    // Obtener precio actual para verificar si la alerta ya se cumple
+    const HistorialPreciosService = require('../services/historialPreciosService');
+    const historialService = new HistorialPreciosService();
+    const precioActual = await historialService.obtenerUltimoPrecio(activoId);
     
     const alerta = await Alerta.create({
       usuarioId: userId,
@@ -88,8 +104,69 @@ router.post('/', async (req, res) => {
       condicion: condicion || 'mayor',
       activa: true
     });
+
+    // Verificar si la alerta ya se cumple al momento de crearla
+    if (precioActual) {
+      const condicionCumplida = condicion === 'mayor' ?
+        precioActual >= precioObjetivo :
+        precioActual <= precioObjetivo;
+
+      console.log(`Verificando condición al crear alerta ${alerta.id}:`, {
+        precioActual,
+        precioObjetivo,
+        condicion,
+        condicionCumplida
+      });
+
+      if (condicionCumplida) {
+        console.log(`🚨 ALERTA CUMPLIDA AL CREAR: ID ${alerta.id} - Ejecutando venta inmediata`);
+        
+        try {
+          const transaccionController = require('../controllers/transaccionController');
+          const resultadoVenta = await transaccionController.ejecutarVentaAutomatica(
+            userId,
+            activoId,
+            cantidadVenta,
+            precioActual,
+            portafolioId
+          );
+
+          // Actualizar estado de la alerta
+          await alerta.update({
+            estado: 'disparada',
+            activa: false,
+            fecha_disparo: new Date()
+          });
+
+          return res.status(201).json({
+            alerta,
+            mensaje: 'Alerta creada y ejecutada inmediatamente',
+            venta_ejecutada: true,
+            resultado_venta: resultadoVenta,
+            precio_ejecucion: precioActual
+          });
+
+        } catch (ventaError) {
+          console.error(`❌ Error al ejecutar venta inmediata:`, ventaError.message);
+          
+          // Cancelar la alerta si no se puede ejecutar
+          await alerta.update({
+            estado: 'cancelada',
+            activa: false
+          });
+
+          return res.status(400).json({
+            error: `Alerta creada pero no se pudo ejecutar la venta: ${ventaError.message}`
+          });
+        }
+      }
+    }
     
-    return res.status(201).json(alerta);
+    return res.status(201).json({
+      alerta,
+      mensaje: 'Alerta creada exitosamente',
+      venta_ejecutada: false
+    });
   } catch (error) {
     console.error('Error al crear alerta:', error);
     return res.status(500).json({ message: 'Error al crear alerta', error: error.message });

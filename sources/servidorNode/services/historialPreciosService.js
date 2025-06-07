@@ -7,30 +7,32 @@ class HistorialPreciosService {
 
     async obtenerUltimoPrecio(activoId) {
         try {
-            const ultimosRegistros = await HistorialPrecios.findAll({
+            const { HistorialPrecios, Activo } = require('../models/index');
+            
+            // Primero intentar obtener el último precio del historial
+            const ultimoRegistro = await HistorialPrecios.findOne({
                 where: { activo_id: activoId },
                 order: [['fecha', 'DESC']],
-                limit: 2,
-                raw: true
+                limit: 1
             });
-            
-            if (ultimosRegistros.length === 0) {
-                console.log(`No se encontró historial de precios para el activo ${activoId}`);
-                return null;
+
+            if (ultimoRegistro) {
+                console.log(`Precio del historial para activo ${activoId}: $${ultimoRegistro.precio}`);
+                return parseFloat(ultimoRegistro.precio);
             }
-            
-            // Si solo hay un registro o si los dos últimos registros son iguales, usar el último
-            if (ultimosRegistros.length === 1 || ultimosRegistros[0].precio === ultimosRegistros[1].precio) {
-                console.log(`Último precio encontrado para activo ${activoId}: ${ultimosRegistros[0].precio}`);
-                return ultimosRegistros[0].precio;
+
+            // Si no hay historial, obtener precio del activo
+            const activo = await Activo.findByPk(activoId);
+            if (activo && activo.ultimo_precio) {
+                console.log(`Precio del activo ${activoId}: $${activo.ultimo_precio}`);
+                return parseFloat(activo.ultimo_precio);
             }
-            
-            // Usar el penúltimo registro para calcular la variación
-            console.log(`Penúltimo precio encontrado para activo ${activoId}: ${ultimosRegistros[1].precio}`);
-            return ultimosRegistros[1].precio;
+
+            console.log(`No se encontró precio para activo ${activoId}`);
+            return null;
         } catch (error) {
-            console.error('Error al obtener último precio:', error);
-            throw error;
+            console.error(`Error al obtener último precio para activo ${activoId}:`, error);
+            return null;
         }
     }
 

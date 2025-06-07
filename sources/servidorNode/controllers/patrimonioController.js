@@ -66,7 +66,8 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
         }
 
         const patrimonioActual = balanceTotal + valorPortafolioTotal;
-
+        const saldoInicial = 10000.00; // Saldo inicial de referencia
+        
         // Generar historial simulado para los últimos 7 días
         const historial = [];
         const hoy = new Date();
@@ -76,11 +77,12 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
             fecha.setDate(hoy.getDate() - i);
 
             // Factor de variación que disminuye hacia el pasado
-            const factorTiempo = 1 - (i * 0.02); // 2% de variación por día
-            const variacionAleatoria = 0.95 + (Math.random() * 0.1); // ±5% aleatorio
+            const factorTiempo = 1 - (i * 0.001); // 0.1% de variación por día para ser más realista
+            const variacionAleatoria = 0.98 + (Math.random() * 0.04); // ±2% aleatorio
 
             const balanceDia = balanceTotal * factorTiempo * variacionAleatoria;
             const valorPortafolioDia = valorPortafolioTotal * factorTiempo * variacionAleatoria;
+            const patrimonioDia = balanceDia + valorPortafolioDia;
 
             historial.push({
                 usuarioId: parseInt(usuarioId),
@@ -88,7 +90,8 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
                 fecha: fecha.toISOString().split('T')[0], // Solo la fecha
                 balance: Math.round(balanceDia * 100) / 100,
                 valorPortafolio: Math.round(valorPortafolioDia * 100) / 100,
-                patrimonioTotal: Math.round((balanceDia + valorPortafolioDia) * 100) / 100
+                patrimonioTotal: Math.round(patrimonioDia * 100) / 100,
+                rendimientoTotal: Math.round((patrimonioDia - saldoInicial) * 100) / 100
             });
         }
 

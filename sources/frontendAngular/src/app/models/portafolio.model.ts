@@ -3,10 +3,10 @@ export interface ActivoEnPortafolio {
   nombre: string;
   simbolo: string;
   cantidad: number;
-  precioCompra: number; // Precio promedio de compra
-  precioActual: number; // Precio actual del mercado
-  valorTotal: number; // Precio actual * cantidad
-  rendimiento: number; // Ganancia/pérdida en valor monetario
+  precioCompra: number; // Precio promedio de compra en EUR
+  precioActual: number; // Precio actual del mercado en EUR
+  valorTotal: number; // Precio actual * cantidad en EUR
+  rendimiento: number; // Ganancia/pérdida en valor monetario EUR
   rendimientoPorcentaje: number; // Ganancia/pérdida en porcentaje
 }
 
@@ -14,10 +14,10 @@ export interface Portafolio {
   id: number;
   nombre: string;
   usuarioId: number;
-  saldo: number;
+  saldo: number; // Saldo disponible en EUR
   activos?: ActivoEnPortafolio[]; // Usar la misma interfaz
   fechaCreacion?: Date;
   fechaActualizacion?: Date;
-  valorTotal?: number;
-  rendimientoTotal?: number;
+  valorTotal?: number; // Valor total en EUR
+  rendimientoTotal?: number; // Rendimiento total en EUR
 }

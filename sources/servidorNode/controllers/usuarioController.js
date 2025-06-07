@@ -209,11 +209,14 @@ exports.obtenerDatosDashboard = async (req, res) => {
       total + activo.valorTotal, 0
     );
     
-    const rendimientoTotal = activosEnPortafolio.reduce((total, activo) => 
-      total + activo.rendimiento, 0
-    );
+    // Calcular patrimonio total (saldo + valor de activos)
+    const patrimonioTotal = portafolio.saldo + valorTotalActivos;
+    
+    // Calcular rendimiento basado en el patrimonio total respecto al saldo inicial
+    const saldoInicial = 10000.00; // Saldo inicial del portafolio
+    const rendimientoTotal = patrimonioTotal - saldoInicial;
 
-    const valorTotalPortafolio = portafolio.saldo + valorTotalActivos;
+    const valorTotalPortafolio = patrimonioTotal;
 
     res.status(200).json({
       usuario: {

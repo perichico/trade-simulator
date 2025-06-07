@@ -296,9 +296,9 @@ export class AlertasComponent implements OnInit, OnDestroy {
       return 0;
     }
     
-    const cantidad = parseFloat(activo.cantidad || '0');
+    const cantidad = Math.floor(parseFloat(activo.cantidad?.toString() || '0'));
     console.log('Cantidad disponible encontrada:', cantidad, 'para activo:', activoId);
-    return Math.floor(cantidad); // Devolver cantidad como entero
+    return cantidad; // Devolver cantidad como entero
   }
 
   crearAlerta(): void {

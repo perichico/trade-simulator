@@ -303,25 +303,23 @@ export class PortafolioService {
 
   // Calcular rendimiento porcentual del portafolio
   calcularRendimientoPorcentual(portafolio: Portafolio): number {
-    if (!portafolio || !portafolio.activos || !Array.isArray(portafolio.activos)) {
-      console.warn('Portafolio inválido o sin activos al calcular rendimiento porcentual');
+    if (!portafolio) {
+      console.warn('Portafolio inválido al calcular rendimiento porcentual');
       return 0;
     }
     
-    const inversionTotal = portafolio.activos.reduce(
-      (total, activo) => {
-        // Validar que el activo tenga precio de compra y cantidad válidos
-        if (!activo || typeof activo.precioCompra !== 'number' || typeof activo.cantidad !== 'number') {
-          console.warn('Activo con precio de compra o cantidad inválidos:', activo);
-          return total;
-        }
-        return total + (activo.precioCompra * activo.cantidad);
-      }, 0
-    );
+    // Saldo inicial de referencia en EUR
+    const saldoInicial = 10000;
     
-    if (inversionTotal === 0) return 0;
+    // Calcular patrimonio total actual (saldo + valor de activos)
+    const saldoActual = portafolio.saldo || 0;
+    const valorActivos = portafolio.valorTotal || 0;
+    const patrimonioTotal = saldoActual + valorActivos;
     
-    return ((portafolio.rendimientoTotal || 0) / inversionTotal) * 100;
+    // Calcular rendimiento porcentual basado en el patrimonio total
+    const rendimientoPorcentual = ((patrimonioTotal - saldoInicial) / saldoInicial) * 100;
+    
+    return Math.round(rendimientoPorcentual * 100) / 100;
   }
 
   // Eliminar un portafolio y sus activos asociados

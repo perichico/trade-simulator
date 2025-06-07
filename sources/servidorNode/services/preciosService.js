@@ -62,7 +62,7 @@ class PreciosService {
             console.error('Error al generar precio simulado:', error);
             const cachePrecio = this.cache.get(simbolo);
             const precio = cachePrecio ? cachePrecio.precio : await this.historialService.obtenerUltimoPrecio(activoId) || 0;
-            return { precio };
+            return { precio, variacion: 0 };
         }
     }
 

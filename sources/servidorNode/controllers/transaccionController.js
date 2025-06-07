@@ -156,7 +156,7 @@ exports.crearTransaccion = async (req, res) => {
           
           // Calcular precio promedio ponderado
           const valorAnterior = cantidadAnterior * precioAnterior;
-          const valorNuevo = cantidad * precioEnTransaccion;
+          const valorNuevo = parseInt(cantidad) * precioEnTransaccion;
           const precioPromedio = (valorAnterior + valorNuevo) / nuevaCantidad;
 
           console.log('=== CALCULANDO PRECIO PROMEDIO ===');

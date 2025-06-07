@@ -447,13 +447,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
         // Valor base más una variación aleatoria
         const balanceBase = 5000 + Math.random() * 2000;
         const valorPortafolioBase = 4000 + Math.random() * 3000;
+        const patrimonioTotalBase = balanceBase + valorPortafolioBase;
+        const rendimientoTotalBase = patrimonioTotalBase - 10000; // Saldo inicial de referencia
         
         datosMuestra.push({
           usuarioId: usuarioId,
           fecha: fecha.toISOString(),
           balance: balanceBase,
           valorPortafolio: valorPortafolioBase,
-          patrimonioTotal: balanceBase + valorPortafolioBase
+          patrimonioTotal: patrimonioTotalBase,
+          rendimientoTotal: rendimientoTotalBase
         });
       }
       
@@ -482,13 +485,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
       // Calcular valores con variación
       const balanceDia = saldoActual * factorVariacion * (0.95 + Math.random() * 0.1);
       const valorPortafolioDia = valorPortafolioActual * factorVariacion * (0.95 + Math.random() * 0.1);
+      const patrimonioTotalDia = balanceDia + valorPortafolioDia;
+      const rendimientoTotalDia = patrimonioTotalDia - 10000; // Saldo inicial de referencia
       
       datosMuestra.push({
         usuarioId: portafolio.usuarioId || 0,
         fecha: fecha.toISOString(),
         balance: Math.round(balanceDia * 100) / 100,
         valorPortafolio: Math.round(valorPortafolioDia * 100) / 100,
-        patrimonioTotal: Math.round((balanceDia + valorPortafolioDia) * 100) / 100
+        patrimonioTotal: Math.round(patrimonioTotalDia * 100) / 100,
+        rendimientoTotal: Math.round(rendimientoTotalDia * 100) / 100
       });
     }
     
@@ -497,31 +503,33 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Método para calcular el rendimiento porcentual del portafolio seleccionado
   calcularRendimientoPorcentual(): number {
-    if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
+    if (!this.portafolioSeleccionado) {
       return 0;
     }
 
-    // Calcular la inversión total (costo base)
-    const inversionTotal = this.portafolioSeleccionado.activos.reduce((total, activo) => {
-      const costoBasis = (activo.precioCompra || 0) * (activo.cantidad || 0);
-      return total + costoBasis;
-    }, 0);
-
-    console.log('Calculando rendimiento porcentual:', {
-      inversionTotal,
-      rendimientoTotal: this.portafolioSeleccionado.rendimientoTotal,
-      activos: this.portafolioSeleccionado.activos.length
-    });
-
-    if (inversionTotal === 0) {
-      console.warn('Inversión total es 0, no se puede calcular rendimiento porcentual');
-      return 0;
-    }
-
-    const rendimientoTotal = this.portafolioSeleccionado.rendimientoTotal || 0;
-    const rendimientoPorcentual = (rendimientoTotal / inversionTotal) * 100;
+    // Saldo inicial de referencia en EUR
+    const saldoInicial = 10000;
     
-    console.log('Rendimiento porcentual calculado:', rendimientoPorcentual);
+    // Calcular patrimonio total actual (saldo + valor de activos)
+    const saldoActual = this.portafolioSeleccionado.saldo || 0;
+    const valorActivos = this.obtenerValorTotalPortafolio();
+    const patrimonioTotal = saldoActual + valorActivos;
+    
+    // Calcular rendimiento en euros: patrimonio total - saldo inicial
+    const rendimientoEuros = patrimonioTotal - saldoInicial;
+    
+    // Calcular rendimiento porcentual basado en el saldo inicial
+    const rendimientoPorcentual = (rendimientoEuros / saldoInicial) * 100;
+    
+    console.log('Cálculo de rendimiento porcentual:', {
+      saldoInicial,
+      saldoActual,
+      valorActivos,
+      patrimonioTotal,
+      rendimientoEuros,
+      rendimientoPorcentual
+    });
+    
     return Math.round(rendimientoPorcentual * 100) / 100;
   }
 
@@ -539,15 +547,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
     return valorTotal;
   }
 
-  // Método para obtener el rendimiento total del portafolio
+  // Método para obtener el rendimiento total del portafolio en euros
   obtenerRendimientoTotal(): number {
-    if (!this.portafolioSeleccionado || !this.portafolioSeleccionado.activos) {
+    if (!this.portafolioSeleccionado) {
       return 0;
     }
 
-    const rendimientoTotal = this.portafolioSeleccionado.activos.reduce((total, activo) => {
-      return total + (activo.rendimiento || 0);
-    }, 0);
+    // Saldo inicial de referencia
+    const saldoInicial = 10000;
+    
+    // Calcular patrimonio total actual
+    const saldoActual = this.portafolioSeleccionado.saldo || 0;
+    const valorActivos = this.obtenerValorTotalPortafolio();
+    const patrimonioTotal = saldoActual + valorActivos;
+    
+    // Rendimiento total = patrimonio total - saldo inicial
+    const rendimientoTotal = patrimonioTotal - saldoInicial;
     
     console.log('Rendimiento total del portafolio:', rendimientoTotal);
     return rendimientoTotal;

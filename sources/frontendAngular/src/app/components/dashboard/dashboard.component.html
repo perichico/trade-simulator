@@ -88,7 +88,7 @@
         <div class="card-body text-center">
           <i class="bi bi-graph-up-arrow display-4 text-success mb-3"></i>
           <h5 class="card-title">Valor del Portafolio</h5>
-          <h3 class="card-text">{{ formatearDinero(portafolioSeleccionado?.valorTotal || 0) }}</h3>
+          <h3 class="card-text">{{ formatearDinero(obtenerValorTotalPortafolio() + (portafolioSeleccionado?.saldo || 0)) }}</h3>
         </div>
       </div>
     </div>
@@ -99,9 +99,9 @@
           <i class="bi bi-graph-up display-4 text-warning mb-3"></i>
           <h5 class="card-title">Rendimiento</h5>
           <h3 class="card-text" 
-              [class.text-success]="(portafolioSeleccionado?.rendimientoTotal || 0) >= 0"
-              [class.text-danger]="(portafolioSeleccionado?.rendimientoTotal || 0) < 0">
-            {{ formatearDinero(portafolioSeleccionado?.rendimientoTotal || 0) }}
+              [class.text-success]="obtenerRendimientoTotal() >= 0"
+              [class.text-danger]="obtenerRendimientoTotal() < 0">
+            {{ formatearDinero(obtenerRendimientoTotal()) }}
           </h3>
           <small class="text-muted" *ngIf="portafolioSeleccionado && portafolioSeleccionado.activos && portafolioSeleccionado.activos.length > 0">
             ({{ calcularRendimientoPorcentual() | number:'1.2-2' }}%)

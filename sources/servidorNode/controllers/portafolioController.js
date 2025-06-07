@@ -31,7 +31,7 @@ exports.obtenerPortafoliosUsuario = async (req, res) => {
                 nombre: "Portafolio Principal",
                 usuario_id: usuarioId,
                 descripcion: "Mi portafolio principal de inversiones",
-                saldo: 10000.00 // Saldo inicial por defecto
+                saldo: 10000 // Saldo inicial de 10,000 EUR
             });
             portafolios.push(nuevoPortafolio);
         }
@@ -264,7 +264,9 @@ exports.obtenerPortafolio = async (req, res) => {
 
         // Calcular totales
         const valorTotal = activos.reduce((total, activo) => total + activo.valorTotal, 0);
-        const rendimientoTotal = activos.reduce((total, activo) => total + activo.rendimiento, 0);
+        const patrimonioTotal = parseFloat(portafolio.saldo) + valorTotal;
+        const saldoInicial = 10000.00; // Saldo inicial de referencia
+        const rendimientoTotal = patrimonioTotal - saldoInicial;
 
         console.log(`Enviando respuesta con ${activos.length} activos`);
         

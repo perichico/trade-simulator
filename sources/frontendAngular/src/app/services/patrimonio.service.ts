@@ -12,6 +12,7 @@ export interface PatrimonioHistorico {
   balance: number;
   valorPortafolio: number;
   patrimonioTotal: number;
+  rendimientoTotal: number; // Cambiar de opcional a obligatorio - patrimonio total - 10000
 }
 
 @Injectable({
@@ -56,21 +57,24 @@ export class PatrimonioService {
   ): PatrimonioHistorico[] {
     const hoy = new Date();
     const datosMuestra: PatrimonioHistorico[] = [];
+    const saldoInicial = 10000.00; // Saldo inicial de referencia
     
     // Generar datos de muestra para los últimos 7 días
     for (let i = 6; i >= 0; i--) {
       const fecha = new Date();
       fecha.setDate(hoy.getDate() - i);
       
-      // Pequeña variación aleatoria (±10%) para simular cambios
-      const variacionBalance = Math.random() * 0.2 - 0.1; // -10% a +10%
-      const variacionValor = Math.random() * 0.2 - 0.1;   // -10% a +10%
+      // Pequeña variación aleatoria (±5%) para simular cambios más realistas
+      const variacionBalance = Math.random() * 0.1 - 0.05; // -5% a +5%
+      const variacionValor = Math.random() * 0.1 - 0.05;   // -5% a +5%
       
       // Calculamos valores basados en los actuales con variación
       // Para el día actual (i=0) usamos exactamente los valores actuales
-      const factorTiempo = i === 0 ? 1 : (1 - (i * 0.05)); // Reducción gradual hacia el pasado
+      const factorTiempo = i === 0 ? 1 : (1 - (i * 0.02)); // Reducción gradual hacia el pasado
       const balance = i === 0 ? balanceActual : Math.round(balanceActual * factorTiempo * (1 + variacionBalance) * 100) / 100;
       const valorPortafolio = i === 0 ? valorPortafolioActual : Math.round(valorPortafolioActual * factorTiempo * (1 + variacionValor) * 100) / 100;
+      const patrimonioTotal = Math.round((balance + valorPortafolio) * 100) / 100;
+      const rendimientoTotal = Math.round((patrimonioTotal - saldoInicial) * 100) / 100;
       
       datosMuestra.push({
         usuarioId: usuarioId,
@@ -78,7 +82,8 @@ export class PatrimonioService {
         fecha: fecha.toISOString(),
         balance: balance,
         valorPortafolio: valorPortafolio,
-        patrimonioTotal: Math.round((balance + valorPortafolio) * 100) / 100
+        patrimonioTotal: patrimonioTotal,
+        rendimientoTotal: rendimientoTotal
       });
     }
     
@@ -117,7 +122,8 @@ export class PatrimonioService {
       fecha: new Date(),
       balance: 0,
       valorPortafolio: 0,
-      patrimonioTotal: 0
+      patrimonioTotal: 0,
+      rendimientoTotal: 0
     };
     
     if (error.status === 404) {

@@ -25,13 +25,13 @@ async function migrarSaldoAPortafolio() {
                 portafolio = await Portafolio.create({
                     nombre: "Portafolio Principal",
                     usuario_id: usuario.id,
-                    saldo: usuario.balance || 10000.00 // Usar el saldo del usuario o el valor por defecto
+                    saldo: usuario.balance || 10000 // Saldo inicial de 10,000 EUR
                 }, { transaction });
                 console.log(`Creado nuevo portafolio ID: ${portafolio.id} con saldo: ${portafolio.saldo}`);
             } else {
                 // Actualizar el saldo del portafolio con el balance del usuario
                 await portafolio.update({ 
-                    saldo: usuario.balance || 10000.00 
+                    saldo: usuario.balance || 10000 // Saldo inicial de 10,000 EUR
                 }, { transaction });
                 console.log(`Actualizado portafolio ID: ${portafolio.id} con saldo: ${portafolio.saldo}`);
             }

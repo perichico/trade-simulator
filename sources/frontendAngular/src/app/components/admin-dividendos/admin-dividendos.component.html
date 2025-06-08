@@ -1,0 +1,420 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">
+          <i class="bi bi-cash-coin text-warning me-2"></i>
+          Gestión de Dividendos
+        </h2>
+        <div class="btn-group">
+          <button class="btn btn-success" (click)="mostrarFormularioGenerarDividendo()">
+            <i class="bi bi-plus-circle me-1"></i>
+            Generar Dividendo
+          </button>
+          <button 
+            class="btn btn-primary" 
+            (click)="procesarDividendosAutomaticos()"
+            [disabled]="procesandoDividendos">
+            <i class="bi bi-gear-fill me-1" [class.spin]="procesandoDividendos"></i>
+            Procesar Automáticos
+          </button>
+          <button class="btn btn-outline-primary" (click)="cargarDatos()" [disabled]="cargando">
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            Actualizar
+          </button>
+        </div>
+      </div>
+      <p class="text-muted mt-2">
+        Administra los dividendos del sistema y genera pagos automáticos
+      </p>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="row g-4 mb-4" *ngIf="estadisticas">
+    <div class="col-12 col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <i class="bi bi-check-circle display-4 mb-2"></i>
+          <h3>{{ estadisticas.totalDividendosPagados }}</h3>
+          <p class="mb-0">Dividendos Pagados</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card bg-warning text-dark">
+        <div class="card-body text-center">
+          <i class="bi bi-clock display-4 mb-2"></i>
+          <h3>{{ estadisticas.totalDividendosPendientes }}</h3>
+          <p class="mb-0">Pendientes</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <i class="bi bi-currency-dollar display-4 mb-2"></i>
+          <h3>{{ formatearDinero(estadisticas.montoTotalDividendos) }}</h3>
+          <p class="mb-0">Total Pagado</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <i class="bi bi-graph-up display-4 mb-2"></i>
+          <h3>{{ estadisticas.activosConDividendos }}</h3>
+          <p class="mb-0">Activos con Dividendos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario para generar dividendo manual -->
+  <div class="row mb-4" *ngIf="mostrandoFormulario">
+    <div class="col-12">
+      <div class="card border-success">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-plus-circle me-2"></i>
+            Generar Dividendo Manual
+          </h5>
+        </div>
+        <div class="card-body">
+          <form (ngSubmit)="generarDividendoManual()">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Activo *</label>
+                <select 
+                  class="form-select" 
+                  [(ngModel)]="dividendoManual.activoId"
+                  name="activoId"
+                  (change)="calcularMontoPorAccionAutomatico()"
+                  required>
+                  <option value="0">Seleccionar activo...</option>
+                  <option *ngFor="let activo of activosConDividendos" [value]="activo.id">
+                    {{ activo.simbolo }} - {{ activo.nombre }} 
+                    ({{ activo.porcentajeDividendo }}% {{ activo.frecuenciaDividendo }})
+                    <span *ngIf="esActivoElegibleDividendo(activo)" class="text-success"> ✓ Elegible</span>
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Monto por acción *</label>
+                <div class="input-group">
+                  <span class="input-group-text">€</span>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    [(ngModel)]="dividendoManual.montoPorAccion"
+                    name="montoPorAccion"
+                    min="0.01"
+                    step="0.01"
+                    required>
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary"
+                    (click)="calcularMontoPorAccionAutomatico()"
+                    title="Calcular automáticamente">
+                    <i class="bi bi-calculator"></i>
+                  </button>
+                </div>
+                <small class="text-muted">Se calculará automáticamente según el % configurado</small>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Fecha de pago *</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  [(ngModel)]="dividendoManual.fechaPago"
+                  name="fechaPago"
+                  required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+              <button type="button" class="btn btn-secondary" (click)="cancelarFormulario()">
+                Cancelar
+              </button>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-cash-coin me-1"></i>
+                Generar Dividendo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Filtrar por estado</label>
+              <select class="form-select" [(ngModel)]="filtroEstado">
+                <option value="todos">Todos los estados</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="pagado">Pagados</option>
+                <option value="cancelado">Cancelados</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Filtrar por activo</label>
+              <select class="form-select" [(ngModel)]="filtroActivo">
+                <option value="todos">Todos los activos</option>
+                <option *ngFor="let activo of activos" [value]="activo.id">
+                  {{ activo.simbolo }} - {{ activo.nombre }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de dividendos -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-list-check me-2"></i>
+            Historial de Dividendos ({{ dividendosFiltrados.length }})
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive" *ngIf="!cargando && dividendosFiltrados.length > 0">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Activo</th>
+                  <th>Monto por acción</th>
+                  <th>Estado</th>
+                  <th>Fecha de creación</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let dividendo of dividendosFiltrados">
+                  <td>
+                    <span class="badge bg-secondary">{{ dividendo.id }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ formatearFecha(dividendo.fecha) }}</strong>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="bi bi-graph-up me-2 text-success"></i>
+                      <div>
+                        <strong>{{ dividendo.activo?.simbolo || 'N/A' }}</strong>
+                        <br>
+                        <small class="text-muted">{{ dividendo.activo?.nombre || obtenerNombreActivo(dividendo.activo_id) }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <strong class="text-success">{{ formatearDinero(dividendo.monto_por_accion) }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="obtenerClaseEstado(dividendo.estado)">
+                      {{ dividendo.estado | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      {{ formatearFecha(dividendo.fecha) }}
+                    </small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button 
+                        class="btn btn-outline-info" 
+                        (click)="verDetallesDividendo(dividendo)"
+                        title="Ver detalles">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                      <button 
+                        class="btn btn-outline-success" 
+                        *ngIf="dividendo.estado === 'pendiente'"
+                        (click)="marcarComoPagado(dividendo)"
+                        title="Marcar como pagado">
+                        <i class="bi bi-check-circle"></i>
+                      </button>
+                      <button 
+                        class="btn btn-outline-danger" 
+                        *ngIf="dividendo.estado === 'pendiente'"
+                        (click)="cancelarDividendo(dividendo)"
+                        title="Cancelar dividendo">
+                        <i class="bi bi-x-circle"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Estado de carga -->
+          <div class="text-center py-5" *ngIf="cargando">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando dividendos...</p>
+          </div>
+
+          <!-- Sin dividendos -->
+          <div class="text-center py-5" *ngIf="!cargando && dividendosFiltrados.length === 0">
+            <i class="bi bi-cash-coin display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">No hay dividendos registrados</h5>
+            <p class="text-muted">Genera tu primer dividendo usando el botón "Generar Dividendo"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de detalles del dividendo -->
+  <div class="modal fade" [class.show]="mostrandoDetalles" [style.display]="mostrandoDetalles ? 'block' : 'none'" *ngIf="mostrandoDetalles">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-info-circle me-2"></i>
+            Detalles del Dividendo
+          </h5>
+          <button type="button" class="btn-close" (click)="cerrarDetalles()"></button>
+        </div>
+        <div class="modal-body" *ngIf="dividendoSeleccionado && estadisticasDividendo">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <h6>Información del Dividendo</h6>
+              <table class="table table-sm">
+                <tr>
+                  <td><strong>ID:</strong></td>
+                  <td>{{ dividendoSeleccionado.id }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Fecha:</strong></td>
+                  <td>{{ formatearFecha(dividendoSeleccionado.fecha) }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Estado:</strong></td>
+                  <td>
+                    <span class="badge" [ngClass]="obtenerClaseEstado(dividendoSeleccionado.estado)">
+                      {{ dividendoSeleccionado.estado | titlecase }}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Monto por acción:</strong></td>
+                  <td><strong>{{ formatearDinero(dividendoSeleccionado.monto_por_accion) }}</strong></td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6>Información del Activo</h6>
+              <table class="table table-sm">
+                <tr>
+                  <td><strong>Símbolo:</strong></td>
+                  <td><span class="badge bg-primary">{{ estadisticasDividendo.activo?.simbolo }}</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Nombre:</strong></td>
+                  <td>{{ estadisticasDividendo.activo?.nombre }}</td>
+                </tr>
+                <tr>
+                  <td><strong>Tipo:</strong></td>
+                  <td>{{ estadisticasDividendo.activo?.tipoActivo }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          
+          <hr>
+          
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                  <h4>{{ estadisticasDividendo.usuariosAfectados }}</h4>
+                  <small>Usuarios Afectados</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                  <h4>{{ estadisticasDividendo.totalAcciones }}</h4>
+                  <small>Total Acciones</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                  <h4>{{ formatearDinero(estadisticasDividendo.montoPorAccion) }}</h4>
+                  <small>Por Acción</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                  <h4>{{ formatearDinero(estadisticasDividendo.montoTotalDividendo) }}</h4>
+                  <small>Monto Total</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarDetalles()">Cerrar</button>
+          <button 
+            type="button" 
+            class="btn btn-success" 
+            *ngIf="dividendoSeleccionado?.estado === 'pendiente'"
+            (click)="marcarComoPagado(dividendoSeleccionado!); cerrarDetalles()">
+            <i class="bi bi-check-circle me-1"></i>
+            Marcar como Pagado
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-danger" 
+            *ngIf="dividendoSeleccionado?.estado === 'pendiente'"
+            (click)="cancelarDividendo(dividendoSeleccionado!); cerrarDetalles()">
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar Dividendo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade" [class.show]="mostrandoDetalles" *ngIf="mostrandoDetalles"></div>
+
+</div>
+
+<style>
+.spin {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.modal {
+  z-index: 1050;
+}
+
+.modal-backdrop {
+  z-index: 1040;
+}
+</style>

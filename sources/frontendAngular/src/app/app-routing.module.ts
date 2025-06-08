@@ -61,6 +61,18 @@ const routes: Routes = [
     canActivate: [AuthGuard],
     data: { requiereAdmin: true }
   },
+  {
+    path: 'admin/dividendos',
+    loadComponent: () => import('./components/admin-dividendos/admin-dividendos.component').then(m => m.AdminDividendosComponent),
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
+  { 
+    path: 'admin-dividendos', 
+    loadComponent: () => import('./components/admin-dividendos/admin-dividendos.component').then(m => m.AdminDividendosComponent),
+    canActivate: [AuthGuard],
+    data: { requiereAdmin: true }
+  },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
 

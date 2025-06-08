@@ -1,24 +1,18 @@
-const { sequelize, Activo, Dividendo, PortafolioActivo, Portafolio, Op } = require('../models/index');
+const { sequelize, Activo, Dividendo, PortafolioActivo, Portafolio, Usuario, Op } = require('../models/index');
 
 class DividendoService {
   // Método para inicializar el servicio con mejor manejo de errores
   async iniciarServicio() {
     console.log('Iniciando servicio de dividendos...');
     try {
-      try {
-        await this.verificarModelosDisponibles();
-      } catch (error) {
-        console.error('Error al verificar modelos en iniciarServicio:', error);
-        return; // Salimos del método si no podemos verificar los modelos
-      }
-      
+      await this.verificarModelosDisponibles();
       console.log('Iniciando servicio de generación automática de dividendos...');
       
       // Verificar activos para dividendos de forma segura
       setTimeout(() => {
         this.verificarDividendosPendientes()
           .catch(err => console.error('Error al verificar dividendos pendientes:', err));
-      }, 3000); // Retrasar para dar tiempo a que las tablas se inicialicen completamente
+      }, 3000);
       
     } catch (error) {
       console.error('Error controlado al iniciar el servicio de dividendos:', error.message);
@@ -26,11 +20,7 @@ class DividendoService {
   }
 
   async verificarModelosDisponibles() {
-    // Verificar que podemos acceder a los modelos necesarios
-    const { Activo, Dividendo } = require('../models/index');
-    
     try {
-      // Hacer una consulta simple para verificar disponibilidad
       await Activo.findOne({ limit: 1 });
       console.log('Modelo Activo disponible');
       return true;
@@ -40,34 +30,15 @@ class DividendoService {
     }
   }
   
-  // Verificar si una tabla existe en la base de datos
-  async verificarTablaExiste(tableName) {
-    try {
-      const query = `
-        SELECT COUNT(*) as count
-        FROM information_schema.tables 
-        WHERE table_schema = '${sequelize.config.database}' 
-        AND table_name = '${tableName}'
-      `;
-      
-      const [results] = await sequelize.query(query);
-      return results[0]?.count > 0;
-    } catch (error) {
-      console.error(`Error al verificar si existe la tabla ${tableName}:`, error);
-      return false;
-    }
-  }
-  
   // Verificar dividendos pendientes de manera segura
   async verificarDividendosPendientes() {
     try {
       console.log('Verificando activos para generar dividendos...');
       
-      // Obtener activos que pagan dividendos
       const activos = await Activo.findAll({
         where: {
           porcentaje_dividendo: {
-            [Op.gt]: 0 // Porcentaje mayor que 0
+            [Op.gt]: 0
           }
         }
       }).catch(err => {
@@ -77,7 +48,6 @@ class DividendoService {
       
       console.log(`Se encontraron ${activos.length} activos con configuración de dividendos`);
       
-      // Solo registrar activos con dividendos pendientes
       const hoy = new Date();
       for (const activo of activos) {
         try {
@@ -97,7 +67,6 @@ class DividendoService {
   async procesarDividendosPendientes() {
     const transaction = await sequelize.transaction();
     try {
-      // Obtener dividendos en estado pendiente
       const dividendosPendientes = await Dividendo.findAll({
         where: { estado: 'pendiente' },
         include: [{ model: Activo }],
@@ -111,7 +80,6 @@ class DividendoService {
           transaction
         );
         
-        // Actualizar estado a 'pagado'
         await dividendo.update({ estado: 'pagado' }, { transaction });
       }
       
@@ -129,11 +97,10 @@ class DividendoService {
     try {
       console.log('Iniciando procesamiento de dividendos automáticos...');
       
-      // Obtener activos que pagan dividendos
       const activos = await Activo.findAll({
         where: {
           porcentaje_dividendo: {
-            [Op.gt]: 0 // Porcentaje mayor que 0
+            [Op.gt]: 0
           }
         }
       });
@@ -143,37 +110,30 @@ class DividendoService {
       const hoy = new Date();
       const dividendosCreados = [];
       
-      // Procesar cada activo
       for (const activo of activos) {
         try {
-          // Verificar si corresponde pagar dividendo
           if (this.debeGenerarDividendo(activo, hoy)) {
             console.log(`Generando dividendo para activo: ${activo.nombre} (${activo.simbolo})`);
             
-            // Calcular monto por acción basado en el porcentaje anual y la frecuencia
             const montoPorAccion = this.calcularMontoPorAccion(activo);
             
-            // Crear registro de dividendo
             const dividendo = await Dividendo.create({
               activo_id: activo.id,
               fecha: hoy,
               monto_por_accion: montoPorAccion,
-              estado: 'pagado'  // Lo marcamos como pagado directamente
+              estado: 'pagado'
             }, { transaction });
             
-            // Actualizar fecha de último dividendo en el activo
             await activo.update({
               ultima_fecha_dividendo: hoy
             }, { transaction });
             
             dividendosCreados.push(dividendo);
             
-            // Procesar pagos a los portafolios que tienen este activo
             await this.procesarPagoDividendos(activo.id, montoPorAccion, transaction);
           }
         } catch (error) {
           console.error(`Error procesando dividendo para activo ${activo.id}:`, error);
-          // Continuamos con el próximo activo
         }
       }
       
@@ -189,7 +149,6 @@ class DividendoService {
   }
   
   debeGenerarDividendo(activo, fechaActual) {
-    // Si no hay fecha de último dividendo, siempre generar
     if (!activo.ultima_fecha_dividendo) {
       return true;
     }
@@ -197,18 +156,17 @@ class DividendoService {
     const ultimaFecha = new Date(activo.ultima_fecha_dividendo);
     const diasTranscurridos = this.calcularDiasEntreFechas(ultimaFecha, fechaActual);
     
-    // Determinar el periodo en días según la frecuencia
     let periodoEnDias;
     switch (activo.frecuencia_dividendo) {
       case 'trimestral':
-        periodoEnDias = 90; // Aproximadamente 3 meses
+        periodoEnDias = 90;
         break;
       case 'semestral':
-        periodoEnDias = 180; // Aproximadamente 6 meses
+        periodoEnDias = 180;
         break;
       case 'anual':
       default:
-        periodoEnDias = 365; // Aproximadamente 1 año
+        periodoEnDias = 365;
         break;
     }
     
@@ -221,7 +179,6 @@ class DividendoService {
   }
   
   calcularMontoPorAccion(activo) {
-    // Dividendo anual dividido por la frecuencia
     let divisor;
     switch (activo.frecuencia_dividendo) {
       case 'trimestral':
@@ -236,7 +193,6 @@ class DividendoService {
         break;
     }
     
-    // Calcular monto por acción basado en el precio actual y el porcentaje anual
     const precioActual = activo.ultimo_precio || 0;
     const porcentajeAjustado = (activo.porcentaje_dividendo / 100) / divisor;
     
@@ -245,7 +201,6 @@ class DividendoService {
   
   async procesarPagoDividendos(activoId, montoPorAccion, transaction) {
     try {
-      // Encontrar todos los portafolios que contienen este activo
       const posiciones = await PortafolioActivo.findAll({
         where: { activo_id: activoId },
         transaction
@@ -254,15 +209,12 @@ class DividendoService {
       console.log(`Procesando pago de dividendos para ${posiciones.length} posiciones del activo ${activoId}`);
       
       for (const posicion of posiciones) {
-        // Calcular monto total para esta posición
         const montoTotal = montoPorAccion * posicion.cantidad;
         
         if (montoTotal <= 0) continue;
         
-        // Actualizar el saldo del portafolio
         const portafolio = await Portafolio.findByPk(posicion.portafolio_id, { transaction });
         if (portafolio) {
-          // Sumar el dividendo al saldo del portafolio
           const nuevoSaldo = parseFloat(portafolio.saldo || 0) + parseFloat(montoTotal);
           await portafolio.update({ saldo: nuevoSaldo }, { transaction });
         }
@@ -276,9 +228,123 @@ class DividendoService {
   // Obtener dividendos por usuario 
   async obtenerDividendosPorUsuario(usuarioId) {
     try {
-      // Obtener los portafolios del usuario
+      console.log(`Obteniendo dividendos para usuario ID: ${usuarioId}`);
+      
+      // Primero obtener los portafolios del usuario
       const portafolios = await Portafolio.findAll({
-        where: { usuario_id: usuarioId }
+        where: { usuario_id: usuarioId },
+        attributes: ['id']
+      }).catch(dbError => {
+        console.error('Error al obtener portafolios:', dbError);
+        throw new Error(`Error de base de datos al obtener portafolios: ${dbError.message}`);
+      });
+      
+      if (!portafolios.length) {
+        console.log(`Usuario ${usuarioId} no tiene portafolios`);
+        return [];
+      }
+      
+      const portafolioIds = portafolios.map(p => p.id);
+      console.log(`Portafolios encontrados: ${portafolioIds.join(', ')}`);
+      
+      // Obtener las posiciones en activos de estos portafolios
+      const activosEnPortafolio = await PortafolioActivo.findAll({
+        where: { 
+          portafolio_id: { [Op.in]: portafolioIds },
+          cantidad: { [Op.gt]: 0 }
+        },
+        attributes: [
+          'activo_id',
+          [sequelize.fn('SUM', sequelize.col('cantidad')), 'total_cantidad']
+        ],
+        group: ['activo_id']
+      }).catch(dbError => {
+        console.error('Error al obtener activos en portafolio:', dbError);
+        throw new Error(`Error de base de datos al obtener activos: ${dbError.message}`);
+      });
+      
+      if (!activosEnPortafolio.length) {
+        console.log(`Usuario ${usuarioId} no tiene activos en portafolio`);
+        return [];
+      }
+      
+      // Crear mapa de activos con cantidades totales
+      const activosPorId = {};
+      activosEnPortafolio.forEach(item => {
+        const activoId = item.activo_id || item.get('activo_id');
+        const totalCantidad = item.get('total_cantidad') || item.total_cantidad || 0;
+        activosPorId[activoId] = parseFloat(totalCantidad);
+      });
+      
+      const activosIds = Object.keys(activosPorId).map(id => parseInt(id));
+      console.log(`Activos con posiciones: ${activosIds.join(', ')}`);
+      
+      // Obtener todos los dividendos de estos activos con manejo de errores específico
+      const dividendos = await Dividendo.findAll({
+        where: { 
+          activo_id: { [Op.in]: activosIds },
+          estado: 'pagado' // Solo dividendos ya pagados
+        },
+        attributes: ['id', 'activo_id', 'fecha', 'monto_por_accion', 'estado'], // Solo campos que existen
+        include: [{
+          model: Activo,
+          attributes: ['id', 'simbolo', 'nombre']
+        }],
+        order: [["fecha", "DESC"]],
+        limit: 100 // Limitar resultados para evitar sobrecarga
+      }).catch(dbError => {
+        console.error('Error al obtener dividendos:', dbError);
+        // Verificar si es error de columna inexistente
+        if (dbError.message.includes('Unknown column') || dbError.message.includes('column')) {
+          throw new Error(`Error: La base de datos no tiene la estructura esperada. ${dbError.message}`);
+        }
+        throw new Error(`Error de base de datos al obtener dividendos: ${dbError.message}`);
+      });
+      
+      console.log(`Dividendos encontrados: ${dividendos.length}`);
+      
+      // Mapear los dividendos con información del usuario
+      const dividendosConInfo = dividendos.map(div => {
+        const activoId = div.activo_id;
+        const cantidadAcciones = activosPorId[activoId] || 0;
+        const montoTotal = parseFloat(div.monto_por_accion) * cantidadAcciones;
+        
+        return {
+          id: div.id,
+          activo_id: div.activo_id,
+          fecha: div.fecha,
+          monto_por_accion: parseFloat(div.monto_por_accion),
+          estado: div.estado,
+          activo: div.Activo ? {
+            id: div.Activo.id,
+            simbolo: div.Activo.simbolo,
+            nombre: div.Activo.nombre
+          } : null,
+          cantidadAcciones: cantidadAcciones,
+          montoTotal: montoTotal
+        };
+      });
+      
+      return dividendosConInfo;
+      
+    } catch (error) {
+      console.error('Error detallado al obtener dividendos del usuario:', {
+        error: error.message,
+        stack: error.stack,
+        usuarioId
+      });
+      throw new Error(`Error al obtener dividendos del usuario: ${error.message}`);
+    }
+  }
+
+  // Obtener dividendos históricos incluyendo todos los estados
+  async obtenerDividendosHistoricos(usuarioId) {
+    try {
+      console.log(`Obteniendo dividendos históricos para usuario ID: ${usuarioId}`);
+      
+      const portafolios = await Portafolio.findAll({
+        where: { usuario_id: usuarioId },
+        attributes: ['id']
       });
       
       if (!portafolios.length) {
@@ -287,46 +353,142 @@ class DividendoService {
       
       const portafolioIds = portafolios.map(p => p.id);
       
-      // Obtener los activos que tiene el usuario en sus portafolios
-      const activosEnPortafolio = await PortafolioActivo.findAll({
-        where: { portafolio_id: portafolioIds },
-        attributes: ['activo_id', 'cantidad']
+      // Obtener TODAS las posiciones (incluso las vendidas)
+      const todasLasPosiciones = await PortafolioActivo.findAll({
+        where: { 
+          portafolio_id: { [Op.in]: portafolioIds }
+        },
+        attributes: ['activo_id'],
+        group: ['activo_id']
       });
       
-      if (!activosEnPortafolio.length) {
+      if (!todasLasPosiciones.length) {
         return [];
       }
       
-      const activosPorId = {};
-      activosEnPortafolio.forEach(item => {
-        if (!activosPorId[item.activo_id]) {
-          activosPorId[item.activo_id] = 0;
-        }
-        activosPorId[item.activo_id] += item.cantidad;
-      });
+      const activosIds = todasLasPosiciones.map(p => p.activo_id);
       
-      const activosIds = Object.keys(activosPorId).map(id => parseInt(id));
-      
-      // Obtener los dividendos de los activos que tiene el usuario
+      // Obtener TODOS los dividendos de estos activos
       const dividendos = await Dividendo.findAll({
-        where: { activo_id: activosIds },
-        include: [{ model: Activo }],
-        order: [["fecha", "DESC"]]
+        where: { 
+          activo_id: { [Op.in]: activosIds }
+        },
+        include: [{
+          model: Activo,
+          attributes: ['id', 'simbolo', 'nombre']
+        }],
+        order: [["fecha", "DESC"]],
+        limit: 200
       });
       
-      // Calcular el monto recibido en base a la cantidad de acciones
-      return dividendos.map(div => {
-        const cantidadAcciones = activosPorId[div.activo_id] || 0;
-        const montoTotal = div.monto_por_accion * cantidadAcciones;
-        
-        return {
-          ...div.toJSON(),
-          cantidadAcciones,
-          montoTotal
-        };
-      });
+      return dividendos.map(div => ({
+        id: div.id,
+        activo_id: div.activo_id,
+        fecha: div.fecha,
+        monto_por_accion: parseFloat(div.monto_por_accion),
+        estado: div.estado,
+        activo: div.Activo ? {
+          id: div.Activo.id,
+          simbolo: div.Activo.simbolo,
+          nombre: div.Activo.nombre
+        } : null
+      }));
+      
     } catch (error) {
-      console.error('Error al obtener dividendos del usuario:', error);
+      console.error('Error al obtener dividendos históricos:', error);
+      throw error;
+    }
+  }
+
+  // Procesar el pago de un dividendo específico
+  async procesarPagoDividendo(dividendo) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      console.log(`Procesando pago de dividendo ID: ${dividendo.id} para activo ${dividendo.activo_id}`);
+      
+      const portafoliosConActivo = await PortafolioActivo.findAll({
+        where: { activo_id: dividendo.activo_id, cantidad: { [Op.gt]: 0 } },
+        include: [{ model: Portafolio }],
+        transaction
+      });
+
+      console.log(`Encontrados ${portafoliosConActivo.length} portafolios con el activo ${dividendo.activo_id}`);
+
+      let totalPagado = 0;
+      let usuariosAfectados = 0;
+
+      for (const posicion of portafoliosConActivo) {
+        const cantidadAcciones = parseFloat(posicion.cantidad);
+        const montoDividendo = cantidadAcciones * parseFloat(dividendo.monto_por_accion);
+        
+        const nuevoSaldo = parseFloat(posicion.Portafolio.saldo) + montoDividendo;
+        
+        await posicion.Portafolio.update({
+          saldo: nuevoSaldo
+        }, { transaction });
+
+        totalPagado += montoDividendo;
+        usuariosAfectados++;
+
+        console.log(`Portafolio ID ${posicion.portafolio_id}: ${cantidadAcciones} acciones x ${dividendo.monto_por_accion}€ = ${montoDividendo}€. Nuevo saldo: ${nuevoSaldo}€`);
+      }
+
+      await transaction.commit();
+      
+      console.log(`Dividendo procesado: ${totalPagado}€ pagados a ${usuariosAfectados} portafolios`);
+      
+      return {
+        totalPagado,
+        usuariosAfectados,
+        portafoliosAfectados: portafoliosConActivo.length
+      };
+      
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error al procesar pago de dividendo:', error);
+      throw error;
+    }
+  }
+
+  // Obtener estadísticas de un dividendo específico
+  async obtenerEstadisticasDividendo(dividendoId) {
+    try {
+      const dividendo = await Dividendo.findByPk(dividendoId, {
+        include: [{ model: Activo }]
+      });
+
+      if (!dividendo) {
+        throw new Error('Dividendo no encontrado');
+      }
+
+      const portafoliosConActivo = await PortafolioActivo.findAll({
+        where: { 
+          activo_id: dividendo.activo_id,
+          cantidad: { [Op.gt]: 0 }
+        },
+        include: [{ model: Portafolio, include: [{ model: Usuario }] }]
+      });
+
+      const totalAcciones = portafoliosConActivo.reduce((total, posicion) => {
+        return total + parseFloat(posicion.cantidad);
+      }, 0);
+
+      const montoTotalDividendo = totalAcciones * parseFloat(dividendo.monto_por_accion);
+
+      return {
+        activo: {
+          simbolo: dividendo.Activo.simbolo,
+          nombre: dividendo.Activo.nombre,
+          tipoActivo: dividendo.Activo.TipoActivo?.nombre || 'Sin tipo'
+        },
+        usuariosAfectados: portafoliosConActivo.length,
+        totalAcciones: totalAcciones,
+        montoPorAccion: parseFloat(dividendo.monto_por_accion),
+        montoTotalDividendo: montoTotalDividendo
+      };
+    } catch (error) {
+      console.error('Error al obtener estadísticas del dividendo:', error);
       throw error;
     }
   }

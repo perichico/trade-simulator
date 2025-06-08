@@ -154,6 +154,31 @@ export class AdminService {
       );
   }
 
+  // Métodos para gestión de dividendos
+  procesarDividendosAutomaticos(): Observable<any> {
+    // Corregir la URL para no duplicar /api/admin
+    return this.http.post(`${environment.apiUrl}/api/dividendos/procesar`, {}, { withCredentials: true })
+      .pipe(
+        tap(data => console.log('Dividendos procesados:', data)),
+        catchError(error => {
+          console.error('Error al procesar dividendos automáticos', error);
+          throw error;
+        })
+      );
+  }
+
+  obtenerDividendosAdmin(): Observable<any[]> {
+    // Corregir la URL para no duplicar /api/admin
+    return this.http.get<any[]>(`${environment.apiUrl}/api/dividendos`, { withCredentials: true })
+      .pipe(
+        tap(data => console.log('Dividendos admin obtenidos:', data)),
+        catchError(error => {
+          console.error('Error al obtener dividendos admin', error);
+          return of([]);
+        })
+      );
+  }
+
   private handleError(error: any): Observable<never> {
     console.error('AdminService: Ocurrió un error', error);
     return throwError(() => error);

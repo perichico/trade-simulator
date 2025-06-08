@@ -1,13 +1,21 @@
 export interface Dividendo {
   id?: number;
-  activoId: number;
-  simbolo: string;
-  nombreEmpresa: string;
-  fechaAnuncio: Date;
-  fechaExDividendo: Date;
-  fechaPago: Date;
-  cantidadPorAccion: number;
-  moneda: string;
-  estado: 'ANUNCIADO' | 'PAGADO' | 'CANCELADO';
-  totalRecibido?: number;
+  activo_id: number;
+  fecha: Date | string;
+  monto_por_accion: number;
+  estado: 'pendiente' | 'pagado' | 'cancelado';
+  fecha_creacion?: Date | string;
+  fecha_actualizacion?: Date | string;
+  
+  // Datos del activo asociado
+  activo?: {
+    id: number;
+    nombre: string;
+    simbolo: string;
+    tipo_activo_id?: number;
+  };
+  
+  // Datos calculados para el usuario
+  cantidadAcciones?: number;
+  montoTotal?: number;
 }

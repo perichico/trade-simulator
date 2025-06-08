@@ -20,7 +20,9 @@ interface ActivoEnPortafolio {
   simbolo?: string;
   cantidad: number;
   precioActual?: number;
+  precio_actual?: number; // Alias para compatibilidad
   valorTotal?: number;
+  valor_total?: number; // Alias para compatibilidad
 }
 
 @Component({
@@ -151,6 +153,7 @@ export class AlertasComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (activos) => {
+            console.log('Activos recibidos en alertas:', activos);
             this.activos = activos;
             this.activosFiltrados = activos;
             this.cargandoActivos = false;

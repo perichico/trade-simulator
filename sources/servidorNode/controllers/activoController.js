@@ -1,4 +1,4 @@
-const {sequelize, Usuario, Activo, Transaccion, TipoActivo} = require("../models/index");
+const { sequelize, Usuario, Activo, Transaccion, TipoActivo } = require("../models/index");
 const PreciosService = require('../services/preciosService');
 const preciosService = new PreciosService();
 
@@ -8,12 +8,21 @@ exports.obtenerActivos = async (req, res) => {
     const { tipo_activo_id } = req.query;
     const whereClause = tipo_activo_id ? { tipo_activo_id } : {};
 
+    console.log('Consultando activos con whereClause:', whereClause);
+
     const activos = await Activo.findAll({
       where: whereClause,
       include: [{
         model: TipoActivo,
-        attributes: ['nombre']
-      }]
+        attributes: ['id', 'nombre'],
+        required: false
+      }],
+      order: [['id', 'ASC']]
+    });
+    
+    console.log(`Activos encontrados en base de datos: ${activos.length}`);
+    activos.forEach(activo => {
+      console.log(`- ID: ${activo.id}, Nombre: ${activo.nombre}, Símbolo: ${activo.simbolo}, Tipo: ${activo.TipoActivo?.nombre}`);
     });
     
     try {
@@ -31,28 +40,37 @@ exports.obtenerActivos = async (req, res) => {
           });
         }
       }
-      // Obtener los activos actualizados
+      // Obtener los activos actualizados con formato consistente
       const activosActualizados = await Activo.findAll({
         where: whereClause,
         include: [{
           model: TipoActivo,
-          attributes: ['nombre']
+          attributes: ['id', 'nombre']
         }]
       });
-      // Fusionar variación y último precio en la respuesta
-      const activosConVariacion = activosActualizados.map(activo => {
-        const actualizacion = actualizaciones.find(a => a.id === activo.id);
-        return {
-          ...activo.toJSON(),
-          variacion: actualizacion ? actualizacion.variacion : 0,
-          ultimo_precio: actualizacion ? actualizacion.ultimo_precio : activo.ultimo_precio,
-          ultima_actualizacion: actualizacion ? actualizacion.ultima_actualizacion : activo.ultima_actualizacion
-        };
-      });
-      res.status(200).json(activosConVariacion);
+      
+      // Formatear la respuesta para consistencia
+      const activosFormateados = activosActualizados.map(activo => ({
+        id: activo.id,
+        nombre: activo.nombre,
+        simbolo: activo.simbolo,
+        ultimo_precio: parseFloat(activo.ultimo_precio) || 0,
+        ultima_actualizacion: activo.ultima_actualizacion,
+        tipo_activo_id: activo.tipo_activo_id,
+        tipoActivo: activo.TipoActivo ? {
+          id: activo.TipoActivo.id,
+          nombre: activo.TipoActivo.nombre
+        } : { id: 1, nombre: 'Acción' },
+        porcentaje_dividendo: activo.porcentaje_dividendo || 0,
+        frecuencia_dividendo: activo.frecuencia_dividendo || 'trimestral',
+        variacion: 0 // Se calculará en el frontend
+      }));
+      
+      res.json(activosFormateados);
     } catch (precioError) {
       console.error('Error al actualizar precios:', precioError);
       // Si hay error al actualizar precios, devolver los activos sin actualizar
+      console.log('Enviando activos sin actualización de precios al frontend:', activos.length);
       res.status(200).json(activos);
     }
   } catch (error) {

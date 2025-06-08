@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError, of } from 'rxjs';
 import { Usuario } from '../models/usuario.model';
 import { environment } from '../../environments/environment';
 
@@ -82,10 +82,28 @@ export class AdminService {
   // Métodos para gestión de activos
   obtenerActivos(): Observable<any> {
     console.log('AdminService: Obteniendo activos...');
+    console.log('AdminService: URL completa:', `${this.apiUrl}/activos`);
+    
     return this.http.get<any>(`${this.apiUrl}/activos`, { withCredentials: true }).pipe(
-      tap(response => console.log('AdminService: Activos obtenidos:', response)),
+      tap(response => {
+        console.log('AdminService: Respuesta cruda del servidor:', response);
+        console.log('AdminService: Tipo de respuesta:', typeof response);
+        console.log('AdminService: Es array?:', Array.isArray(response));
+        if (Array.isArray(response)) {
+          console.log('AdminService: Cantidad de elementos en array:', response.length);
+          response.forEach((item, index) => {
+            console.log(`AdminService: Elemento ${index}:`, item);
+          });
+        }
+      }),
       catchError(error => {
-        console.error('AdminService: Error al obtener activos:', error);
+        console.error('AdminService: Error detallado al obtener activos:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          message: error.message,
+          url: error.url
+        });
         return throwError(() => error);
       })
     );
@@ -112,5 +130,32 @@ export class AdminService {
 
   eliminarActivo(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/activos/${id}`, { withCredentials: true });
+  }
+
+  obtenerTiposActivos(): Observable<any[]> {
+    console.log('AdminService: Obteniendo tipos de activos...');
+    return this.http.get<any[]>(`${this.apiUrl}/tipos-activos`, { withCredentials: true })
+      .pipe(
+        tap(response => console.log('AdminService: Tipos de activos recibidos:', response)),
+        catchError(error => {
+          console.error('AdminService: Error al obtener tipos de activos:', error);
+          // Devolver tipos por defecto en caso de error
+          const tiposPorDefecto = [
+          { id: 1, nombre: 'Acción' },
+          { id: 2, nombre: 'ETF' },
+          { id: 3, nombre: 'Bonos' },
+          { id: 4, nombre: 'Materias Primas' },
+          { id: 5, nombre: 'Criptomonedas' },
+          { id: 6, nombre: 'Forex' }
+          ];
+          console.log('AdminService: Devolviendo tipos por defecto');
+          return of(tiposPorDefecto);
+        })
+      );
+  }
+
+  private handleError(error: any): Observable<never> {
+    console.error('AdminService: Ocurrió un error', error);
+    return throwError(() => error);
   }
 }

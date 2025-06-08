@@ -2,8 +2,10 @@ export interface Transaccion {
   id: number;
   usuarioId: number;
   activoId: number;
+  activo_id?: number; // Alias para compatibilidad con backend
   cantidad: number;
   precio: number;
+  precio_unitario?: number; // Alias para compatibilidad con backend
   fecha: Date;
   tipo?: 'compra' | 'venta'; // Tipo de transacción
   

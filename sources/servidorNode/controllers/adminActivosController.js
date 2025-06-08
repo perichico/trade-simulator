@@ -39,24 +39,28 @@ const obtenerActivos = async (req, res) => {
         }
         
         // Formatear datos completos para el frontend
-        const activosFormateados = activos.map(activo => ({
-            id: activo.id,
-            nombre: activo.nombre || 'Sin nombre',
-            simbolo: activo.simbolo || 'Sin símbolo',
-            tipoActivo: activo.TipoActivo ? activo.TipoActivo.nombre : 'Sin tipo',
-            tipoActivoId: activo.tipo_activo_id,
-            ultimoPrecio: activo.ultimo_precio || 0,
-            ultimaActualizacion: activo.ultima_actualizacion || new Date(),
-            porcentajeDividendo: activo.porcentaje_dividendo || 0,
-            frecuenciaDividendo: activo.frecuencia_dividendo || 'trimestral',
-            ultimaFechaDividendo: activo.ultima_fecha_dividendo || null,
-            // Información adicional para análisis
-            tieneDividendos: (activo.porcentaje_dividendo || 0) > 0,
-            diasSinActualizar: activo.ultima_actualizacion ? 
-                Math.floor((new Date() - new Date(activo.ultima_actualizacion)) / (1000 * 60 * 60 * 24)) : 0
-        }));
+        const activosFormateados = activos.map(activo => {
+            console.log(`Procesando activo ID ${activo.id}: ${activo.nombre}`);
+            return {
+                id: activo.id,
+                nombre: activo.nombre || 'Sin nombre',
+                simbolo: activo.simbolo || 'Sin símbolo',
+                tipoActivo: activo.TipoActivo ? activo.TipoActivo.nombre : 'Sin tipo',
+                tipoActivoId: activo.tipo_activo_id || 1,
+                ultimoPrecio: parseFloat(activo.ultimo_precio) || 0,
+                ultimaActualizacion: activo.ultima_actualizacion || new Date(),
+                porcentajeDividendo: parseFloat(activo.porcentaje_dividendo) || 0,
+                frecuenciaDividendo: activo.frecuencia_dividendo || 'trimestral',
+                ultimaFechaDividendo: activo.ultima_fecha_dividendo || null,
+                // Información adicional para análisis
+                tieneDividendos: (parseFloat(activo.porcentaje_dividendo) || 0) > 0,
+                diasSinActualizar: activo.ultima_actualizacion ? 
+                    Math.floor((new Date() - new Date(activo.ultima_actualizacion)) / (1000 * 60 * 60 * 24)) : 0
+            };
+        });
         
         console.log(`✅ Enviando ${activosFormateados.length} activos completos formateados`);
+        console.log('Activos formateados:', activosFormateados.map(a => ({ id: a.id, nombre: a.nombre, simbolo: a.simbolo })));
         return res.status(200).json(activosFormateados);
         
     } catch (error) {
@@ -263,10 +267,78 @@ const obtenerEstadisticasActivos = async (req, res) => {
     }
 };
 
+// Obtener todos los tipos de activos
+const obtenerTiposActivos = async (req, res) => {
+    try {
+        console.log('=== OBTENIENDO TIPOS DE ACTIVOS ===');
+        
+        // Validar sesión del usuario (mantenemos la validación admin por seguridad)
+        if (!req.session || !req.session.usuario) {
+            console.log('❌ No hay sesión activa');
+            return res.status(401).json({ error: 'No hay sesión activa' });
+        }
+        
+        if (req.session.usuario.rol !== 'admin') {
+            console.log('❌ Usuario no es administrador');
+            return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+        }
+        
+        console.log('✅ Usuario admin autenticado:', req.session.usuario.nombre);
+        
+        // Verificar que TipoActivo esté disponible
+        if (!TipoActivo) {
+            console.log('⚠️ Modelo TipoActivo no disponible, devolviendo tipos por defecto');
+            const tiposPorDefecto = [
+                { id: 1, nombre: 'Acción' },
+                { id: 2, nombre: 'Bono' },
+                { id: 3, nombre: 'ETF' },
+                { id: 4, nombre: 'Criptomoneda' }
+            ];
+            return res.status(200).json(tiposPorDefecto);
+        }
+        
+        const tiposActivos = await TipoActivo.findAll({
+            order: [['id', 'ASC']]
+        });
+        
+        console.log(`📊 Tipos de activos encontrados: ${tiposActivos.length}`);
+        console.log('Tipos:', tiposActivos.map(t => ({ id: t.id, nombre: t.nombre })));
+        
+        // Si no hay tipos en la base de datos, devolver tipos por defecto
+        if (tiposActivos.length === 0) {
+            console.log('⚠️ No hay tipos de activos en BD, devolviendo tipos por defecto');
+            const tiposPorDefecto = [
+                { id: 1, nombre: 'Acción' },
+                { id: 2, nombre: 'Bono' },
+                { id: 3, nombre: 'ETF' },
+                { id: 4, nombre: 'Criptomoneda' }
+            ];
+            return res.status(200).json(tiposPorDefecto);
+        }
+        
+        res.status(200).json(tiposActivos);
+        
+    } catch (error) {
+        console.error('❌ Error al obtener tipos de activos:', error);
+        
+        // En caso de error, devolver tipos por defecto para no bloquear la funcionalidad
+        const tiposPorDefecto = [
+            { id: 1, nombre: 'Acción' },
+            { id: 2, nombre: 'Bono' },
+            { id: 3, nombre: 'ETF' },
+            { id: 4, nombre: 'Criptomoneda' }
+        ];
+        
+        console.log('📋 Devolviendo tipos por defecto debido al error');
+        res.status(200).json(tiposPorDefecto);
+    }
+};
+
 module.exports = {
     obtenerActivos,
     crearActivo,
     actualizarActivo,
     eliminarActivo,
-    obtenerEstadisticasActivos
+    obtenerEstadisticasActivos,
+    obtenerTiposActivos
 };

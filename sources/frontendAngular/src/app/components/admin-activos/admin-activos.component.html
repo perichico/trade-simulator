@@ -166,10 +166,14 @@
               <label class="form-label">Filtrar por tipo</label>
               <select class="form-select" [(ngModel)]="filtroTipo" (change)="aplicarFiltros()">
                 <option value="todos">Todos los tipos</option>
-                <option *ngFor="let tipo of tiposActivos" [value]="tipo.nombre">
+                <option *ngFor="let tipo of tiposActivos" [value]="tipo.id">
                   {{ tipo.nombre }}
                 </option>
               </select>
+              <!-- Debug info actualizado -->
+              <small class="text-muted" *ngIf="filtroTipo !== 'todos'">
+                Filtrando por ID: {{ filtroTipo }} ({{ obtenerNombreTipo(+filtroTipo) }})
+              </small>
             </div>
           </div>
         </div>

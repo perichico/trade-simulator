@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const adminActivosController = require('../controllers/adminActivosController');
 
 // Middleware de autenticación y autorización
 const requireAdmin = (req, res, next) => {
@@ -28,5 +29,8 @@ router.post('/activos', requireAdmin, adminController.crearActivo);
 router.put('/activos/:id', requireAdmin, adminController.actualizarActivo);
 router.delete('/activos/:id', requireAdmin, adminController.eliminarActivo);
 router.get('/estadisticas-activos', requireAdmin, adminController.obtenerEstadisticasActivos);
+
+// Ruta para obtener tipos de activos - usar el controlador correcto
+router.get('/tipos-activos', requireAdmin, adminActivosController.obtenerTiposActivos);
 
 module.exports = router;

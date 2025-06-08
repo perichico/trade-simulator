@@ -56,7 +56,7 @@
             <select class="form-control" formControlName="activoId" [class.is-invalid]="alertaForm.get('activoId')?.touched && alertaForm.get('activoId')?.errors" [disabled]="!alertaForm.get('portafolioId')?.value">
               <option value="">Seleccionar activo...</option>
               <option *ngFor="let activo of activosFiltrados" [value]="activo.id">
-                {{ activo.simbolo }} - {{ activo.nombre }}
+                {{ activo.simbolo }} - {{ activo.nombre }} ({{ activo.tipoActivo?.nombre || 'Sin tipo' }})
               </option>
             </select>
             <div class="invalid-feedback" *ngIf="alertaForm.get('activoId')?.touched && alertaForm.get('activoId')?.errors">
@@ -64,6 +64,7 @@
             </div>
             <div class="form-hint" *ngIf="activoSeleccionado">
               Precio actual: <strong>${{ activoSeleccionado.ultimo_precio | number:'1.2-2' }}</strong>
+              <span class="ms-2 text-muted">({{ activoSeleccionado.tipoActivo?.nombre }})</span>
             </div>
           </div>
         </div>

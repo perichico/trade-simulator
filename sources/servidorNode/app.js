@@ -73,16 +73,20 @@ app.use('/api/admin', (req, res, next) => {
 }, adminRoutes);
 app.use('/api/admin', adminActivosRoutes);
 
-// Middleware para logging de todas las rutas
+// Middleware para logging de todas las rutas (incluir logging de activos)
 app.use('*', (req, res, next) => {
   console.log(`🌐 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
   console.log('📝 Session ID:', req.sessionID);
   console.log('👤 Usuario:', req.session?.usuario?.nombre || 'No autenticado');
   
-  // Log para rutas no encontradas
-  if (res.headersSent) return next();
+  // Log específico para rutas de activos
+  if (req.originalUrl.includes('activos')) {
+    console.log('📊 Ruta de activos detectada:', req.originalUrl);
+  }
   
   // Si llegamos aquí, la ruta no fue encontrada
+  if (res.headersSent) return next();
+  
   console.log(`❌ Ruta no encontrada: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: 'Recurso no encontrado', ruta: req.originalUrl });
 });

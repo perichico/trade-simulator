@@ -38,33 +38,44 @@ class HistorialPreciosService {
 
     async calcularVariacionPorcentual(activoId, precioActual) {
         try {
-            if (!precioActual) {
-                console.log('Precio actual no proporcionado');
+            if (!precioActual || precioActual <= 0) {
+                console.log('Precio actual no válido para calcular variación');
                 return 0;
             }
 
+            // Obtener los últimos 2 registros distintos de precio
             const ultimosRegistros = await HistorialPrecios.findAll({
                 where: { activo_id: activoId },
                 order: [['fecha', 'DESC']],
-                limit: 2,
+                limit: 10, // Obtener más registros para encontrar precios diferentes
                 raw: true
             });
             
             if (ultimosRegistros.length < 2) {
-                console.log(`No hay suficientes registros para calcular variación para el activo ${activoId}`);
+                console.log(`Insuficientes registros históricos para activo ${activoId}`);
                 return 0;
             }
             
-            const penultimoPrecio = ultimosRegistros[1].precio;
+            // Buscar el primer precio diferente al actual (tolerancia de 0.01)
+            let precioAnterior = null;
+            for (let i = 1; i < ultimosRegistros.length; i++) {
+                const precio = parseFloat(ultimosRegistros[i].precio);
+                if (Math.abs(precio - precioActual) > 0.01) {
+                    precioAnterior = precio;
+                    break;
+                }
+            }
             
-            if (precioActual === penultimoPrecio) {
-                console.log(`No hay variación en el precio para el activo ${activoId}`);
+            if (!precioAnterior || precioAnterior <= 0) {
+                console.log(`No se encontró precio anterior válido para activo ${activoId}`);
                 return 0;
             }
             
-            const variacion = ((precioActual - penultimoPrecio) / penultimoPrecio) * 100;
-            console.log(`Variación calculada para activo ${activoId}: ${variacion.toFixed(2)}% (Precio actual: ${precioActual}, Penúltimo precio: ${penultimoPrecio})`);
-            return parseFloat(variacion.toFixed(2));
+            const variacion = ((precioActual - precioAnterior) / precioAnterior) * 100;
+            const variacionRedondeada = parseFloat(variacion.toFixed(2));
+            
+            console.log(`Variación calculada para activo ${activoId}: ${variacionRedondeada}% (Actual: ${precioActual}, Anterior: ${precioAnterior})`);
+            return variacionRedondeada;
         } catch (error) {
             console.error('Error al calcular variación porcentual:', error);
             return 0;

@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class ActivoService {
-  private apiUrl = `${environment.apiUrl}/api/activos`; // URL del backend
+  private apiUrl = `${environment.apiUrl}/activos`; // Corregido: removido /api
 
   constructor(private http: HttpClient) { }
 

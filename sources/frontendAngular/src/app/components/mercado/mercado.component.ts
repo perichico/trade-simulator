@@ -157,11 +157,26 @@ export class MercadoComponent implements OnInit, OnDestroy {
       });
   }
 
+  // Método para obtener la variación del activo
+  obtenerVariacion(activo: Activo): number {
+    // Solo usar propiedades que existen en el modelo Activo
+    return activo.variacion || 0;
+  }
+
   // Método para obtener la clase CSS según la variación
-  obtenerClaseVariacion(variacion: number): string {
+  obtenerClaseVariacion(activo: Activo): string {
+    const variacion = this.obtenerVariacion(activo);
     if (variacion > 0) return 'variacion-positiva';
     if (variacion < 0) return 'variacion-negativa';
     return 'variacion-neutral';
+  }
+
+  // Método para formatear la variación como texto
+  formatearVariacion(activo: Activo): string {
+    const variacion = this.obtenerVariacion(activo);
+    if (variacion === 0) return '0%';
+    const signo = variacion > 0 ? '+' : '';
+    return `${signo}${variacion.toFixed(2)}%`;
   }
 
   // Método para obtener el icono según la tendencia

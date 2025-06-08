@@ -50,13 +50,13 @@
               <h5 class="card-title mb-0">{{ activo.nombre }}</h5>
               <h6 class="card-subtitle mb-3 text-muted">{{ activo.simbolo }}</h6>
             </div>
-            <span class="variacion-badge" [ngClass]="obtenerClaseVariacion(activo.variacion || 0)">
+            <span class="variacion-badge" [ngClass]="obtenerClaseVariacion(activo)">
               <i class="bi" [ngClass]="{
-                'bi-arrow-up': activo.variacion && activo.variacion > 0,
-                'bi-arrow-down': activo.variacion && activo.variacion < 0,
-                'bi-dash': !activo.variacion || activo.variacion === 0
+                'bi-arrow-up': obtenerVariacion(activo) > 0,
+                'bi-arrow-down': obtenerVariacion(activo) < 0,
+                'bi-dash': obtenerVariacion(activo) === 0
               }"></i>
-              <span class="fw-bold ms-1">{{ activo.variacion ? (activo.variacion > 0 ? '+' : '') + activo.variacion + '%' : '0%' }}</span>
+              <span class="fw-bold ms-1">{{ formatearVariacion(activo) }}</span>
             </span>
           </div>
           <div class="d-flex justify-content-between align-items-center mb-3">

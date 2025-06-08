@@ -1,6 +1,8 @@
 const { sequelize, Usuario, Activo, Transaccion, TipoActivo } = require("../models/index");
 const PreciosService = require('../services/preciosService');
+const HistorialPreciosService = require('../services/historialPreciosService');
 const preciosService = new PreciosService();
+const historialPreciosService = new HistorialPreciosService();
 
 // Obtener todos los activos con opción de filtrado por tipo
 exports.obtenerActivos = async (req, res) => {
@@ -21,36 +23,61 @@ exports.obtenerActivos = async (req, res) => {
     });
     
     console.log(`Activos encontrados en base de datos: ${activos.length}`);
-    activos.forEach(activo => {
-      console.log(`- ID: ${activo.id}, Nombre: ${activo.nombre}, Símbolo: ${activo.simbolo}, Tipo: ${activo.TipoActivo?.nombre}`);
-    });
     
     try {
       // Actualizar precios en tiempo real
       const actualizaciones = await preciosService.actualizarPreciosActivos(activos);
-      // Actualizar los precios en la base de datos
-      for (const actualizacion of actualizaciones) {
+      
+      // Actualizar los precios en la base de datos y calcular variaciones
+      const activosFormateados = [];
+      
+      for (let i = 0; i < activos.length; i++) {
+        const activo = activos[i];
+        const actualizacion = actualizaciones[i];
+        
+        let variacion = 0;
+        let precioActualizado = parseFloat(activo.ultimo_precio) || 0;
+        
         if (actualizacion && actualizacion.ultimo_precio) {
+          precioActualizado = parseFloat(actualizacion.ultimo_precio);
+          
+          // Actualizar precio en BD
           await Activo.update({
             ultima_actualizacion: actualizacion.ultima_actualizacion,
-            ultimo_precio: actualizacion.ultimo_precio
-            // La variación se calculará en tiempo real usando historial_precios
+            ultimo_precio: precioActualizado
           }, {
-            where: { id: actualizacion.id }
+            where: { id: activo.id }
           });
+          
+          // Calcular variación usando el servicio de historial
+          variacion = await historialPreciosService.calcularVariacionPorcentual(activo.id, precioActualizado);
         }
+        
+        // Formatear respuesta
+        activosFormateados.push({
+          id: activo.id,
+          nombre: activo.nombre,
+          simbolo: activo.simbolo,
+          ultimo_precio: precioActualizado,
+          ultima_actualizacion: actualizacion?.ultima_actualizacion || activo.ultima_actualizacion,
+          tipo_activo_id: activo.tipo_activo_id,
+          tipoActivo: activo.TipoActivo ? {
+            id: activo.TipoActivo.id,
+            nombre: activo.TipoActivo.nombre
+          } : { id: 1, nombre: 'Acción' },
+          porcentaje_dividendo: activo.porcentaje_dividendo || 0,
+          frecuencia_dividendo: activo.frecuencia_dividendo || 'trimestral',
+          variacion: variacion
+        });
       }
-      // Obtener los activos actualizados con formato consistente
-      const activosActualizados = await Activo.findAll({
-        where: whereClause,
-        include: [{
-          model: TipoActivo,
-          attributes: ['id', 'nombre']
-        }]
-      });
       
-      // Formatear la respuesta para consistencia
-      const activosFormateados = activosActualizados.map(activo => ({
+      console.log('Enviando activos con variaciones calculadas:', activosFormateados.length);
+      res.json(activosFormateados);
+      
+    } catch (precioError) {
+      console.error('Error al actualizar precios:', precioError);
+      // En caso de error, enviar activos con variación 0
+      const activosSinVariacion = activos.map(activo => ({
         id: activo.id,
         nombre: activo.nombre,
         simbolo: activo.simbolo,
@@ -63,15 +90,9 @@ exports.obtenerActivos = async (req, res) => {
         } : { id: 1, nombre: 'Acción' },
         porcentaje_dividendo: activo.porcentaje_dividendo || 0,
         frecuencia_dividendo: activo.frecuencia_dividendo || 'trimestral',
-        variacion: 0 // Se calculará en el frontend
+        variacion: 0
       }));
-      
-      res.json(activosFormateados);
-    } catch (precioError) {
-      console.error('Error al actualizar precios:', precioError);
-      // Si hay error al actualizar precios, devolver los activos sin actualizar
-      console.log('Enviando activos sin actualización de precios al frontend:', activos.length);
-      res.status(200).json(activos);
+      res.status(200).json(activosSinVariacion);
     }
   } catch (error) {
     console.error('Error al obtener los activos:', error);
@@ -143,52 +164,59 @@ exports.obtenerActivoPorId = async (req, res) => {
     }
     
     try {
-      // Actualizar precio y obtener variación para este activo específico
+      // Actualizar precio y calcular variación para este activo específico
       const actualizacion = await preciosService.actualizarPreciosActivos([activo]);
+      
+      let precioActualizado = parseFloat(activo.ultimo_precio) || 0;
+      let variacion = 0;
       
       if (actualizacion && actualizacion.length > 0 && actualizacion[0]) {
         const datosActualizados = actualizacion[0];
+        precioActualizado = parseFloat(datosActualizados.ultimo_precio) || precioActualizado;
         
         // Actualizar en la base de datos
         await Activo.update({
           ultima_actualizacion: datosActualizados.ultima_actualizacion,
-          ultimo_precio: datosActualizados.ultimo_precio
+          ultimo_precio: precioActualizado
         }, {
           where: { id: activoId }
         });
-        
-        // Devolver el activo con la variación calculada
-        const activoConVariacion = {
-          ...activo.toJSON(),
-          variacion: datosActualizados.variacion || 0,
-          ultimo_precio: datosActualizados.ultimo_precio || activo.ultimo_precio,
-          ultima_actualizacion: datosActualizados.ultima_actualizacion || activo.ultima_actualizacion
-        };
-        
-        console.log('Activo con variación:', activoConVariacion);
-        res.status(200).json(activoConVariacion);
-      } else {
-        // Si no se puede actualizar el precio, devolver el activo con variación 0
-        const activoSinVariacion = {
-          ...activo.toJSON(),
-          variacion: 0
-        };
-        console.log('Activo sin variación (error en actualización):', activoSinVariacion);
-        res.status(200).json(activoSinVariacion);
       }
+      
+      // Calcular variación independientemente del éxito de la actualización
+      variacion = await historialPreciosService.calcularVariacionPorcentual(activoId, precioActualizado);
+      
+      // Devolver el activo con la variación calculada
+      const activoConVariacion = {
+        ...activo.toJSON(),
+        variacion: variacion,
+        ultimo_precio: precioActualizado,
+        ultima_actualizacion: actualizacion?.[0]?.ultima_actualizacion || activo.ultima_actualizacion
+      };
+      
+      console.log(`Activo ${activoId} con variación: ${variacion}%`);
+      res.status(200).json(activoConVariacion);
+      
     } catch (precioError) {
       console.error('Error al actualizar precio del activo:', precioError);
-      // En caso de error, devolver el activo sin variación
-      const activoSinVariacion = {
+      
+      // Aún así intentar calcular variación con el precio actual
+      let variacion = 0;
+      try {
+        variacion = await historialPreciosService.calcularVariacionPorcentual(activoId, parseFloat(activo.ultimo_precio));
+      } catch (variacionError) {
+        console.error('Error al calcular variación:', variacionError);
+      }
+      
+      const activoConVariacion = {
         ...activo.toJSON(),
-        variacion: 0
+        variacion: variacion
       };
-      res.status(200).json(activoSinVariacion);
+      res.status(200).json(activoConVariacion);
     }
     
   } catch (error) {
     console.error('Error detallado al obtener el activo:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({ 
       error: "Error al obtener el activo",
       details: error.message 

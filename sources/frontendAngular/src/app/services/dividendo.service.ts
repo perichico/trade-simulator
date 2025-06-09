@@ -24,11 +24,35 @@ export class DividendoService {
   constructor(private http: HttpClient) { }
 
   obtenerDividendos(): Observable<Dividendo[]> {
-    return this.http.get<Dividendo[]>(`${this.apiUrl}/api/dividendos`)
+    console.log('🔄 DividendoService: Obteniendo dividendos generales...');
+    console.log('🌐 URL:', `${this.apiUrl}/api/dividendos`);
+    
+    return this.http.get<any>(`${this.apiUrl}/api/dividendos`, { withCredentials: true })
       .pipe(
-        tap(data => console.log('Dividendos obtenidos:', data)),
+        tap(response => {
+          console.log('✅ Dividendos obtenidos:', response);
+          if (response && response.success) {
+            console.log(`📊 Total de dividendos: ${response.total}`);
+          }
+        }),
+        map(response => {
+          // Manejar la nueva estructura de respuesta
+          if (response && response.success && response.data) {
+            return response.data;
+          }
+          // Si es array directo (compatibilidad)
+          if (Array.isArray(response)) {
+            return response;
+          }
+          return [];
+        }),
         catchError(error => {
-          console.error('Error al obtener dividendos', error);
+          console.error('❌ Error al obtener dividendos:', {
+            status: error.status,
+            statusText: error.statusText,
+            message: error.message,
+            error: error.error
+          });
           return of([]);
         })
       );

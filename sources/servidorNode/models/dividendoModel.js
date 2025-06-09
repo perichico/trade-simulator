@@ -33,8 +33,6 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: "dividendos",
-    timestamps: true,
-    createdAt: 'fecha_creacion',
-    updatedAt: 'fecha_actualizacion'
+    timestamps: false
   });
 };

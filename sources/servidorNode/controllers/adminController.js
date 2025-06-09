@@ -284,6 +284,83 @@ const obtenerEstadisticas = async (req, res) => {
     }
 };
 
+// Método para obtener dividendos para admin
+const obtenerDividendos = async (req, res) => {
+    try {
+        console.log('AdminController: Obteniendo dividendos para admin...');
+        console.log('AdminController: Usuario:', req.session?.usuario?.nombre, 'Rol:', req.session?.usuario?.rol);
+        
+        // Validar sesión y permisos
+        if (!req.session || !req.session.usuario) {
+            console.log('❌ No hay sesión activa');
+            return res.status(401).json({ error: 'No hay sesión activa' });
+        }
+        
+        if (req.session.usuario.rol !== 'admin') {
+            console.log('❌ Usuario no es administrador');
+            return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+        }
+        
+        // Verificar si los modelos están disponibles
+        let Dividendo, Activo;
+        try {
+            const models = require('../models/index');
+            Dividendo = models.Dividendo;
+            Activo = models.Activo;
+            
+            if (!Dividendo || !Activo) {
+                throw new Error('Modelos de Dividendo o Activo no encontrados');
+            }
+        } catch (modelError) {
+            console.error('AdminController: Error al cargar modelos:', modelError);
+            return res.status(500).json({ 
+                error: "Error de configuración del servidor",
+                mensaje: "Los modelos de datos no están disponibles"
+            });
+        }
+        
+        const dividendos = await Dividendo.findAll({
+            include: [{ 
+                model: Activo,
+                attributes: ['id', 'simbolo', 'nombre', 'ultimo_precio']
+            }],
+            order: [["fecha", "DESC"]],
+            limit: 100
+        });
+        
+        console.log(`AdminController: Se obtuvieron ${dividendos.length} dividendos`);
+        
+        // Mapear los dividendos para asegurar consistencia
+        const dividendosMapeados = dividendos.map(div => ({
+            id: div.id,
+            activo_id: div.activo_id,
+            fecha: div.fecha,
+            monto_por_accion: parseFloat(div.monto_por_accion),
+            estado: div.estado,
+            activo: div.Activo ? {
+                id: div.Activo.id,
+                simbolo: div.Activo.simbolo,
+                nombre: div.Activo.nombre,
+                ultimo_precio: div.Activo.ultimo_precio
+            } : null
+        }));
+        
+        res.status(200).json({
+            success: true,
+            data: dividendosMapeados,
+            total: dividendosMapeados.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('AdminController: Error al obtener dividendos:', error);
+        res.status(500).json({ 
+            error: "Error al obtener dividendos",
+            mensaje: "Ha ocurrido un error interno del servidor",
+            details: error.message
+        });
+    }
+};
+
 module.exports = {
     obtenerUsuarios,
     cambiarRolUsuario,
@@ -295,5 +372,6 @@ module.exports = {
     crearActivo: adminActivosController.crearActivo,
     actualizarActivo: adminActivosController.actualizarActivo,
     eliminarActivo: adminActivosController.eliminarActivo,
-    obtenerEstadisticasActivos: adminActivosController.obtenerEstadisticasActivos
+    obtenerEstadisticasActivos: adminActivosController.obtenerEstadisticasActivos,
+    obtenerDividendos
 };

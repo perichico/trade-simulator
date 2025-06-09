@@ -55,12 +55,12 @@ exports.obtenerHistorialPatrimonio = async (req, res) => {
             // Obtener activos del portafolio usando PortafolioActivo
             const activosEnPortafolio = await PortafolioActivo.findAll({
                 where: { portafolio_id: portafolio.id },
-                include: [Activo]
+                include: [{ model: Activo, as: 'activo' }]
             });
 
             for (const posicion of activosEnPortafolio) {
-                if (posicion.cantidad > 0 && posicion.Activo) {
-                    valorPortafolioTotal += posicion.cantidad * (posicion.Activo.ultimo_precio || 0);
+                if (posicion.cantidad > 0 && posicion.activo) {
+                    valorPortafolioTotal += posicion.cantidad * (posicion.activo.ultimo_precio || 0);
                 }
             }
         }
@@ -136,12 +136,12 @@ exports.obtenerPatrimonioActual = async (req, res) => {
             // Obtener activos del portafolio usando PortafolioActivo
             const activosEnPortafolio = await PortafolioActivo.findAll({
                 where: { portafolio_id: portafolio.id },
-                include: [Activo]
+                include: [{ model: Activo, as: 'activo' }]
             });
 
             for (const posicion of activosEnPortafolio) {
-                if (posicion.cantidad > 0 && posicion.Activo) {
-                    valorPortafolioTotal += posicion.cantidad * (posicion.Activo.ultimo_precio || 0);
+                if (posicion.cantidad > 0 && posicion.activo) {
+                    valorPortafolioTotal += posicion.cantidad * (posicion.activo.ultimo_precio || 0);
                 }
             }
         }

@@ -6,15 +6,71 @@ const dividendoService = new DividendoService();
 // Obtener todos los dividendos
 exports.obtenerDividendos = async (req, res) => {
   try {
+    console.log('📊 DividendoController: Obteniendo dividendos...');
+    console.log('👤 Usuario solicitante:', req.session?.usuario?.email || 'Desconocido');
+    console.log('🔑 Rol del usuario:', req.session?.usuario?.rol || 'Sin rol');
+    
+    // Verificar autenticación
+    if (!req.session?.usuario) {
+      return res.status(401).json({ 
+        error: "No autenticado",
+        mensaje: "Debes iniciar sesión para ver los dividendos"
+      });
+    }
+    
+    const whereClause = {};
+    const includeClause = [{ 
+      model: Activo,
+      attributes: ['id', 'simbolo', 'nombre', 'ultimo_precio']
+    }];
+
+    // Si es admin, mostrar todos los dividendos
+    const isAdmin = req.session.usuario.rol === 'admin';
+    console.log('🔑 Es administrador:', isAdmin);
+    
     const dividendos = await Dividendo.findAll({
-      include: [{ model: Activo }],
-      order: [["fecha", "DESC"]]
+      where: whereClause,
+      include: includeClause,
+      order: [["fecha", "DESC"]],
+      limit: isAdmin ? 200 : 50
     });
     
-    res.status(200).json(dividendos);
+    console.log(`✅ Se obtuvieron ${dividendos.length} dividendos`);
+    
+    // Mapear los dividendos para asegurar consistencia en la respuesta
+    const dividendosMapeados = dividendos.map(div => ({
+      id: div.id,
+      activo_id: div.activo_id,
+      fecha: div.fecha,
+      monto_por_accion: parseFloat(div.monto_por_accion),
+      estado: div.estado,
+      activo: div.Activo ? {
+        id: div.Activo.id,
+        simbolo: div.Activo.simbolo,
+        nombre: div.Activo.nombre,
+        ultimo_precio: div.Activo.ultimo_precio
+      } : null
+    }));
+    
+    res.status(200).json({
+      success: true,
+      data: dividendosMapeados,
+      total: dividendosMapeados.length,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    console.error('Error al obtener dividendos:', error);
-    res.status(500).json({ error: "Error al obtener dividendos" });
+    console.error('❌ Error al obtener dividendos:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    res.status(500).json({ 
+      error: "Error al obtener dividendos",
+      mensaje: "Ha ocurrido un error interno del servidor",
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 };
 
@@ -223,14 +279,37 @@ exports.procesarDividendosPendientes = async (req, res) => {
 // Procesar dividendos automáticos
 exports.procesarDividendosAutomaticos = async (req, res) => {
   try {
+    console.log('🔄 Iniciando procesamiento de dividendos automáticos desde controlador...');
+    console.log('👤 Usuario que solicita:', req.session?.usuario?.email || 'Desconocido');
+    
+    // Verificar permisos de admin
+    if (!req.session.usuario || req.session.usuario.rol !== 'admin') {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Permisos insuficientes. Se requiere rol de administrador.',
+        mensaje: 'Solo los administradores pueden procesar dividendos automáticos'
+      });
+    }
+    
     const dividendos = await dividendoService.procesarDividendosAutomaticos();
+    
+    console.log(`✅ Procesamiento completado: ${dividendos.length} dividendos generados`);
+    
     res.status(200).json({
-      mensaje: `Se han procesado ${dividendos.length} dividendos automáticos`,
-      dividendos
+      success: true,
+      mensaje: `Se han procesado ${dividendos.length} dividendos automáticos correctamente`,
+      dividendos,
+      total: dividendos.length,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error al procesar dividendos automáticos:', error);
-    res.status(500).json({ error: "Error al procesar dividendos automáticos" });
+    console.error('❌ Error al procesar dividendos automáticos:', error);
+    res.status(500).json({ 
+      success: false,
+      error: "Error al procesar dividendos automáticos",
+      mensaje: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 };
 

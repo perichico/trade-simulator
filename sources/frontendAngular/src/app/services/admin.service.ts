@@ -156,24 +156,72 @@ export class AdminService {
 
   // Métodos para gestión de dividendos
   procesarDividendosAutomaticos(): Observable<any> {
-    // Corregir la URL para no duplicar /api/admin
-    return this.http.post(`${environment.apiUrl}/api/dividendos/procesar`, {}, { withCredentials: true })
+    console.log('AdminService: Procesando dividendos automáticos...');
+    // Usar la ruta correcta que existe en el backend
+    return this.http.post(`${environment.apiUrl}/api/dividendos/procesar-automaticos`, {}, { withCredentials: true })
       .pipe(
-        tap(data => console.log('Dividendos procesados:', data)),
+        tap(data => {
+          console.log('AdminService: Dividendos procesados exitosamente:', data);
+          if (data && typeof data === 'object' && 'total' in data && data.total === 0) {
+            console.log('AdminService: No se procesaron dividendos - revisar configuración de activos');
+          }
+        }),
         catchError(error => {
-          console.error('Error al procesar dividendos automáticos', error);
+          console.error('AdminService: Error al procesar dividendos automáticos:', {
+            status: error.status,
+            statusText: error.statusText,
+            error: error.error,
+            message: error.message
+          });
           throw error;
         })
       );
   }
 
   obtenerDividendosAdmin(): Observable<any[]> {
-    // Corregir la URL para no duplicar /api/admin
-    return this.http.get<any[]>(`${environment.apiUrl}/api/dividendos`, { withCredentials: true })
+    console.log('AdminService: Obteniendo dividendos para admin...');
+    // Usar la ruta principal de dividendos en lugar de la ruta de admin
+    const url = `${environment.apiUrl}/api/dividendos`;
+    console.log('AdminService: URL completa:', url);
+    
+    return this.http.get<any>(url, { withCredentials: true })
       .pipe(
-        tap(data => console.log('Dividendos admin obtenidos:', data)),
+        tap(response => {
+          console.log('AdminService: Respuesta cruda recibida:', response);
+          console.log('AdminService: Tipo de respuesta:', typeof response);
+        }),
+        map(response => {
+          console.log('AdminService: Procesando respuesta...');
+          
+          // Manejar la nueva estructura con success y data
+          if (response && response.success && response.data) {
+            console.log('AdminService: Usando response.data, elementos:', response.data.length);
+            return response.data;
+          }
+          
+          // Si es array directo (compatibilidad)
+          if (Array.isArray(response)) {
+            console.log('AdminService: Usando array directo, elementos:', response.length);
+            return response;
+          }
+          
+          console.log('AdminService: Respuesta no reconocida, devolviendo array vacío');
+          return [];
+        }),
+        tap(data => {
+          console.log('AdminService: Dividendos procesados:', data.length);
+          if (data.length > 0) {
+            console.log('AdminService: Primer dividendo:', data[0]);
+          }
+        }),
         catchError(error => {
-          console.error('Error al obtener dividendos admin', error);
+          console.error('AdminService: Error detallado al obtener dividendos:', {
+            status: error.status,
+            statusText: error.statusText,
+            error: error.error,
+            message: error.message,
+            url: error.url
+          });
           return of([]);
         })
       );

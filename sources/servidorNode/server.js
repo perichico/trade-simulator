@@ -27,14 +27,24 @@ app.use(session({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Middleware de logging para dividendos
+app.use('/api/dividendos*', (req, res, next) => {
+  console.log(`💰 Ruta de dividendos: ${req.method} ${req.originalUrl}`);
+  console.log('Session ID:', req.sessionID);
+  console.log('Usuario:', req.session?.usuario?.nombre || 'No autenticado');
+  next();
+});
+
 // Rutas
 const authRoutes = require('./routes/auth');
 const usuarioRoutes = require('./routes/usuario');
 const adminRoutes = require('./routes/admin');
+const dividendoRoutes = require('./routes/dividendoRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/usuario', usuarioRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/dividendos', dividendoRoutes);
 
 // Servir archivos estáticos desde el directorio 'public'
 app.use(express.static(path.join(__dirname, 'public')));

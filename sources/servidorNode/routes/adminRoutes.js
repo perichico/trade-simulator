@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const dividendoController = require('../controllers/dividendoController');
 
 // Middleware de autenticación de administrador
 const verificarAdmin = (req, res, next) => {

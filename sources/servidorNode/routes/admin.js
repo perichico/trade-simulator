@@ -33,4 +33,14 @@ router.get('/estadisticas-activos', requireAdmin, adminController.obtenerEstadis
 // Ruta para obtener tipos de activos - usar el controlador correcto
 router.get('/tipos-activos', requireAdmin, adminActivosController.obtenerTiposActivos);
 
+// Ruta para obtener dividendos para admin
+router.get('/dividendos', requireAdmin, adminController.obtenerDividendos);
+
+// Ruta para procesar dividendos automáticos
+router.post('/dividendos/procesar-automaticos', requireAdmin, (req, res) => {
+    // Redirigir al controlador de dividendos para procesamiento automático
+    const dividendoController = require('../controllers/dividendoController');
+    dividendoController.procesarDividendosAutomaticos(req, res);
+});
+
 module.exports = router;

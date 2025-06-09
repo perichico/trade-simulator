@@ -73,6 +73,12 @@ app.use('/api/admin', (req, res, next) => {
 }, adminRoutes);
 app.use('/api/admin', adminActivosRoutes);
 
+// Middleware para logging específico de dividendos
+app.use('/api/dividendos*', (req, res, next) => {
+  console.log(`💰 Ruta de dividendos: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Middleware para logging de todas las rutas (incluir logging de activos)
 app.use('*', (req, res, next) => {
   console.log(`🌐 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
@@ -109,9 +115,79 @@ app.on('ready', async () => {
 });
 
 // Emitir evento 'ready' después de configurar todo
-setTimeout(() => {
+setTimeout(async () => {
   app.emit('ready');
-}, 1000);
+  
+  // Crear algunos dividendos de prueba si no existen
+  try {
+    const { Dividendo, Activo } = require('./models/index');
+    const dividendosExistentes = await Dividendo.count();
+    
+    if (dividendosExistentes === 0) {
+      console.log('🔧 Creando dividendos de prueba...');
+      
+      // Buscar activos que tengan configuración de dividendos
+      const activos = await Activo.findAll({ 
+        where: {
+          porcentaje_dividendo: { [Op.gt]: 0 }
+        },
+        limit: 3 
+      });
+      
+      if (activos.length === 0) {
+        // Si no hay activos con dividendos, crear algunos básicos
+        console.log('🔧 No hay activos con dividendos, creando activos básicos...');
+        const activosBasicos = await Activo.findAll({ limit: 3 });
+        
+        for (const activo of activosBasicos) {
+          // Actualizar el activo para que tenga dividendos
+          await activo.update({
+            porcentaje_dividendo: 3.5, // 3.5% anual
+            frecuencia_dividendo: 'trimestral'
+          });
+          
+          // Crear dividendos de prueba
+          await Dividendo.create({
+            activo_id: activo.id,
+            fecha: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 días atrás
+            monto_por_accion: (activo.ultimo_precio * 0.00875), // ~0.875% trimestral
+            estado: 'pagado'
+          });
+          
+          await Dividendo.create({
+            activo_id: activo.id,
+            fecha: new Date(),
+            monto_por_accion: (activo.ultimo_precio * 0.00875),
+            estado: 'pendiente'
+          });
+        }
+      } else {
+        // Crear dividendos para activos que ya tienen configuración
+        for (const activo of activos) {
+          const montoPorAccion = (activo.ultimo_precio * activo.porcentaje_dividendo / 100) / 4; // Trimestral
+          
+          await Dividendo.create({
+            activo_id: activo.id,
+            fecha: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 días atrás
+            monto_por_accion: montoPorAccion,
+            estado: 'pagado'
+          });
+          
+          await Dividendo.create({
+            activo_id: activo.id,
+            fecha: new Date(),
+            monto_por_accion: montoPorAccion,
+            estado: 'pendiente'
+          });
+        }
+      }
+      
+      console.log('✅ Dividendos de prueba creados');
+    }
+  } catch (error) {
+    console.error('Error al crear dividendos de prueba:', error);
+  }
+}, 2000);
 
 // Iniciar servicio de generación automática de dividendos
 const generadorDividendos = new GeneradorDividendosService();

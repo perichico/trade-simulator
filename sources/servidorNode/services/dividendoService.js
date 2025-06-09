@@ -33,33 +33,51 @@ class DividendoService {
   // Verificar dividendos pendientes de manera segura
   async verificarDividendosPendientes() {
     try {
-      console.log('Verificando activos para generar dividendos...');
-      
-      const activos = await Activo.findAll({
-        where: {
-          porcentaje_dividendo: {
-            [Op.gt]: 0
-          }
+        console.log('📊 Verificando activos para generar dividendos...');
+        
+        const activos = await Activo.findAll({
+            where: {
+                porcentaje_dividendo: {
+                    [Op.gt]: 0
+                }
+            }
+        }).catch(err => {
+            console.error('Error al buscar activos con dividendos:', err);
+            return [];
+        });
+        
+        console.log(`📈 Se encontraron ${activos.length} activos con configuración de dividendos`);
+        
+        if (activos.length === 0) {
+            console.log('⚠️ No hay activos configurados para pagar dividendos');
+            return;
         }
-      }).catch(err => {
-        console.error('Error al buscar activos con dividendos:', err);
-        return [];
-      });
-      
-      console.log(`Se encontraron ${activos.length} activos con configuración de dividendos`);
-      
-      const hoy = new Date();
-      for (const activo of activos) {
-        try {
-          if (this.debeGenerarDividendo(activo, hoy)) {
-            console.log(`Activo ${activo.simbolo} (${activo.id}) elegible para generar dividendo`);
-          }
-        } catch (err) {
-          console.error(`Error al verificar dividendos para activo ${activo.id}:`, err);
+        
+        const hoy = new Date();
+        let activosElegibles = 0;
+        
+        for (const activo of activos) {
+            try {
+                console.log(`🔍 Evaluando activo: ${activo.simbolo} (ID: ${activo.id})`);
+                console.log(`   - Porcentaje dividendo: ${activo.porcentaje_dividendo}%`);
+                console.log(`   - Frecuencia: ${activo.frecuencia_dividendo || 'anual'}`);
+                console.log(`   - Última fecha dividendo: ${activo.ultima_fecha_dividendo || 'Nunca'}`);
+                
+                if (this.debeGenerarDividendo(activo, hoy)) {
+                    console.log(`✅ Activo ${activo.simbolo} (${activo.id}) elegible para generar dividendo`);
+                    activosElegibles++;
+                } else {
+                    console.log(`⏭️ Activo ${activo.simbolo} no elegible: ${this.obtenerRazonNoElegible(activo, hoy)}`);
+                }
+            } catch (err) {
+                console.error(`❌ Error al verificar dividendos para activo ${activo.id}:`, err);
+            }
         }
-      }
+        
+        console.log(`📋 Resumen: ${activosElegibles} activos elegibles de ${activos.length} total`);
+        
     } catch (error) {
-      console.error('Error al verificar dividendos pendientes:', error);
+        console.error('💥 Error al verificar dividendos pendientes:', error);
     }
   }
 
@@ -95,7 +113,7 @@ class DividendoService {
   async procesarDividendosAutomaticos() {
     const transaction = await sequelize.transaction();
     try {
-      console.log('Iniciando procesamiento de dividendos automáticos...');
+      console.log('🔄 Iniciando procesamiento de dividendos automáticos...');
       
       const activos = await Activo.findAll({
         where: {
@@ -105,45 +123,65 @@ class DividendoService {
         }
       });
       
-      console.log(`Se encontraron ${activos.length} activos con dividendos configurados`);
+      console.log(`📊 Se encontraron ${activos.length} activos con dividendos configurados`);
+      
+      if (activos.length === 0) {
+        await transaction.commit();
+        console.log('⚠️ No hay activos configurados para pagar dividendos');
+        return [];
+      }
+      
+      // Mostrar información detallada de cada activo
+      activos.forEach(activo => {
+        console.log(`📈 Activo: ${activo.simbolo} (${activo.nombre})`);
+        console.log(`   - Porcentaje dividendo: ${activo.porcentaje_dividendo}%`);
+        console.log(`   - Frecuencia: ${activo.frecuencia_dividendo || 'anual'}`);
+        console.log(`   - Última fecha dividendo: ${activo.ultima_fecha_dividendo || 'Nunca'}`);
+        console.log(`   - Precio actual: ${activo.ultimo_precio || 0}€`);
+      });
       
       const hoy = new Date();
       const dividendosCreados = [];
       
       for (const activo of activos) {
         try {
+          console.log(`🔍 Evaluando activo: ${activo.simbolo}`);
+          
           if (this.debeGenerarDividendo(activo, hoy)) {
-            console.log(`Generando dividendo para activo: ${activo.nombre} (${activo.simbolo})`);
+            console.log(`✅ Generando dividendo para: ${activo.simbolo}`);
             
             const montoPorAccion = this.calcularMontoPorAccion(activo);
             
-            const dividendo = await Dividendo.create({
+            // Crear el dividendo
+            const nuevoDividendo = await Dividendo.create({
               activo_id: activo.id,
               fecha: hoy,
               monto_por_accion: montoPorAccion,
-              estado: 'pagado'
+              estado: 'pendiente'
             }, { transaction });
             
+            // Actualizar la fecha del último dividendo del activo
             await activo.update({
               ultima_fecha_dividendo: hoy
             }, { transaction });
             
-            dividendosCreados.push(dividendo);
-            
-            await this.procesarPagoDividendos(activo.id, montoPorAccion, transaction);
+            dividendosCreados.push(nuevoDividendo);
+            console.log(`💰 Dividendo creado: ${montoPorAccion}€ por acción para ${activo.simbolo}`);
+          } else {
+            console.log(`⏭️ Activo ${activo.simbolo} no elegible: ${this.obtenerRazonNoElegible(activo, hoy)}`);
           }
         } catch (error) {
-          console.error(`Error procesando dividendo para activo ${activo.id}:`, error);
+          console.error(`❌ Error procesando activo ${activo.simbolo}:`, error);
         }
       }
       
       await transaction.commit();
-      console.log(`Procesamiento de dividendos completado. Se generaron ${dividendosCreados.length} dividendos.`);
+      console.log(`🎉 Procesamiento de dividendos completado. Se generaron ${dividendosCreados.length} dividendos.`);
       return dividendosCreados;
       
     } catch (error) {
       await transaction.rollback();
-      console.error('Error en procesarDividendosAutomaticos:', error);
+      console.error('💥 Error en procesarDividendosAutomaticos:', error);
       throw error;
     }
   }
@@ -491,6 +529,31 @@ class DividendoService {
       console.error('Error al obtener estadísticas del dividendo:', error);
       throw error;
     }
+  }
+
+  obtenerRazonNoElegible(activo, fechaActual) {
+    if (!activo.ultima_fecha_dividendo) {
+      return 'Debería ser elegible (primera vez)';
+    }
+    
+    const ultimaFecha = new Date(activo.ultima_fecha_dividendo);
+    const diasTranscurridos = this.calcularDiasEntreFechas(ultimaFecha, fechaActual);
+    
+    let periodoEnDias;
+    switch (activo.frecuencia_dividendo) {
+      case 'trimestral':
+        periodoEnDias = 90;
+        break;
+      case 'semestral':
+        periodoEnDias = 180;
+        break;
+      case 'anual':
+      default:
+        periodoEnDias = 365;
+        break;
+    }
+    
+    return `Días transcurridos: ${diasTranscurridos}, Días requeridos: ${periodoEnDias}`;
   }
 }
 

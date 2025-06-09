@@ -95,17 +95,40 @@ export class AdminDividendosComponent implements OnInit {
 
   cargarDividendos(): void {
     this.cargando = true;
-    this.dividendoService.obtenerDividendos().subscribe({
+    this.adminService.obtenerDividendosAdmin().subscribe({
       next: (dividendos) => {
+        console.log('Dividendos recibidos en admin:', dividendos);
         this.dividendos = dividendos;
         this.cargando = false;
+        // Calcular estadísticas después de cargar dividendos
+        this.calcularEstadisticas();
       },
       error: (error) => {
         console.error('Error al cargar dividendos:', error);
         this.snackBar.open('Error al cargar dividendos', 'Cerrar', { duration: 3000 });
         this.cargando = false;
+        this.dividendos = [];
       }
     });
+  }
+
+  calcularEstadisticas(): void {
+    const dividendosPagados = this.dividendos.filter(d => d.estado === 'pagado');
+    const dividendosPendientes = this.dividendos.filter(d => d.estado === 'pendiente');
+    
+    this.estadisticas = {
+      totalDividendosPagados: dividendosPagados.length,
+      totalDividendosPendientes: dividendosPendientes.length,
+      montoTotalDividendos: dividendosPagados.reduce((sum, d) => sum + (d.monto_por_accion || 0), 0),
+      activosConDividendos: this.activosConDividendos.length
+    };
+    
+    console.log('Estadísticas calculadas:', this.estadisticas);
+  }
+
+  cargarEstadisticas(): void {
+    // Este método ahora solo se llama desde calcularEstadisticas
+    // después de cargar los dividendos
   }
 
   cargarActivos(): void {
@@ -120,37 +143,59 @@ export class AdminDividendosComponent implements OnInit {
     });
   }
 
-  cargarEstadisticas(): void {
-    // Calcular estadísticas localmente desde los dividendos cargados
-    const dividendosPagados = this.dividendos.filter(d => d.estado === 'pagado');
-    const dividendosPendientes = this.dividendos.filter(d => d.estado === 'pendiente');
-    
-    this.estadisticas = {
-      totalDividendosPagados: dividendosPagados.length,
-      totalDividendosPendientes: dividendosPendientes.length,
-      montoTotalDividendos: dividendosPagados.reduce((sum, d) => sum + (d.monto_por_accion || 0), 0),
-      activosConDividendos: this.activosConDividendos.length
-    };
-  }
-
   procesarDividendosAutomaticos(): void {
     if (!confirm('¿Estás seguro de que quieres procesar todos los dividendos automáticos? Esta acción verificará qué activos deben generar dividendos según su frecuencia.')) {
       return;
     }
 
     this.procesandoDividendos = true;
+    console.log('🔄 Iniciando procesamiento de dividendos automáticos...');
     
     // Llamar al endpoint de procesamiento automático
     this.adminService.procesarDividendosAutomaticos().subscribe({
       next: (response) => {
         this.procesandoDividendos = false;
-        this.snackBar.open(response.mensaje || 'Dividendos procesados correctamente', 'Cerrar', { duration: 5000 });
+        console.log('✅ Respuesta del procesamiento:', response);
+        
+        const mensaje = response?.mensaje || response?.message || 'Dividendos procesados correctamente';
+        const total = response?.total || response?.dividendos?.length || 0;
+        
+        if (total === 0) {
+          this.snackBar.open(
+            'No se procesaron dividendos. Verifica que haya activos configurados con dividendos y que sea momento de pagarlos según su frecuencia.',
+            'Cerrar',
+            { 
+              duration: 8000,
+              panelClass: ['warning-snackbar']
+            }
+          );
+        } else {
+          this.snackBar.open(`${mensaje} (${total} dividendos procesados)`, 'Cerrar', { 
+            duration: 6000,
+            panelClass: ['success-snackbar']
+          });
+        }
+        
         this.cargarDatos(); // Recargar datos
       },
       error: (error) => {
         this.procesandoDividendos = false;
-        console.error('Error al procesar dividendos:', error);
-        this.snackBar.open('Error al procesar dividendos automáticos', 'Cerrar', { duration: 3000 });
+        console.error('❌ Error al procesar dividendos:', error);
+        
+        let mensajeError = 'Error al procesar dividendos automáticos';
+        
+        if (error?.status === 403) {
+          mensajeError = 'No tienes permisos para procesar dividendos automáticos';
+        } else if (error?.error?.mensaje) {
+          mensajeError = error.error.mensaje;
+        } else if (error?.message) {
+          mensajeError = error.message;
+        }
+        
+        this.snackBar.open(mensajeError, 'Cerrar', { 
+          duration: 5000,
+          panelClass: ['error-snackbar']
+        });
       }
     });
   }

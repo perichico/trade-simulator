@@ -13,6 +13,7 @@ export interface Dividendo {
     nombre: string;
     simbolo: string;
     tipo_activo_id?: number;
+    ultimo_precio?: number;
   };
   
   // Datos calculados para el usuario

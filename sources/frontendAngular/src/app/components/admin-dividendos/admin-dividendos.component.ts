@@ -15,6 +15,7 @@ interface Activo {
   frecuenciaDividendo: string;
   ultimaFechaDividendo?: Date;
   ultimoPrecio: number;
+  ultimo_precio?: number; // Alias para compatibilidad
 }
 
 interface EstadisticasDividendos {

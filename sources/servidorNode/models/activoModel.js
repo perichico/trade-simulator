@@ -17,6 +17,7 @@ module.exports = (sequelize) => {
         frecuencia_dividendo: { 
             type: DataTypes.ENUM('mensual', 'trimestral', 'semestral', 'anual'), 
             allowNull: true,
+            defaultValue: 'trimestral',
             comment: 'Frecuencia con la que se pagan los dividendos'
         },
         ultima_fecha_dividendo: { 

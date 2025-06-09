@@ -10,8 +10,7 @@ class DividendoService {
       
       // Verificar activos para dividendos de forma segura
       setTimeout(() => {
-        this.verificarDividendosPendientes()
-          .catch(err => console.error('Error al verificar dividendos pendientes:', err));
+        this.verificarDividendosPendientes();
       }, 3000);
       
     } catch (error) {
@@ -87,7 +86,7 @@ class DividendoService {
     try {
       const dividendosPendientes = await Dividendo.findAll({
         where: { estado: 'pendiente' },
-        include: [{ model: Activo }],
+        include: [{ model: Activo, as: 'activo' }],
         transaction
       });
       
@@ -273,12 +272,12 @@ class DividendoService {
         where: { usuario_id: usuarioId },
         attributes: ['id']
       }).catch(dbError => {
-        console.error('Error al obtener portafolios:', dbError);
-        throw new Error(`Error de base de datos al obtener portafolios: ${dbError.message}`);
+        console.error('Error al obtener portafolios del usuario:', dbError);
+        throw new Error('Error al consultar portafolios del usuario');
       });
       
       if (!portafolios.length) {
-        console.log(`Usuario ${usuarioId} no tiene portafolios`);
+        console.log(`No se encontraron portafolios para el usuario ${usuarioId}`);
         return [];
       }
       
@@ -286,92 +285,78 @@ class DividendoService {
       console.log(`Portafolios encontrados: ${portafolioIds.join(', ')}`);
       
       // Obtener las posiciones en activos de estos portafolios
-      const activosEnPortafolio = await PortafolioActivo.findAll({
+      const posicionesEnActivos = await PortafolioActivo.findAll({
         where: { 
           portafolio_id: { [Op.in]: portafolioIds },
           cantidad: { [Op.gt]: 0 }
         },
-        attributes: [
-          'activo_id',
-          [sequelize.fn('SUM', sequelize.col('cantidad')), 'total_cantidad']
-        ],
-        group: ['activo_id']
+        include: [{
+          model: Activo,
+          as: 'activo',
+          required: true,
+          attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
+        }]
       }).catch(dbError => {
-        console.error('Error al obtener activos en portafolio:', dbError);
-        throw new Error(`Error de base de datos al obtener activos: ${dbError.message}`);
+        console.error('Error al obtener posiciones de activos:', dbError);
+        throw new Error('Error al consultar posiciones de activos');
       });
       
-      if (!activosEnPortafolio.length) {
-        console.log(`Usuario ${usuarioId} no tiene activos en portafolio`);
+      if (!posicionesEnActivos.length) {
+        console.log(`No se encontraron posiciones de activos para el usuario ${usuarioId}`);
         return [];
       }
       
-      // Crear mapa de activos con cantidades totales
-      const activosPorId = {};
-      activosEnPortafolio.forEach(item => {
-        const activoId = item.activo_id || item.get('activo_id');
-        const totalCantidad = item.get('total_cantidad') || item.total_cantidad || 0;
-        activosPorId[activoId] = parseFloat(totalCantidad);
-      });
+      // Obtener los activos únicos
+      const activosIds = [...new Set(posicionesEnActivos.map(pos => pos.activo_id))];
+      console.log(`Activos únicos encontrados: ${activosIds.join(', ')}`);
       
-      const activosIds = Object.keys(activosPorId).map(id => parseInt(id));
-      console.log(`Activos con posiciones: ${activosIds.join(', ')}`);
-      
-      // Obtener todos los dividendos de estos activos con manejo de errores específico
+      // Obtener dividendos para estos activos
       const dividendos = await Dividendo.findAll({
         where: { 
           activo_id: { [Op.in]: activosIds },
-          estado: 'pagado' // Solo dividendos ya pagados
+          estado: 'pagado'
         },
-        attributes: ['id', 'activo_id', 'fecha', 'monto_por_accion', 'estado'], // Solo campos que existen
         include: [{
           model: Activo,
-          attributes: ['id', 'simbolo', 'nombre']
+          as: 'activo',
+          required: true,
+          attributes: ['id', 'nombre', 'simbolo', 'ultimo_precio']
         }],
-        order: [["fecha", "DESC"]],
-        limit: 100 // Limitar resultados para evitar sobrecarga
+        order: [['fecha', 'DESC']]
       }).catch(dbError => {
         console.error('Error al obtener dividendos:', dbError);
-        // Verificar si es error de columna inexistente
-        if (dbError.message.includes('Unknown column') || dbError.message.includes('column')) {
-          throw new Error(`Error: La base de datos no tiene la estructura esperada. ${dbError.message}`);
-        }
-        throw new Error(`Error de base de datos al obtener dividendos: ${dbError.message}`);
+        throw new Error('Error al consultar dividendos');
       });
       
-      console.log(`Dividendos encontrados: ${dividendos.length}`);
-      
-      // Mapear los dividendos con información del usuario
-      const dividendosConInfo = dividendos.map(div => {
-        const activoId = div.activo_id;
-        const cantidadAcciones = activosPorId[activoId] || 0;
-        const montoTotal = parseFloat(div.monto_por_accion) * cantidadAcciones;
+      // Calcular dividendos del usuario con información completa del activo
+      const dividendosUsuario = dividendos.map(dividendo => {
+        const posicion = posicionesEnActivos.find(pos => pos.activo_id === dividendo.activo_id);
+        const cantidadAcciones = posicion ? posicion.cantidad : 0;
+        const montoTotal = cantidadAcciones * dividendo.monto_por_accion;
         
         return {
-          id: div.id,
-          activo_id: div.activo_id,
-          fecha: div.fecha,
-          monto_por_accion: parseFloat(div.monto_por_accion),
-          estado: div.estado,
-          activo: div.Activo ? {
-            id: div.Activo.id,
-            simbolo: div.Activo.simbolo,
-            nombre: div.Activo.nombre
-          } : null,
-          cantidadAcciones: cantidadAcciones,
-          montoTotal: montoTotal
+          id: dividendo.id,
+          activo_id: dividendo.activo_id,
+          fecha: dividendo.fecha,
+          monto_por_accion: dividendo.monto_por_accion,
+          estado: dividendo.estado,
+          cantidadAcciones,
+          montoTotal,
+          activo: {
+            id: dividendo.activo.id,
+            nombre: dividendo.activo.nombre,
+            simbolo: dividendo.activo.simbolo,
+            ultimo_precio: dividendo.activo.ultimo_precio
+          }
         };
       });
       
-      return dividendosConInfo;
+      console.log(`Devolviendo ${dividendosUsuario.length} dividendos procesados para el usuario`);
+      return dividendosUsuario;
       
     } catch (error) {
-      console.error('Error detallado al obtener dividendos del usuario:', {
-        error: error.message,
-        stack: error.stack,
-        usuarioId
-      });
-      throw new Error(`Error al obtener dividendos del usuario: ${error.message}`);
+      console.error('Error en obtenerDividendosPorUsuario:', error);
+      throw error;
     }
   }
 
@@ -413,6 +398,7 @@ class DividendoService {
         },
         include: [{
           model: Activo,
+          as: 'activo',
           attributes: ['id', 'simbolo', 'nombre']
         }],
         order: [["fecha", "DESC"]],
@@ -425,10 +411,10 @@ class DividendoService {
         fecha: div.fecha,
         monto_por_accion: parseFloat(div.monto_por_accion),
         estado: div.estado,
-        activo: div.Activo ? {
-          id: div.Activo.id,
-          simbolo: div.Activo.simbolo,
-          nombre: div.Activo.nombre
+        activo: div.activo ? {
+          id: div.activo.id,
+          simbolo: div.activo.simbolo,
+          nombre: div.activo.nombre
         } : null
       }));
       
@@ -447,7 +433,10 @@ class DividendoService {
       
       const portafoliosConActivo = await PortafolioActivo.findAll({
         where: { activo_id: dividendo.activo_id, cantidad: { [Op.gt]: 0 } },
-        include: [{ model: Portafolio }],
+        include: [{ 
+          model: Portafolio,
+          as: 'Portafolio'
+        }],
         transaction
       });
 
@@ -493,7 +482,10 @@ class DividendoService {
   async obtenerEstadisticasDividendo(dividendoId) {
     try {
       const dividendo = await Dividendo.findByPk(dividendoId, {
-        include: [{ model: Activo }]
+        include: [{ 
+          model: Activo,
+          as: 'activo'
+        }]
       });
 
       if (!dividendo) {
@@ -505,7 +497,14 @@ class DividendoService {
           activo_id: dividendo.activo_id,
           cantidad: { [Op.gt]: 0 }
         },
-        include: [{ model: Portafolio, include: [{ model: Usuario }] }]
+        include: [{ 
+          model: Portafolio,
+          as: 'Portafolio',
+          include: [{ 
+            model: Usuario,
+            as: 'Usuario'
+          }] 
+        }]
       });
 
       const totalAcciones = portafoliosConActivo.reduce((total, posicion) => {
@@ -516,9 +515,9 @@ class DividendoService {
 
       return {
         activo: {
-          simbolo: dividendo.Activo.simbolo,
-          nombre: dividendo.Activo.nombre,
-          tipoActivo: dividendo.Activo.TipoActivo?.nombre || 'Sin tipo'
+          simbolo: dividendo.activo.simbolo,
+          nombre: dividendo.activo.nombre,
+          tipoActivo: dividendo.activo.TipoActivo?.nombre || 'Sin tipo'
         },
         usuariosAfectados: portafoliosConActivo.length,
         totalAcciones: totalAcciones,
@@ -531,9 +530,10 @@ class DividendoService {
     }
   }
 
+  // Obtener razón por la cual un activo no es elegible para dividendo
   obtenerRazonNoElegible(activo, fechaActual) {
     if (!activo.ultima_fecha_dividendo) {
-      return 'Debería ser elegible (primera vez)';
+      return 'Primer dividendo - eligible immediately';
     }
     
     const ultimaFecha = new Date(activo.ultima_fecha_dividendo);

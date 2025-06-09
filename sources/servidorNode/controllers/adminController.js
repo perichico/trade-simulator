@@ -322,7 +322,8 @@ const obtenerDividendos = async (req, res) => {
         const dividendos = await Dividendo.findAll({
             include: [{ 
                 model: Activo,
-                attributes: ['id', 'simbolo', 'nombre', 'ultimo_precio']
+                attributes: ['id', 'simbolo', 'nombre', 'ultimo_precio'],
+                required: true // Asegurar que siempre se incluya el activo
             }],
             order: [["fecha", "DESC"]],
             limit: 100

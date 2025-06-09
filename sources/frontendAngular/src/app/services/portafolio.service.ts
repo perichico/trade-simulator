@@ -245,7 +245,7 @@ export class PortafolioService {
       const precioCompra = costoTotal / cantidadTotal;
       
       // Calcular valor actual y rendimiento
-      const precioActual = activo.precio || activo.ultimo_precio || 0;
+      const precioActual = activo.ultimo_precio || activo.precio || 0;
       const valorTotal = cantidadTotal * precioActual;
       const rendimiento = valorTotal - (cantidadTotal * precioCompra);
       const rendimientoPorcentaje = precioCompra > 0 ? (rendimiento / (cantidadTotal * precioCompra)) * 100 : 0;

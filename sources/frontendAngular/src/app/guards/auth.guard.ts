@@ -38,7 +38,14 @@ export class AuthGuard implements CanActivate {
         
         return true;
       }),
-      catchError(() => {
+      catchError((error) => {
+        // Manejar errores de rate limiting
+        if (error.status === 429) {
+          console.warn('Rate limit excedido:', error.error);
+          // Mostrar mensaje específico al usuario
+          // this.notificationService.showError(error.error.mensaje);
+        }
+        
         this.router.navigate(['/login']);
         return of(false);
       })

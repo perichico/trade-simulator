@@ -28,10 +28,10 @@ export class MercadoComponent implements OnInit, OnDestroy {
   tiposActivo = [
     { id: 0, nombre: 'Todos' },
     { id: 1, nombre: 'Acciones' },
-    { id: 2, nombre: 'Bonos' },
-    { id: 3, nombre: 'ETF' },
-    { id: 4, nombre: 'Criptomonedas' },
-    { id: 5, nombre: 'Materias Primas' },
+    { id: 2, nombre: 'ETF' },
+    { id: 3, nombre: 'Bonos' },
+    { id: 4, nombre: 'Materias Primas' },
+    { id: 5, nombre: 'Criptomonedas' },
     { id: 6, nombre: 'Divisas' }
   ];
 

@@ -69,5 +69,34 @@ describe('UsuarioController', () => {
         })
       );
     });
+
+    test('debería retornar datos del dashboard cuando hay portafolios', async () => {
+      Usuario.findByPk.mockResolvedValue({
+        id: 1,
+        nombre: 'Test User',
+        toJSON: () => ({ id: 1, nombre: 'Test User' })
+      });
+      
+      Portafolio.findAll.mockResolvedValue([{
+        id: 1,
+        saldo: 10000,
+        usuario_id: 1
+      }]);
+
+      // Mock para las otras consultas necesarias
+      require('../../models/index').Transaccion.findAll.mockResolvedValue([]);
+      require('../../models/index').PortafolioActivo.findAll.mockResolvedValue([]);
+      
+      await usuarioController.obtenerDatosDashboard(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          usuario: expect.any(Object),
+          transacciones: expect.any(Array),
+          activos: expect.any(Array)
+        })
+      );
+    });
   });
 });

@@ -1,94 +1,140 @@
-# Trade Simulator - Configuración Docker
 
-Este proyecto utiliza Docker para crear un entorno de desarrollo consistente con tres contenedores:
+# Trade Simulator
 
-- **MySQL**: Base de datos para almacenar la información del simulador de trading
-- **Node.js**: Backend que proporciona la API REST
-- **Angular**: Frontend que ofrece la interfaz de usuario
+Simulador de inversiones en bolsa con datos reales para practicar trading y gestión financiera.
 
-## Requisitos previos
+---
 
-- Docker y Docker Compose instalados en tu sistema
-- Git para clonar el repositorio (opcional)
+## 📌 Descripción
 
-## Estructura de contenedores
+Trade Simulator es una plataforma web que permite simular inversiones en tiempo real con precios del mercado reales. Ideal para aprender a gestionar portafolios, realizar operaciones, y analizar resultados sin riesgo financiero.
 
-La configuración incluye:
+---
 
-- **3 contenedores**: MySQL, Node.js y Angular
-- **2 redes Docker**: 
-  - `backend_network`: Conecta MySQL con Node.js
-  - `frontend_network`: Conecta Node.js con Angular
-- **Volúmenes bind mount**: Para persistir datos y código fuente
+## 🖥️ Capturas de pantalla por sección
 
-## Instrucciones de uso
+### Dashboard / Inicio
 
-### 1. Iniciar los contenedores
+El **Dashboard** es la página principal donde el usuario ve un resumen general de su portafolio, estado de sus inversiones y alertas importantes.  
+Aquí se muestra el rendimiento actual, noticias relevantes y accesos rápidos a las funciones principales.
+
+![Dashboard 1](screenshots/dashboard-1.jpg)  
+![Dashboard 2](screenshots/dashboard-2.jpg)  
+
+---
+
+### Mercado de activos
+
+En esta sección, el usuario puede consultar el mercado completo, con todos los activos disponibles para invertir. Se muestran cotizaciones, volúmenes y tendencias para facilitar la toma de decisiones.
+
+![Mercado de activos](screenshots/mercado-activos.jpg)  
+
+---
+
+### Página de un activo
+
+Cada activo dispone de una página dedicada con información detallada, gráficos históricos, noticias y opciones para comprar o vender.  
+Estas dos capturas muestran diferentes vistas y funcionalidades dentro de la página del activo.
+
+![Activo 1](screenshots/activo-1.jpg)  
+![Activo 2](screenshots/activo-2.jpg)  
+
+---
+
+### Historial de transacciones
+
+Esta pantalla presenta el historial completo de operaciones realizadas por el usuario, con detalles de fechas, cantidades, precios y resultados, permitiendo analizar la evolución de su portafolio.
+
+![Historial transacciones](screenshots/historial-transacciones.jpg)  
+
+---
+
+### Página de pago de dividendos
+
+Aquí el usuario puede consultar y gestionar el pago de dividendos recibidos por sus activos, con resumen de montos y fechas.
+
+![Pago dividendos](screenshots/pago-dividendos.jpg)  
+
+---
+
+### Gestión de alertas (stop loss y otras)
+
+Permite configurar alertas automáticas para proteger inversiones, como stop loss y otras condiciones personalizadas.  
+Estas dos capturas muestran las opciones disponibles y la interfaz para crear o modificar alertas.
+
+![Gestión alertas 1](screenshots/gestion-alertas-1.jpg)  
+![Gestión alertas 2](screenshots/gestion-alertas-2.jpg)  
+
+---
+
+### Panel de administración
+
+El panel de administración es la herramienta para que los administradores gestionen la plataforma, revisen estadísticas generales y controlen la actividad del sistema.
+
+![Panel administración](screenshots/panel-administracion.jpg)  
+
+---
+
+### Gestión de usuarios (admin)
+
+Desde esta sección, los administradores pueden gestionar los usuarios registrados, con opciones para modificar permisos, activar o desactivar cuentas.
+
+![Gestión usuarios](screenshots/gestion-usuarios.jpg)  
+
+---
+
+### Gestión de activos (admin)
+
+Los administradores pueden añadir, modificar o eliminar activos del mercado simulado, asegurando que la información esté actualizada y sea relevante.
+
+![Gestión activos](screenshots/gestion-activos.jpg)  
+
+---
+
+### Gestión de dividendos (admin)
+
+Aquí se gestionan los pagos de dividendos que corresponden a los activos, permitiendo actualizar la información y confirmar transacciones.
+
+![Gestión dividendos](screenshots/gestion-dividendos.jpg)  
+
+---
+
+## 🚀 Instalación y uso
+
+Clona el repositorio, instala las dependencias y ejecuta la aplicación localmente:
 
 ```bash
-docker-compose up -d
+git clone https://github.com/perichico/trade-simulator.git
+cd trade-simulator
+start.docker.bat / ./start.docker.sh
 ```
 
-Esto construirá las imágenes (si es necesario) e iniciará los tres contenedores en modo detached.
+---
 
-### 2. Verificar el estado de los contenedores
+## 🛠️ Tecnologías usadas
 
-```bash
-docker-compose ps
-```
+- Node.js y Express para el backend  
+- MySQL como base de datos  
+- Angular
 
-### 3. Acceder a las aplicaciones
+---
 
-- **Frontend Angular**: http://localhost:4200
-- **Backend Node.js**: http://localhost:3000
-- **Base de datos MySQL**: localhost:3306 (accesible mediante herramientas como MySQL Workbench)
+## 🙌 Contribuciones
 
-### 4. Ver logs de los contenedores
+Las contribuciones son bienvenidas. Para aportar:
 
-```bash
-# Ver logs de todos los contenedores
-docker-compose logs
+1. Haz fork del repositorio.  
+2. Crea una rama nueva para tu feature o fix.  
+3. Realiza commits claros y descriptivos.  
+4. Envía un Pull Request explicando tus cambios.
 
-# Ver logs de un contenedor específico
-docker-compose logs mysql
-docker-compose logs node
-docker-compose logs angular
-```
 
-### 5. Detener los contenedores
+---
 
-```bash
-docker-compose down
-```
+## 🤝 Contacto
 
-Para eliminar también los volúmenes (esto borrará los datos persistentes):
+Si tienes dudas, sugerencias o quieres colaborar, contáctame en [perifedea000@gmail.com] o abre un issue en GitHub.
 
-```bash
-docker-compose down -v
-```
+---
 
-## Configuración personalizada
-
-Puedes modificar las variables de entorno y otras configuraciones en el archivo `docker-compose.yml`.
-
-## Desarrollo
-
-Gracias a los volúmenes bind mount, puedes modificar el código fuente en tu máquina local y los cambios se reflejarán automáticamente en los contenedores:
-
-- El código del backend se encuentra en `./sources/servidorNode`
-- El código del frontend se encuentra en `./sources/frontendAngular`
-
-## Solución de problemas
-
-Si encuentras problemas con los contenedores:
-
-1. Verifica los logs para identificar errores: `docker-compose logs`
-2. Reinicia los contenedores: `docker-compose restart`
-3. Reconstruye las imágenes: `docker-compose build --no-cache`
-4. Elimina los contenedores y vuelve a iniciarlos: `docker-compose down && docker-compose up -d`
-
-## Notas adicionales
-
-- La base de datos MySQL está configurada con las credenciales especificadas en el archivo `docker-compose.yml`
-- El backend Node.js espera a que MySQL esté disponible antes de iniciar
-- El frontend Angular depende del backend Node.js
+¡Gracias por visitar Trade Simulator! 🚀
